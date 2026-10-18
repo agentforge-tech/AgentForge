@@ -15,12 +15,32 @@
 
     <properties>
         <spring-boot.version>2.7.18</spring-boot.version>
+        <mybatis-spring-boot.version>2.3.2</mybatis-spring-boot.version>
+        <mysql-connector.version>8.0.33</mysql-connector.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Align transitive versions (slf4j / logback / etc.) with Spring Boot. -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>cloud.changlu.agentforge</groupId>
             <artifactId>agentforge-agent-core</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cloud.changlu.agentforge</groupId>
+            <artifactId>agentforge-model-registry</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>
@@ -32,6 +52,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <version>${spring-boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>${mybatis-spring-boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql-connector.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

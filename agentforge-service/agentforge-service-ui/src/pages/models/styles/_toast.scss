@@ -6,13 +6,16 @@
 .af-toast {
   position: fixed;
   left: 50%;
-  bottom: $space-8;
-  transform: translateX(-50%) translateY(8px);
+  top: $space-6;
+  transform: translateX(-50%) translateY(-8px);
+  max-width: calc(100% - #{$space-8});
   padding: 9px $space-4;
   border-radius: $radius-lg;
   background: rgba(31, 41, 55, 0.94);
   color: #fff;
   font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
   box-shadow: $shadow-lg;
   opacity: 0;
   pointer-events: none;

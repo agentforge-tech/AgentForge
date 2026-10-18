@@ -55,12 +55,22 @@
 
 .af-sidebar__scroll {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   padding: $space-2 + 2px $space-2 $space-5;
 }
 
 .af-nav-group {
   margin-bottom: $space-3;
+
+  &--resources {
+    order: 1;
+  }
+
+  &--agent {
+    order: 2;
+  }
 
   &__head {
     @include button-reset;
@@ -130,6 +140,25 @@
     border-radius: $radius-pill;
     padding: 1px 7px;
     line-height: 1.5;
+  }
+
+  &__hint {
+    font-size: 11px;
+    color: $color-brand-dark;
+    background: rgba(75, 142, 247, 0.12);
+    border-radius: $radius-pill;
+    padding: 1px 8px;
+    line-height: 1.5;
+    transition: $transition;
+  }
+
+  &--link {
+    text-decoration: none;
+    margin-bottom: $space-4;
+
+    &:hover .af-nav-item__hint {
+      background: rgba(75, 142, 247, 0.2);
+    }
   }
 
   &:hover {

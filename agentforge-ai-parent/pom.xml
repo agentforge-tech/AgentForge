@@ -9,7 +9,7 @@
 
     <name>AgentForge :: AI :: Parent</name>
     <description>Parent POM for AgentForge dependency and build configuration.</description>
-    <url>https://github.com/changluya/AgentForge</url>
+    <url>https://github.com/agentforge-tech/AgentForge</url>
 
     <licenses>
         <license>
@@ -27,16 +27,16 @@
             <email>changluya@users.noreply.github.com</email>
             <url>https://changlu.cloud</url>
             <organization>AgentForge</organization>
-            <organizationUrl>https://github.com/changluya/AgentForge</organizationUrl>
+            <organizationUrl>https://github.com/agentforge-tech/AgentForge</organizationUrl>
         </developer>
     </developers>
 
     <!-- Source-control coordinates displayed by Central and consumed by release tooling. -->
     <scm>
-        <connection>scm:git:https://github.com/changluya/AgentForge.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/changluya/AgentForge.git</developerConnection>
+        <connection>scm:git:https://github.com/agentforge-tech/AgentForge.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/agentforge-tech/AgentForge.git</developerConnection>
         <tag>HEAD</tag>
-        <url>https://github.com/changluya/AgentForge</url>
+        <url>https://github.com/agentforge-tech/AgentForge</url>
     </scm>
 
     <properties>

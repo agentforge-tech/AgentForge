@@ -14,7 +14,7 @@ description: 获取源码并构建 AgentForge
 ## 获取并构建
 
 ```bash
-git clone https://github.com/changluya/AgentForge.git
+git clone https://github.com/agentforge-tech/AgentForge.git
 cd AgentForge
 mvn -B -ntp clean test
 ```
