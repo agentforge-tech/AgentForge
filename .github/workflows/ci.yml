@@ -11,7 +11,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '17' ]
+        # 8 and 17 verify the public modules stay Java 8 compatible; 21 runs the Spotless format check.
+        java: [ '8', '17', '21' ]
 
     steps:
       - name: Checkout
