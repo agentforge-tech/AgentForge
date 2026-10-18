@@ -6,6 +6,11 @@
 
 > **Forge Intelligence into Action.**
 
+[![Docs](https://img.shields.io/badge/docs-online-blue?style=flat-square)](https://agentforge-tech.github.io/AgentForge/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Java 8+](https://img.shields.io/badge/Java-8%2B-orange?style=flat-square)](https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started)
+[![GitHub stars](https://img.shields.io/github/stars/agentforge-tech/AgentForge?style=flat-square&logo=github)](https://github.com/agentforge-tech/AgentForge/stargazers)
+
 **English** | [简体中文](README.zh-CN.md)
 
 AgentForge is an open-source Agent framework for Java developers, built **from the lowest-level LLM capabilities upward**.
@@ -16,9 +21,35 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 
 `AgentForge = Agent + Forge`: `Agent` stands for an entity that understands goals, reasons, calls tools, and completes tasks; `Forge` emphasizes shaping raw material through continuous processing, forming, and strengthening until it becomes a truly usable product.
 
-- Documentation: <https://changluya.github.io/AgentForge/>
-- GitHub: <https://github.com/changluya/AgentForge>
-- Gitee: <https://gitee.com/changluJava/agent-forge>
+**Highlights**
+
+- Provider-neutral model abstraction with [OI]-compatible and Anthropic implementations
+- ReAct agent runtime with streaming, memory, tool calling, middleware, retry, and cancellation
+- Harness runtime with permissions, tool approval, sandboxing, tracing, and resumable execution
+- Out-of-the-box Spring Boot + Vue service with a unified SSE streaming protocol
+
+## Documentation
+
+The documentation site is the best place to start. It is available in both 简体中文 and English, and covers the architecture, module-by-module design notes, and end-to-end guides.
+
+| Resource | Link |
+| --- | --- |
+| Documentation | <https://agentforge-tech.github.io/AgentForge/> |
+| Introduction | <https://agentforge-tech.github.io/AgentForge/docs/about/introduction> |
+| Getting Started | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started> |
+| Contributing | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/contributing> |
+| Blog | <https://agentforge-tech.github.io/AgentForge/blog> |
+| Source (GitHub) | <https://github.com/agentforge-tech/AgentForge> |
+| Mirror (Gitee) | <https://gitee.com/changluJava/agent-forge> |
+
+### Table of Contents
+
+- [Documentation](#documentation)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Questions](#questions)
+- [Contribution](#contribution)
+- [License](#license)
 
 ---
 
@@ -47,7 +78,7 @@ AgentForge
 │   ├── agentforge-model-api      # Provider-neutral model contracts & unified req/vo
 │   ├── agentforge-model-core     # Vendor-free default implementations & execution engine
 │   ├── agentforge-model-openai   # OpenAI / OpenAI-compatible provider
-│   ├── agentforge-model-anthropic# Anthropic provider
+│   ├── agentforge-model-anthropic # Anthropic provider
 │   └── agentforge-model-registry # Out-of-the-box ChatModel factory
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent runtime
@@ -104,10 +135,12 @@ AgentForge
 ### Build & Dependency
 
 ```bash
-git clone https://github.com/changluya/AgentForge.git
+git clone https://github.com/agentforge-tech/AgentForge.git
 cd AgentForge
 mvn clean install -DskipTests
 ```
+
+Then add the modules you need. Until the first Maven Central release is published, use the locally installed `1.0.0-SNAPSHOT` artifacts:
 
 ```xml
 <dependency>
@@ -182,9 +215,9 @@ Unit tests do not hit real model services by default; they verify requests and r
 
 If you run into any problem, please reach out via:
 
-- GitHub Issues: <https://github.com/changluya/AgentForge/issues>
+- GitHub Issues: <https://github.com/agentforge-tech/AgentForge/issues>
 - Gitee Issues: <https://gitee.com/changluJava/agent-forge/issues>
-- Documentation: <https://changluya.github.io/AgentForge/>
+- Documentation: <https://agentforge-tech.github.io/AgentForge/>
 
 When filing an issue, please include environment info (JDK / Maven versions), reproduction steps, and the full error log to help us locate the problem quickly.
 
@@ -203,7 +236,7 @@ Contributions of code, documentation, and feedback are all welcome.
 
 ---
 
-## Contributor
+## Contributors
 
 | Contributor | Role |
 | --- | --- |

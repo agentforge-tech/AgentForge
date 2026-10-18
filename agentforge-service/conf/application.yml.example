@@ -1,0 +1,39 @@
+# AgentForge Service configuration template.
+# Copy this file before running the service:
+#   cp conf/application.yml.example conf/application.yml
+# Then adjust the values below (or override them with environment variables).
+# The service reads this file from ${user.dir.conf}/application.yml at startup.
+
+server:
+  port: ${SERVER_PORT:8080}
+
+agentforge:
+  model:
+    # [OI]-compatible endpoint (also works for DashScope / Ollama / Xinference, etc.)
+    base-url: ${AGENTFORGE_MODEL_BASE_URL:https://tokenrhythm.studio/v1}
+    # Required at call time; leave empty and pass AGENTFORGE_MODEL_API_KEY via environment.
+    api-key: ${AGENTFORGE_MODEL_API_KEY:}
+    name: ${AGENTFORGE_MODEL_NAME:deepseek-flash}
+    temperature: ${AGENTFORGE_MODEL_TEMPERATURE:0.3}
+  # OpenReach web tools (webSearch / webImageSearch / webRead / webCurl).
+  # Leave empty to disable the web tools.
+  openreach:
+    base-url: ${OPENREACH_BASE_URL:http://openreach.changlu.cloud}
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # Local MySQL by default; override with environment variables when needed.
+    url: ${AGENTFORGE_DB_URL:jdbc:mysql://localhost:3306/agentforge?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${AGENTFORGE_DB_USERNAME:root}
+    password: ${AGENTFORGE_DB_PASSWORD:root}
+  mvc:
+    async:
+      request-timeout: 0
+
+mybatis:
+  # Mapper XML files live next to their module package (see modules/model/mapper).
+  mapper-locations: classpath*:cloud/changlu/agentforge/service/modules/**/mapper/*.xml
+  type-aliases-package: cloud.changlu.agentforge.service.modules.model.domain
+  configuration:
+    map-underscore-to-camel-case: true

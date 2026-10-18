@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="AgentForgeServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="agentforge-service-web" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="cloud.changlu.agentforge.service.AgentForgeServiceApplication" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/agentforge-service" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

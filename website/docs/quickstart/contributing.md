@@ -5,7 +5,7 @@ description: 参与 AgentForge 开发的基本流程
 ---
 # 贡献指南
 
-提交改动前，请先搜索现有 [Issues](https://github.com/changluya/AgentForge/issues) 与 [Discussions](https://github.com/changluya/AgentForge/discussions)。
+提交改动前，请先搜索现有 [Issues](https://github.com/agentforge-tech/AgentForge/issues) 与 [Discussions](https://github.com/agentforge-tech/AgentForge/discussions)。
 
 1. Fork 仓库并从最新主分支创建功能分支；
 2. 保持改动聚焦，并为行为变更补充测试；

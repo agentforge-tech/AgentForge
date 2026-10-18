@@ -1,9 +1,65 @@
-// 正式对话页面（chat）——独立构建，产物输出到 dist/
-import { createAppConfig } from './build/vite.factory.js'
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue2'
+import { resolve } from 'node:path'
 
-export default createAppConfig({
-  entry: './index.html',
-  outDir: 'dist',
-  port: 5173,
-  proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: true } }
+// 单站点多页面：
+//   /        → 我的模型（管理列表，src/pages/models）
+//   /chat    → 对话门户（src/App.vue）
+// 两个页面各自独立入口、共享一套构建产物，统一由本配置开发与打包。
+function rewriteChatPath() {
+  const redirect = (req) => {
+    const [path, query] = (req.url || '').split('?')
+    if (path === '/chat' || path === '/agents' || path === '/agents/config') {
+      req.url = path === '/agents/config' ? '/agents/' + (query ? '?' + query : '') : path + '/' + (query ? '?' + query : '')
+    }
+  }
+  return {
+    name: 'agentforge-chat-path',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        redirect(req)
+        next()
+      })
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        redirect(req)
+        next()
+      })
+    }
+  }
+}
+
+export default defineConfig({
+  plugins: [vue(), rewriteChatPath()],
+  css: {
+    preprocessorOptions: {
+      scss: { api: 'modern' }
+    }
+  },
+  server: {
+    port: 5173,
+    proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: true } }
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        index: resolve(process.cwd(), 'index.html'),
+        'agents/index': resolve(process.cwd(), 'agents/index.html'),
+        'chat/index': resolve(process.cwd(), 'chat/index.html')
+      },
+      output: {
+        // 按依赖来源拆分公共包，提升缓存命中率、避免单页打包体积过大。
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('element-ui')) return 'vendor-element'
+          if (id.includes('highlight.js')) return 'vendor-highlight'
+          if (id.includes('markdown-it')) return 'vendor-markdown'
+          return 'vendor'
+        }
+      }
+    }
+  }
 })
