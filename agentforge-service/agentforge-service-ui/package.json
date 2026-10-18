@@ -5,11 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "dev:models": "vite --config vite.models.config.js",
-    "build:models": "vite build --config vite.models.config.js",
-    "preview:models": "vite preview --config vite.models.config.js",
-    "build:all": "npm run build && npm run build:models"
+    "preview": "vite preview"
   },
   "dependencies": {
     "element-ui": "^2.15.14",

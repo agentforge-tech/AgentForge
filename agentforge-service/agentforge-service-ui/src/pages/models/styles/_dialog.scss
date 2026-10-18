@@ -1,0 +1,277 @@
+// ---------------------------------------------------------------------------
+// 新建 / 编辑弹窗 · 表单 · 加载态
+// ---------------------------------------------------------------------------
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.af-modal {
+  position: fixed;
+  inset: 0;
+  z-index: $z-drawer;
+  @include flex(center, center);
+
+  &__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.42);
+  }
+
+  &__panel {
+    position: relative;
+    width: 520px;
+    max-width: calc(100% - #{$space-6});
+    max-height: calc(100vh - #{$space-10});
+    @include flex(flex-start, stretch, column);
+    @include card($radius-xl);
+    box-shadow: $shadow-lg;
+    overflow: hidden;
+  }
+
+  &__head {
+    @include flex(space-between, center);
+    padding: $space-4 $space-5;
+    border-bottom: 1px solid $color-border;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: $color-text;
+  }
+
+  &__close {
+    @include button-reset;
+    width: 30px;
+    height: 30px;
+    border-radius: $radius-md;
+    @include flex(center, center);
+    color: $color-text-muted;
+    transition: $transition;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background: $color-hover;
+      color: $color-text;
+    }
+  }
+
+  &__body {
+    padding: $space-5;
+    overflow-y: auto;
+    @include flex(flex-start, stretch, column);
+    gap: $space-4;
+  }
+
+  &__footer {
+    @include flex(space-between, center);
+    gap: $space-2 + 2px;
+    padding: $space-4 $space-5;
+    border-top: 1px solid $color-border;
+    background: $color-sidebar;
+  }
+
+  &__footer-actions {
+    @include flex(flex-end, center);
+    gap: $space-2 + 2px;
+  }
+}
+
+.af-field {
+  @include flex(flex-start, stretch, column);
+  gap: 6px;
+
+  &__label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $color-text-secondary;
+
+    i {
+      color: $color-danger;
+      font-style: normal;
+    }
+  }
+}
+
+.af-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-4;
+
+  @include respond('sm') {
+    grid-template-columns: 1fr;
+  }
+}
+
+.af-input,
+.af-select {
+  width: 100%;
+  height: 36px;
+  padding: 0 $space-3;
+  border: 1px solid $color-border-strong;
+  border-radius: $radius-lg;
+  background: $color-bg;
+  font-size: 13px;
+  color: $color-text;
+  transition: $transition;
+
+  &::placeholder {
+    color: $color-text-faint;
+  }
+
+  &:focus {
+    border-color: #9cc0f5;
+    @include focus-ring;
+  }
+}
+
+.af-select {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2398a2b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right $space-3 center;
+  background-size: 15px;
+  padding-right: $space-8;
+}
+
+.af-hint {
+  font-size: 11.5px;
+  color: $color-text-muted;
+}
+
+// ------------------------------ Function Call 测试结果 ------------------------------
+.af-test-result {
+  @include flex(flex-start, flex-start);
+  position: relative;
+  gap: $space-3;
+  padding: $space-3 $space-10 $space-3 $space-3;
+  border: 1px solid;
+  border-radius: $radius-lg;
+
+  &__icon {
+    @include flex(center, center);
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: $radius-pill;
+
+    svg {
+      width: 15px;
+      height: 15px;
+    }
+  }
+
+  &__content {
+    min-width: 0;
+    padding-top: 1px;
+  }
+
+  &__title {
+    margin-bottom: 3px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  &__message {
+    font-size: 12px;
+    line-height: 1.6;
+    color: $color-text-secondary;
+    word-break: break-word;
+  }
+
+  &__close {
+    @include button-reset;
+    @include flex(center, center);
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: $radius-md;
+    color: $color-text-muted;
+
+    svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.72);
+      color: $color-text;
+    }
+  }
+
+  &--success {
+    border-color: rgba(20, 148, 100, 0.24);
+    background: $color-success-soft;
+
+    .af-test-result__icon {
+      background: rgba(20, 148, 100, 0.14);
+      color: $color-success;
+    }
+
+    .af-test-result__title {
+      color: $color-success;
+    }
+  }
+
+  &--error {
+    border-color: rgba(214, 69, 69, 0.24);
+    background: $color-danger-soft;
+
+    .af-test-result__icon {
+      background: rgba(214, 69, 69, 0.14);
+      color: $color-danger;
+    }
+
+    .af-test-result__title {
+      color: $color-danger;
+    }
+  }
+}
+
+// ------------------------------ 危险按钮 ------------------------------
+.af-btn--danger {
+  color: $color-danger;
+
+  &:hover:not(:disabled) {
+    background: $color-danger-soft;
+    border-color: rgba(214, 69, 69, 0.32);
+    color: $color-danger;
+  }
+}
+
+// ------------------------------ 加载态 ------------------------------
+.af-loading {
+  @include card;
+  @include flex(center, center);
+  gap: $space-3;
+  padding: $space-10 $space-6;
+  color: $color-text-muted;
+  font-size: 13px;
+}
+
+.af-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: $radius-pill;
+  border: 2px solid $color-border-strong;
+  border-top-color: $color-brand;
+  animation: af-spin 0.7s linear infinite;
+}
+
+@keyframes af-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ------------------------------ 错误吐司 ------------------------------
+.af-toast--error {
+  background: rgba(214, 69, 69, 0.96);
+}

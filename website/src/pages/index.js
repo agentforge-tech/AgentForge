@@ -39,7 +39,7 @@ export default function Home() {
             <p><Translate id="home.description">从统一 LLM 抽象到 Agent Runtime，AgentForge 为 Java 开发者提供透明、可控、可扩展的智能体工程底座。</Translate></p>
             <div className={styles.actions}>
               <Link className={styles.primaryAction} to="/docs/quickstart/getting-started"><Translate id="home.start">开始构建</Translate><span>→</span></Link>
-              <Link className={styles.secondaryAction} href="https://github.com/changluya/AgentForge"><span className={styles.githubMark}>⌘</span> GitHub</Link>
+              <Link className={styles.secondaryAction} href="https://github.com/agentforge-tech/AgentForge"><span className={styles.githubMark}>⌘</span> GitHub</Link>
             </div>
             <div className={styles.heroFacts}><span><b>Java</b> native</span><span><b>0</b> vendor lock-in</span><span><b>MIT</b> open source</span></div>
           </div>

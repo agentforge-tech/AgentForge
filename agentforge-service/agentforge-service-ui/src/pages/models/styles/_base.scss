@@ -37,6 +37,25 @@ textarea {
   @include scrollbar;
 }
 
+// 键盘可达性：仅在键盘聚焦时显示描边
+:focus-visible {
+  outline: 2px solid $color-brand;
+  outline-offset: 2px;
+  border-radius: $radius-sm;
+}
+
+// 尊重系统「减少动态效果」偏好
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .af-models {
   @include flex(flex-start, stretch);
   height: 100vh;

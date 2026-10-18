@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 日志目录由 SystemPropertyUtil 解析为 user.dir.logs -->
+    <property name="LOG_HOME" value="${user.dir.logs}"/>
+    <property name="LOG_CHARSET" value="UTF-8"/>
+    <property name="LOG_PATTERN"
+              value="[%d{'yy-MM-dd HH:mm:ss,SSS',GMT+8:00}] %-5p [%.10t] %logger{36}[%L] - %m%n"/>
+    <!-- 彩色控制台格式 -->
+    <property name="CONSOLE_COLOR_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %boldYellow([%thread])  %cyan(%logger{15}) %msg%n"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${CONSOLE_COLOR_PATTERN}</pattern>
+            <charset>${LOG_CHARSET}</charset>
+        </encoder>
+    </appender>
+
+    <appender name="allAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/agentforge-service.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/history/agentforge-service_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <MaxHistory>5</MaxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>${LOG_CHARSET}</charset>
+        </encoder>
+    </appender>
+
+    <!-- 业务日志单独输出到 llm.log，便于排查模型调用问题 -->
+    <appender name="llmAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/llm.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/history/llm_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <MaxHistory>5</MaxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>${LOG_CHARSET}</charset>
+        </encoder>
+    </appender>
+
+    <logger name="cloud.changlu.agentforge.service.modules.model" level="info" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="llmAppender"/>
+    </logger>
+
+    <!-- 同时输出到控制台与文件 -->
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="allAppender"/>
+    </root>
+
+</configuration>

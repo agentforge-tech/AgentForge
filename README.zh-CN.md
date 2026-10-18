@@ -6,6 +6,11 @@
 
 > **将智能锻造成行动。**
 
+[![Docs](https://img.shields.io/badge/docs-online-blue?style=flat-square)](https://agentforge-tech.github.io/AgentForge/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Java 8+](https://img.shields.io/badge/Java-8%2B-orange?style=flat-square)](https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started)
+[![GitHub stars](https://img.shields.io/github/stars/agentforge-tech/AgentForge?style=flat-square&logo=github)](https://github.com/agentforge-tech/AgentForge/stargazers)
+
 [English](README.md) | **简体中文**
 
 AgentForge 是一个面向 Java 开发者、从 **LLM 最底层能力开始构建** 的开源 Agent Framework。
@@ -18,9 +23,35 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 `AgentForge = Agent + Forge`：`Agent` 代表能理解目标、进行推理、调用工具并完成任务的智能体；`Forge`
 强调把原始材料经过持续加工、塑形、强化，最终打造为真正可用的产品。
 
-- 文档站：<https://changluya.github.io/AgentForge/>
-- GitHub：<https://github.com/changluya/AgentForge>
-- Gitee：<https://gitee.com/changluJava/agent-forge>
+**核心特性**
+
+- Provider-neutral 的模型抽象，内置 [OI]-compatible 与 Anthropic 实现
+- ReAct Agent 运行时：流式输出、记忆、工具调用、Middleware、重试与取消
+- Harness 运行时：权限、工具审批、沙箱、Trace 与可恢复执行
+- 开箱即用的 Spring Boot + Vue 服务，统一 SSE 流式协议
+
+## 文档
+
+文档站是最佳的起点，提供简体中文与英文两个版本，涵盖整体架构、各模块设计原理与端到端使用指南。
+
+| 资源 | 链接 |
+| --- | --- |
+| 文档站 | <https://agentforge-tech.github.io/AgentForge/> |
+| AgentForge 介绍 | <https://agentforge-tech.github.io/AgentForge/docs/about/introduction> |
+| 快速开始 | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started> |
+| 贡献指南 | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/contributing> |
+| 博客 | <https://agentforge-tech.github.io/AgentForge/blog> |
+| 源码（GitHub） | <https://github.com/agentforge-tech/AgentForge> |
+| 镜像（Gitee） | <https://gitee.com/changluJava/agent-forge> |
+
+### 目录
+
+- [文档](#文档)
+- [架构](#架构)
+- [快速开始](#快速开始)
+- [问题反馈](#问题反馈)
+- [参与贡献](#参与贡献)
+- [许可证](#许可证)
 
 ---
 
@@ -49,7 +80,7 @@ AgentForge
 │   ├── agentforge-model-api      # Provider 无关的模型契约与统一 req/vo
 │   ├── agentforge-model-core     # 无厂商依赖的默认实现与执行引擎
 │   ├── agentforge-model-openai   # OpenAI / OpenAI-compatible Provider
-│   ├── agentforge-model-anthropic# Anthropic Provider
+│   ├── agentforge-model-anthropic # Anthropic Provider
 │   └── agentforge-model-registry # 开箱即用的 ChatModel 工厂
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent 运行时
@@ -83,7 +114,7 @@ AgentForge
 4. **Lightweight** — 底层尽量减少不必要依赖，可被 Spring Boot、普通 Java、桌面端甚至嵌入式工程复用。
 5. **Production-oriented** — 目标不是 Demo Agent，而是可以真正进入生产环境的 Agent Runtime。
 
-### Roadmap
+### 路线图
 
 | 阶段 | 状态 | 内容 |
 | --- | --- | --- |
@@ -94,7 +125,7 @@ AgentForge
 
 ---
 
-## Quick Start
+## 快速开始
 
 ### 环境要求
 
@@ -106,10 +137,12 @@ AgentForge
 ### 构建与依赖
 
 ```bash
-git clone https://github.com/changluya/AgentForge.git
+git clone https://github.com/agentforge-tech/AgentForge.git
 cd AgentForge
 mvn clean install -DskipTests
 ```
+
+按需引入所需模块。在首个 Maven Central 版本发布前，请使用本地安装的 `1.0.0-SNAPSHOT` 产物：
 
 ```xml
 <dependency>
@@ -182,19 +215,19 @@ mvn clean test
 
 ---
 
-## Questions
+## 问题反馈
 
 如果使用中遇到问题，欢迎通过以下方式反馈：
 
-- GitHub Issue：<https://github.com/changluya/AgentForge/issues>
+- GitHub Issue：<https://github.com/agentforge-tech/AgentForge/issues>
 - Gitee Issue：<https://gitee.com/changluJava/agent-forge/issues>
-- 文档站：<https://changluya.github.io/AgentForge/>
+- 文档站：<https://agentforge-tech.github.io/AgentForge/>
 
 提 Issue 时请尽量附上环境信息（JDK / Maven 版本）、复现步骤与完整报错日志，便于快速定位。
 
 ---
 
-## Contribution
+## 参与贡献
 
 欢迎参与 AgentForge 的建设，无论是代码、文档还是使用反馈。
 
@@ -207,9 +240,9 @@ mvn clean test
 
 ---
 
-## Contributor
+## 贡献者
 
-| Contributor | 说明 |
+| 贡献者 | 说明 |
 | --- | --- |
 | [changlu](https://github.com/changluya) | 作者 / Maintainer |
 
@@ -217,9 +250,9 @@ mvn clean test
 
 ---
 
-## License
+## 许可证
 
-AgentForge is released under the [MIT License](LICENSE).
+AgentForge 基于 [MIT License](LICENSE) 开源。
 
 ---
 
