@@ -1,0 +1,23 @@
+.github/workflows/ci.yml
+  s_baff7ddf5980e8::t_f97830da2e7225 14-15
+pom.xml
+  s_baff7ddf5980e8::t_6a2c2454d17f01 41-90
+agentforge-ai-parent/pom.xml
+  s_baff7ddf5980e8::t_5331658b772d3e 143-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "504afead894980e8be21cc404170e90cc4f7cf11",
+  "prompts": {},
+  "sessions": {
+    "s_baff7ddf5980e8": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eb026e244ffe8t5LOp4Ww9qRkO",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
