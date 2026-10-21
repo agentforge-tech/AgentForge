@@ -42,8 +42,11 @@ public class AgentChatController {
             throw new IllegalArgumentException("Agent 不存在或已被删除");
         }
         boolean isDebug = Boolean.TRUE.equals(req.getIsDebug());
+        if (!isDebug && !Integer.valueOf(1).equals(config.getPublish())) {
+            throw new IllegalArgumentException("Agent 尚未发布");
+        }
         IAgentManager<Object, Object> agentManager =
-                agentManagerFactory.getAgentManagerByTypeAndMode(config.getType(), req.getMode());
+                agentManagerFactory.getAgentManagerByType(config.getType());
         Object agent =
                 agentManager.getAgentAndInitAgent(
                         AgentInitContext.builder()

@@ -7,7 +7,6 @@ public class AgentChatReq {
     private String sessionId;
     private String message;
     private Boolean isDebug;
-    private Integer mode;
 
     public String getAid() {
         return aid;
@@ -39,13 +38,5 @@ public class AgentChatReq {
 
     public void setIsDebug(Boolean isDebug) {
         this.isDebug = isDebug;
-    }
-
-    public Integer getMode() {
-        return mode;
-    }
-
-    public void setMode(Integer mode) {
-        this.mode = mode;
     }
 }

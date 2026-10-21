@@ -44,6 +44,16 @@ public class AgentConfigController {
         return agentConfigService.upsert(req);
     }
 
+    @PostMapping("/{id}/publish")
+    public AgentConfigVo publish(@PathVariable("id") Long id) {
+        return agentConfigService.updatePublishStatus(id, true);
+    }
+
+    @PostMapping("/{id}/unpublish")
+    public AgentConfigVo unpublish(@PathVariable("id") Long id) {
+        return agentConfigService.updatePublishStatus(id, false);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable("id") Long id) {
         agentConfigService.delete(id);

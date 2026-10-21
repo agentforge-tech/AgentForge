@@ -73,6 +73,14 @@
         where id = #{id} and is_deleted = 0
     </update>
 
+    <update id="updatePublishStatus">
+        update ai_agent_config
+        set publish = #{publish},
+            last_publish_time = case when #{publish} = 1 then #{modifyTime} else last_publish_time end,
+            modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
     <update id="deleteById">
         update ai_agent_config set is_deleted = 1, modify_time = now()
         where id = #{id} and is_deleted = 0

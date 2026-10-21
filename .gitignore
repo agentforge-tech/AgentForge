@@ -38,4 +38,10 @@ logs/
 **/conf/application.yml
 !**/conf/application.yml.example
 
+# Local SQL upgrade execution records
+agentforge-service/sql/local/
+
+# Local database upgrade credentials
+agentforge-service/bin/local/deploy.conf
+
 codes/

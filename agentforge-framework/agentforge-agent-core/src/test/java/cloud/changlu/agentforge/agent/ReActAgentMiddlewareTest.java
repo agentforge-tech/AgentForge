@@ -7,6 +7,7 @@ import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.extend.middlewares.LoggingIAgentMiddleware;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.support.RecordingMiddleware;
 import cloud.changlu.agentforge.agent.support.ScriptedChatModel;
@@ -72,7 +73,7 @@ public class ReActAgentMiddlewareTest {
                 new ScriptedChatModel()
                         .enqueueToolCall("call_1", "getWeather", "{\"city\":\"Hangzhou\"}")
                         .enqueueText("done");
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         RecordingMiddleware middleware = new RecordingMiddleware().toolResultSuffix("[masked]");
 
         agent(chatModel, memoryProvider, settings(0), toolService(), middleware)
@@ -137,7 +138,7 @@ public class ReActAgentMiddlewareTest {
                 new ScriptedChatModel()
                         .enqueueToolCall("call_1", "sideEffect", "{\"reason\":\"user stopped\"}")
                         .enqueueText("never reached");
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         RecordingMiddleware middleware = new RecordingMiddleware();
         final ReActAgent agent =
                 agent(chatModel, memoryProvider, settings(0), toolService, middleware);
@@ -262,7 +263,7 @@ public class ReActAgentMiddlewareTest {
             ScriptedChatModel chatModel, AgentSettings settings, IAgentMiddleware... middlewares) {
         return agent(
                 chatModel,
-                ChatMemoryProvider.windowChatMemoryProvider(100),
+                new MessageWindowChatMemoryProvider(100),
                 settings,
                 toolService(),
                 middlewares);

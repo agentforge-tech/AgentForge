@@ -1,6 +1,7 @@
 package cloud.changlu.agentforge.service.modules.agent.runtime.base;
 
 import cloud.changlu.agentforge.agent.step.ChatResult;
+import cloud.changlu.agentforge.agent.stream.TokenStream;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitContext;
 
@@ -8,8 +9,6 @@ import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitC
 public interface IAgentManager<T, F> {
 
     Integer getType();
-
-    Integer getMode();
 
     T createAndStoreAgent(String aid, String agentConfig, boolean isDebug);
 
@@ -28,4 +27,8 @@ public interface IAgentManager<T, F> {
     void removeAgent(String aid);
 
     ChatResult ask(T agent, AgentChatReq req);
+
+    TokenStream stream(T agent, AgentChatReq req);
+
+    void cancel(T agent, String sessionId);
 }

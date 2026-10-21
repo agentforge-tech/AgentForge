@@ -4,7 +4,7 @@ import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.exception.AgentException;
-import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.support.RecordingMiddleware;
 import cloud.changlu.agentforge.agent.support.ScriptedStreamingChatModel;
 import cloud.changlu.agentforge.agent.support.WeatherTools;
@@ -260,7 +260,7 @@ public class ReActAgentStreamMiddlewareTest {
                 .agentName("stream-middleware-agent")
                 .systemPrompt("You are a weather assistant.")
                 .streamingChatModel(streamingModel)
-                .chatMemoryProvider(ChatMemoryProvider.windowChatMemoryProvider(100))
+                .chatMemoryProvider(new MessageWindowChatMemoryProvider(100))
                 .toolService(toolService)
                 .agentSettings(AgentSettings.builder().maxSteps(3).build())
                 .middleware(middleware)

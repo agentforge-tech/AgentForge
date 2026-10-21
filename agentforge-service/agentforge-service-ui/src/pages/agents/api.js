@@ -46,6 +46,10 @@ export function upsertAgent(payload) {
   return request(AGENT_BASE, '/upsert', { method: 'POST', body: JSON.stringify(payload) })
 }
 
+export function updateAgentPublish(id, published) {
+  return request(AGENT_BASE, '/' + id + (published ? '/publish' : '/unpublish'), { method: 'POST' })
+}
+
 export function deleteAgent(id) {
   return request(AGENT_BASE, '/' + id, { method: 'DELETE' })
 }

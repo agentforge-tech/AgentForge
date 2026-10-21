@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 public class AgentConfigServiceImpl implements IAgentConfigService {
 
     private static final int REACT_AGENT = 1;
-    private static final int NORMAL_MODE = 0;
     private static final long DEFAULT_USER_ID = 1L;
 
     private final AgentConfigMapper agentConfigMapper;
@@ -123,7 +122,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         }
         AgentConfigPojo saved = agentConfigMapper.selectById(pojo.getId());
         IAgentManager<Object, Object> agentManager =
-                agentManagerFactory.getAgentManagerByTypeAndMode(saved.getType(), NORMAL_MODE);
+                agentManagerFactory.getAgentManagerByType(saved.getType());
         agentManager.createAndStoreAgent(saved.getAid(), saved.getAgentConfig(), false);
         return toVo(saved);
     }
@@ -133,8 +132,22 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         AgentConfigPojo pojo = requireAgent(id);
         agentConfigMapper.deleteById(id);
         IAgentManager<Object, Object> agentManager =
-                agentManagerFactory.getAgentManagerByTypeAndMode(pojo.getType(), NORMAL_MODE);
+                agentManagerFactory.getAgentManagerByType(pojo.getType());
         agentManager.removeAgent(pojo.getAid());
+    }
+
+    @Override
+    public AgentConfigVo updatePublishStatus(Long id, boolean published) {
+        AgentConfigPojo pojo = requireAgent(id);
+        agentConfigMapper.updatePublishStatus(id, published ? 1 : 0, new Date());
+        IAgentManager<Object, Object> agentManager =
+                agentManagerFactory.getAgentManagerByType(pojo.getType());
+        if (published) {
+            agentManager.createAndStoreAgent(pojo.getAid(), pojo.getAgentConfig(), false);
+        } else {
+            agentManager.removeAgent(pojo.getAid(), false);
+        }
+        return toVo(requireAgent(id));
     }
 
     private AgentConfigPojo requireAgent(Long id) {

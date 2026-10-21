@@ -16,5 +16,7 @@ public interface IAgentConfigService {
 
     AgentConfigVo upsert(AgentConfigUpsertReq req);
 
+    AgentConfigVo updatePublishStatus(Long id, boolean published);
+
     void delete(Long id);
 }

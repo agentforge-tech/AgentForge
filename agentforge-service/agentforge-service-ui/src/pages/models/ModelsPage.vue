@@ -322,7 +322,7 @@
                 </span>
                 <div class="af-test-result__content">
                   <div class="af-test-result__title">
-                    {{ formTestResult.success ? 'Function Call 测试通过' : 'Function Call 测试未通过' }}
+                    {{ formTestResult.title }}
                   </div>
                   <div class="af-test-result__message">{{ formTestResult.message }}</div>
                 </div>
@@ -336,14 +336,24 @@
           </div>
 
           <div class="af-modal__footer">
-            <button
-              class="af-btn af-btn--sm"
-              type="button"
-              :disabled="saving || testingForm"
-              @click="onTestFormFunctionCall"
-            >
-              {{ testingForm ? '测试中...' : '测试 Function Call' }}
-            </button>
+            <div class="af-modal__footer-tests">
+              <button
+                class="af-btn af-btn--sm"
+                type="button"
+                :disabled="saving || testingForm"
+                @click="onTestFormConnectivity"
+              >
+                {{ testingForm === 'connectivity' ? '测试中...' : '测试连通性' }}
+              </button>
+              <button
+                class="af-btn af-btn--sm"
+                type="button"
+                :disabled="saving || testingForm"
+                @click="onTestFormFunctionCall"
+              >
+                {{ testingForm === 'functionCall' ? '测试中...' : '测试 Function Call' }}
+              </button>
+            </div>
             <div class="af-modal__footer-actions">
               <button class="af-btn af-btn--sm" type="button" @click="closeDialog">取消</button>
               <button class="af-btn af-btn--primary af-btn--sm" type="button" :disabled="saving || testingForm" @click="submitForm">
@@ -394,7 +404,7 @@ export default {
       saving: false,
       testing: null,
       editingId: null,
-      testingForm: false,
+      testingForm: null,
       formTestResult: null,
       options: { providers: [], modelTypes: [] },
       models: [],
@@ -566,32 +576,74 @@ export default {
         this.testing = null
       }
     },
-    async onTestFormFunctionCall() {
+    formTestPayload() {
+      const payload = {
+        modelId: this.form.id,
+        provider: this.form.provider,
+        modelType: this.form.modelType,
+        testType: this.form.modelType,
+        modelname: this.form.modelname,
+        url: this.form.url
+      }
+      if (this.form.apiKey) payload.apiKey = this.form.apiKey
+      return payload
+    },
+    async onTestFormConnectivity() {
       if (!this.form.url || !this.form.modelname) {
-        this.formTestResult = { success: false, message: '请先填写连接地址和模型名称后再进行测试。' }
+        this.formTestResult = {
+          success: false,
+          title: '连通性测试未通过',
+          message: '请先填写连接地址和模型名称后再进行测试。'
+        }
         return
       }
-      this.testingForm = true
+      this.testingForm = 'connectivity'
       this.formTestResult = null
       try {
-        const payload = {
-          modelId: this.form.id,
-          provider: this.form.provider,
-          modelType: this.form.modelType,
-          testType: this.form.modelType,
-          modelname: this.form.modelname,
-          url: this.form.url
-        }
-        if (this.form.apiKey) payload.apiKey = this.form.apiKey
-        const result = await testFunctionCall(payload)
+        const result = await testConnectivity(this.formTestPayload())
+        const success = Boolean(result && result.success)
         this.formTestResult = {
-          success: Boolean(result && result.success),
+          success,
+          title: success ? '连通性测试通过' : '连通性测试未通过',
           message: (result && result.message) || '测试已完成，但服务端未返回详细信息。'
         }
       } catch (e) {
-        this.formTestResult = { success: false, message: e.message || '请求失败，请检查模型配置后重试。' }
+        this.formTestResult = {
+          success: false,
+          title: '连通性测试未通过',
+          message: e.message || '请求失败，请检查模型配置后重试。'
+        }
       } finally {
-        this.testingForm = false
+        this.testingForm = null
+      }
+    },
+    async onTestFormFunctionCall() {
+      if (!this.form.url || !this.form.modelname) {
+        this.formTestResult = {
+          success: false,
+          title: 'Function Call 测试未通过',
+          message: '请先填写连接地址和模型名称后再进行测试。'
+        }
+        return
+      }
+      this.testingForm = 'functionCall'
+      this.formTestResult = null
+      try {
+        const result = await testFunctionCall(this.formTestPayload())
+        const success = Boolean(result && result.success)
+        this.formTestResult = {
+          success,
+          title: success ? 'Function Call 测试通过' : 'Function Call 测试未通过',
+          message: (result && result.message) || '测试已完成，但服务端未返回详细信息。'
+        }
+      } catch (e) {
+        this.formTestResult = {
+          success: false,
+          title: 'Function Call 测试未通过',
+          message: e.message || '请求失败，请检查模型配置后重试。'
+        }
+      } finally {
+        this.testingForm = null
       }
     },
     clearKeyword() {

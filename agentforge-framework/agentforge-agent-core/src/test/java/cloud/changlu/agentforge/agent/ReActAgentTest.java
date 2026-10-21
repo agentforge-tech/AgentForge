@@ -4,6 +4,7 @@ import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.step.ChatResultState;
 import cloud.changlu.agentforge.agent.support.ScriptedChatModel;
@@ -37,7 +38,7 @@ public class ReActAgentTest {
                 new ScriptedChatModel()
                         .enqueueToolCall("call_1", "getWeather", "{\"city\":\"Hangzhou\"}")
                         .enqueueText("Hangzhou今天22度，晴。");
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         ReActAgent agent =
                 agent(
                         chatModel,
@@ -71,7 +72,7 @@ public class ReActAgentTest {
     public void shouldAnswerDirectlyWithoutAnyToolCall() {
         ScriptedChatModel chatModel =
                 new ScriptedChatModel().enqueueText("AgentForge是一个Java Agent框架。");
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         ReActAgent agent =
                 agent(
                         chatModel,
@@ -100,7 +101,7 @@ public class ReActAgentTest {
                 agent(
                                 chatModel,
                                 toolService(new WeatherTools()),
-                                ChatMemoryProvider.windowChatMemoryProvider(100),
+                                new MessageWindowChatMemoryProvider(100),
                                 settings)
                         .run(request("一直查天气"));
 
@@ -119,7 +120,7 @@ public class ReActAgentTest {
                 agent(
                                 chatModel,
                                 toolService(new WeatherTools()),
-                                ChatMemoryProvider.windowChatMemoryProvider(100),
+                                new MessageWindowChatMemoryProvider(100),
                                 settings)
                         .run(request("杭州天气怎么样？"));
 
@@ -138,7 +139,7 @@ public class ReActAgentTest {
                 agent(
                                 chatModel,
                                 toolService(new WeatherTools()),
-                                ChatMemoryProvider.windowChatMemoryProvider(100),
+                                new MessageWindowChatMemoryProvider(100),
                                 settings)
                         .run(request("重试一次"));
 
@@ -154,7 +155,7 @@ public class ReActAgentTest {
         ScriptedChatModel chatModel =
                 new ScriptedChatModel()
                         .enqueueToolCall("call_1", "sideEffect", "{\"reason\":\"user stopped\"}");
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         final ReActAgent agent = agent(chatModel, toolService, memoryProvider, defaultSettings());
         sideEffectTool.onExecute(
                 new Runnable() {
@@ -185,7 +186,7 @@ public class ReActAgentTest {
                 agent(
                                 chatModel,
                                 toolService(new WeatherTools()),
-                                ChatMemoryProvider.windowChatMemoryProvider(100),
+                                new MessageWindowChatMemoryProvider(100),
                                 defaultSettings())
                         .run(request("调用一个不存在的工具"));
 
@@ -196,7 +197,7 @@ public class ReActAgentTest {
 
     @Test
     public void shouldRefreshSystemPromptOnEveryRun() {
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         ReActAgent agent =
                 agent(
                         new ScriptedChatModel().enqueueText("first").enqueueText("second"),
@@ -225,7 +226,7 @@ public class ReActAgentTest {
                 agent(
                         new ScriptedChatModel(),
                         toolService(new WeatherTools()),
-                        ChatMemoryProvider.windowChatMemoryProvider(10),
+                        new MessageWindowChatMemoryProvider(10),
                         defaultSettings());
 
         assertTrue(agent.getSystemPrompt().contains("Concurrent Tool Execution"));
@@ -243,7 +244,7 @@ public class ReActAgentTest {
                 agent(
                         new ScriptedChatModel(),
                         toolService(new WeatherTools()),
-                        ChatMemoryProvider.windowChatMemoryProvider(10),
+                        new MessageWindowChatMemoryProvider(10),
                         settings);
 
         assertFalse(agent.getSystemPrompt().contains("Concurrent Tool Execution"));
@@ -251,7 +252,7 @@ public class ReActAgentTest {
 
     @Test
     public void shouldClearContextAndValidateRequest() {
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         ReActAgent agent =
                 agent(
                         new ScriptedChatModel().enqueueText("done"),

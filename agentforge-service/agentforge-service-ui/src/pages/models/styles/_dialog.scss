@@ -75,6 +75,7 @@
     background: $color-sidebar;
   }
 
+  &__footer-tests,
   &__footer-actions {
     @include flex(flex-end, center);
     gap: $space-2 + 2px;

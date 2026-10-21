@@ -24,5 +24,10 @@ public interface AgentConfigMapper {
 
     int update(AgentConfigPojo pojo);
 
+    int updatePublishStatus(
+            @Param("id") Long id,
+            @Param("publish") Integer publish,
+            @Param("modifyTime") java.util.Date modifyTime);
+
     int deleteById(@Param("id") Long id);
 }

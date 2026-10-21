@@ -5,7 +5,7 @@ import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.memory.ChatMemory;
-import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.support.ScriptedChatModel;
 import cloud.changlu.agentforge.agent.support.WeatherTools;
@@ -106,7 +106,7 @@ public class McpRealStudioTest {
                         .description("Studio + real MCP")
                         .systemPrompt("You are a studio assistant. Use tools to finish the task.")
                         .chatModel(chatModel)
-                        .chatMemoryProvider(ChatMemoryProvider.windowChatMemoryProvider(50))
+                        .chatMemoryProvider(new MessageWindowChatMemoryProvider(50))
                         .toolService(toolService)
                         .agentSettings(
                                 AgentSettings.builder()
