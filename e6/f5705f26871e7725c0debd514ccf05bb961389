@@ -1,0 +1,327 @@
+agentforge-model/agentforge-model-registry/src/main/java/cloud/changlu/agentforge/model/registry/constant/LlmConstant.java
+  s_0a59fba8bf3157::t_554ae282ddf573 16
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/memory/factory/extension/window/WindowChatMemoryProviderFactoryExtension.java
+  s_9a61baafb3a75e::t_9c58ae7fcf8bdf 1-41,45-46,60-62
+  s_9a61baafb3a75e::t_cf377062f16df0 42-43,47-59
+  s_9a61baafb3a75e::t_b215b8aa0eb147 44
+agentforge-service/sql/increment/1.0.x/20261025010000_v1.0.x.sql
+  s_9a61baafb3a75e::t_429955cd0187fc 12
+  s_9a61baafb3a75e::t_740b71ed054220 17,35
+  s_9a61baafb3a75e::t_4e2e59e33bb715 1-11,13-16,18-22,24-34,36
+  s_9a61baafb3a75e::t_edf1e8c8310f33 23
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/controller/AgentConfigController.java
+  s_9a61baafb3a75e::t_1f5dce9905fddd 7,43-45
+  s_9a61baafb3a75e::t_6b36d3e9a61045 46-47
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentsPage.vue
+  s_9a61baafb3a75e::t_a309649a78b9a1 84,113,115
+  s_9a61baafb3a75e::t_4c6c004425e3e3 56
+  s_9a61baafb3a75e::t_3468bd2b3b8396 46,65-72,100,103,111,120
+  s_9a61baafb3a75e::t_d52b75e0249be9 83
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/memory/factory/ChatMemoryProviderFactory.java
+  s_9a61baafb3a75e::t_9c58ae7fcf8bdf 1-3,5-23,29-32,34-36
+  s_9a61baafb3a75e::t_c3d26911ee2020 4,24-28,33
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/config/ChatMemoryConfig.java
+  s_9a61baafb3a75e::t_3ca67cfe9f6122 7
+  s_9a61baafb3a75e::t_22c28b0a506577 6,9-10,13-22
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/memory/dao/AgentMemoryMapper.java
+  s_9a61baafb3a75e::t_71aada339b9bbd 1-24
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/ReActAgentDiyLiveTest.java
+  s_215e0ce7950b2e::t_99590da0fd847f 7
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/agent标准会话 & message核心表设计/AgentForge标准Agent会话与消息核心表设计.md"
+  s_9a61baafb3a75e::t_740b71ed054220 33,44,54,67,84,102,117,166
+  s_832745611f9d6b::t_7aa18b669b56d4 187
+  s_832745611f9d6b::t_fb36d2f1b1f9de 170,182-186,188-319,328-348,350-357,359,434-440
+  s_9a61baafb3a75e::t_37c2f0122baa8c 1-32,34-43,45-53,55-66,68,109-116,118-148,150-157,159-165,167-169,171,181,441
+  s_832745611f9d6b::t_eb7faf8bda4535 349
+  s_832745611f9d6b::t_30978fd535f7b8 358
+  s_9a61baafb3a75e::t_181606575a8b07 69-83,85-101,103-108,149,158
+  s_832745611f9d6b::t_db2c9e23b3be8a 360-433
+  s_832745611f9d6b::t_e137f8c23fea57 320-327
+  s_832745611f9d6b::t_49b291c23c385a 172-180
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/memory/store/InMemoryChatMemoryStore.java
+  s_215e0ce7950b2e::t_cfb8fdc1c922ae 1-44
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/tool/mcp/real/McpRealStudioTest.java
+  s_215e0ce7950b2e::t_99590da0fd847f 8
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/impl/AgentConfigServiceImpl.java
+  s_9a61baafb3a75e::t_d52b75e0249be9 31,107-110,112
+  s_e304c506b7b8a0::t_47ae63e9e2f570 4,113
+  s_9a61baafb3a75e::t_19c521d7f6ce86 89,127,139-143,146,148-149,196,198-199,209-211,213,237-238,248-267
+  s_9a61baafb3a75e::t_a309649a78b9a1 117,133,194-195
+  s_9a61baafb3a75e::t_1f5dce9905fddd 13,74-88
+  s_9a61baafb3a75e::t_f6d6702d18445c 90
+  s_9a61baafb3a75e::t_ed832742e524c3 197
+  s_9a61baafb3a75e::t_e5e8cc8902e85e 268
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/memory/store/ChatMemoryStore.java
+  s_215e0ce7950b2e::t_589f6f6fa42cac 1-23
+agentforge-service/agentforge-service-ui/src/modes/debug/DebugMessage.vue
+  s_9a61baafb3a75e::t_4d2ac631d8e03e 111
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/vo/PublishedAgentBasicVo.java
+  s_9a61baafb3a75e::t_1f5dce9905fddd 1-42
+website/src/theme/BlogLayout/index.js
+  s_223e8cd56993ba::t_1b18a58801a808 1-29
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/common/util/AidGeneratorUtil.java
+  s_e304c506b7b8a0::t_47ae63e9e2f570 1-103
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/tool/AgentToolExecutorConcurrentTest.java
+  s_215e0ce7950b2e::t_99590da0fd847f 7
+website/docusaurus.config.js
+  s_3accdfc829fc52::t_eea2b04d14aa5c 13
+  s_223e8cd56993ba::t_450c9303b2eb31 16
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/ReActAgentStreamTest.java
+  s_215e0ce7950b2e::t_99590da0fd847f 8
+agentforge-service/agentforge-service-ui/src/modes/elegant/ElegantMessage.vue
+  s_9a61baafb3a75e::t_4d2ac631d8e03e 100
+website/src/theme/BlogSidebar/index.js
+  s_223e8cd56993ba::t_f2fb5550d133e7 128
+  s_223e8cd56993ba::t_1b18a58801a808 219
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/ReActAgentStreamMiddlewareTest.java
+  s_215e0ce7950b2e::t_99590da0fd847f 7
+agentforge-model/agentforge-model-anthropic/src/main/java/cloud/changlu/agentforge/model/anthropic/AnthropicStreamingChatModel.java
+  s_0a59fba8bf3157::t_60a332dfa39167 313
+  s_0a59fba8bf3157::t_1ae4c07bb9dbcc 61,82,116,205,241-242
+  s_0a59fba8bf3157::t_b58a55fb7cd569 298,315,470-472
+  s_0a59fba8bf3157::t_77a63d8f2333b0 243-245
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/protocol/processor/AiErrorProcessor.java
+  s_0a59fba8bf3157::t_8cce3d651afb5f 11,16-17
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/memory/enums/ChatMemoryType.java
+  s_9a61baafb3a75e::t_9c58ae7fcf8bdf 1-22
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/memory/window/MessageWindowChatMemoryProvider.java
+  s_215e0ce7950b2e::t_ebf92094808bc8 3-4
+  s_215e0ce7950b2e::t_7d007ead5bc456 1-2,5-6,11-15,19,23-26,30-32,34,42-46
+agentforge-service/agentforge-service-ui/src/main.js
+  s_9a61baafb3a75e::t_f24b4ad7ecdb70 6,10
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/protocol/enums/StreamEventEnums.java
+  s_0a59fba8bf3157::t_6d5cdcb64d6e31 3-7,11-16,18,22,24,27-29,41-42,45-46,51-52,59
+  s_0a59fba8bf3157::t_0d48b775627fdc 30
+agentforge-service/sql/increment/1.0.x/20261025000000_v1.0.x.sql
+  s_215e0ce7950b2e::t_d86de4c48d19f2 2-4,6-12
+  s_9a61baafb3a75e::t_d6fb4c8fa985c8 1,5,13
+agentforge-model/agentforge-model-openai/src/main/java/cloud/changlu/agentforge/model/openai/OpenAiChatModel.java
+  s_0a59fba8bf3157::t_efa7a4c4e16f6e 43,63,103,128,141,146,148-155,174-181,235,264-265,267
+  s_0a59fba8bf3157::t_7e3d6941947120 266
+  s_0a59fba8bf3157::t_283291f7256036 268
+agentforge-service/agentforge-service-ui/src/components/AgentMessageContent.vue
+  s_9a61baafb3a75e::t_31e4d6fc79d62f 1-41
+agentforge-service/agentforge-service-ui/src/modes/index.js
+  s_9a61baafb3a75e::t_0cc2651184adfe 13
+  s_e304c506b7b8a0::t_99a1b73099ae27 14
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/memory/window/MessageWindowChatMemoryTest.java
+  s_215e0ce7950b2e::t_bd6e26821150bc 1,3-4
+agentforge-service/agentforge-service-web/src/test/java/cloud/changlu/agentforge/service/common/util/AidGeneratorUtilTest.java
+  s_e304c506b7b8a0::t_47ae63e9e2f570 1-2,5-31
+  s_e304c506b7b8a0::t_79b9f96250fce1 3-4
+agentforge-service/agentforge-service-ui/src/pages/models/styles/_workspace.scss
+  s_e304c506b7b8a0::t_3ab1bc796a343b 56,58,505-506
+  s_e304c506b7b8a0::t_d5db730109d9d7 389-401,507-538,736-743
+  s_e304c506b7b8a0::t_5e1be0a393b81d 744
+agentforge-service/agentforge-service-ui/public/model-logos/openai.svg
+  s_e304c506b7b8a0::t_bc294873ca055a 1-11
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/ReActAgentFactory.java
+  s_9a61baafb3a75e::t_c3d26911ee2020 66
+  s_9a61baafb3a75e::t_ae37c3de47e9aa 64
+  s_9a61baafb3a75e::t_edfb57803f7f11 11
+  s_215e0ce7950b2e::t_c50c9eb647c16b 32
+  s_0a59fba8bf3157::t_554ae282ddf573 7,51-54,56-57
+  s_9a61baafb3a75e::t_d825a008d0287c 27,65
+  s_9a61baafb3a75e::t_75dae1d15a4cb4 33,37
+  s_0a59fba8bf3157::t_196ac68177f684 50
+  s_0a59fba8bf3157::t_132d97701bd809 55
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/config/ChatMemoryConfiguration.java
+  s_9a61baafb3a75e::t_87f4dc895bfd46 4-5
+  s_215e0ce7950b2e::t_b7b11bcdc18c13 19-20
+  s_9a61baafb3a75e::t_d6fb4c8fa985c8 29-30
+  s_9a61baafb3a75e::t_dad477c261da90 14-15,34,37-42
+  s_9a61baafb3a75e::t_e382e4621c1595 36
+  s_215e0ce7950b2e::t_17613387c68fc1 1-3,9,11-13,16-18,21-28,43-44
+  s_9a61baafb3a75e::t_75dae1d15a4cb4 10,31-33,35
+  s_9a61baafb3a75e::t_edfb57803f7f11 6-8
+website/docs/quickstart/getting-started.md
+  s_223e8cd56993ba::t_0dac70e8f96797 4,14-32,37,40-66,76,82-85
+website/i18n/en/docusaurus-theme-classic/navbar.json
+  s_223e8cd56993ba::t_450c9303b2eb31 10-12
+website/versioned_docs/version-1.0/about/introduction.md
+  s_223e8cd56993ba::t_52fa9804fb1b87 4,6-32
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/memory/window/MessageWindowChatMemory.java
+  s_215e0ce7950b2e::t_ebf92094808bc8 3
+  s_215e0ce7950b2e::t_7d007ead5bc456 1,4-5,12,16-26,33,41,54,59-61,67,69,72,75,77-80,96-97,103,106,124,145,159-164
+"website/blog/02、通用ReActagent层/functioncall核心扩展业务tool/http/适配HTTP协议转换FunctionCall协议01、AgentForge HTTP工具模块核心设计原理.md"
+  s_223e8cd56993ba::t_8565cd58b3f8ef 23,37,51,65,75,90,100,108,129,144,168,179,188,199,252,318,341,375,451,455,476
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/protocol/StreamEventResponse.java
+  s_0a59fba8bf3157::t_6d5cdcb64d6e31 3,7-8,27-29,31-43
+  s_0a59fba8bf3157::t_0d48b775627fdc 4,30
+agentforge-model/agentforge-model-registry/src/main/java/cloud/changlu/agentforge/model/registry/constant/ChatModelProperties.java
+  s_0a59fba8bf3157::t_554ae282ddf573 1-66
+agentforge-service/agentforge-service-ui/src/pages/models/ModelsPage.vue
+  s_e304c506b7b8a0::t_221fd28662ecba 228-244
+  s_e304c506b7b8a0::t_7348c02c027023 156-162
+  s_e304c506b7b8a0::t_d41cc3318fc0c2 216-227,245,665-668,678-682,686-687,693
+  s_e304c506b7b8a0::t_bc294873ca055a 683-685,688-692
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentDebugPanel.vue
+  s_e304c506b7b8a0::t_99a1b73099ae27 20
+  s_9a61baafb3a75e::t_31e4d6fc79d62f 33,47,53,56
+  s_9a61baafb3a75e::t_ca0f12ea456bce 46
+docs/roadmap/README.md
+  s_e304c506b7b8a0::t_cdb8e4a2184fab 1-73
+agentforge-service/agentforge-service-ui/src/modes/elegant/ElegantToolItem.vue
+  s_e304c506b7b8a0::t_649f3a24d8850e 24
+website/src/theme/BlogLayout/styles.module.css
+  s_223e8cd56993ba::t_f434cdea458b9a 3-4,11-12,74-75
+  s_223e8cd56993ba::t_da213f15e3e7f5 21,23-25,40-41,43,91
+  s_223e8cd56993ba::t_1b18a58801a808 1-2,5-10,13-20,22,26-39,42,44-73,76-90,92-93
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/protocol/processor/think/AiThinkProcessor.java
+  s_0a59fba8bf3157::t_8cce3d651afb5f 12,17-18
+website/docs/roadmap/2026-roadmap.md
+  s_223e8cd56993ba::t_336a629d059c77 1-135
+website/versioned_sidebars/version-1.0-sidebars.json
+  s_223e8cd56993ba::t_c7afcbb4576c43 1
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/ReActAgentMiddlewareTest.java
+  s_215e0ce7950b2e::t_99590da0fd847f 10
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/vo/AgentConfigVo.java
+  s_9a61baafb3a75e::t_cfba8ac61ef124 15,80-87
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/ReActAgentTest.java
+  s_215e0ce7950b2e::t_99590da0fd847f 7
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/memory/store/ChatMessageCodecTest.java
+  s_215e0ce7950b2e::t_9afdaac5ca70b1 1-93
+agentforge-model/agentforge-model-registry/src/main/java/cloud/changlu/agentforge/model/registry/models/AnthropicModel.java
+  s_0a59fba8bf3157::t_1ae4c07bb9dbcc 111-115
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/req/AgentConfigUpsertReq.java
+  s_9a61baafb3a75e::t_cfba8ac61ef124 12,45,63-70
+  s_9a61baafb3a75e::t_a309649a78b9a1 9,37-44
+  s_9a61baafb3a75e::t_d52b75e0249be9 8,31-36
+  s_9a61baafb3a75e::t_5d053ac8e16682 46
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/protocol/processor/AiSessionProcessor.java
+  s_0a59fba8bf3157::t_6d5cdcb64d6e31 11,16-17
+website/i18n/en/docusaurus-theme-classic/footer.json
+  s_223e8cd56993ba::t_450c9303b2eb31 2-4
+website/sidebars.js
+  s_223e8cd56993ba::t_c7afcbb4576c43 3
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/memory/domain/AgentMemoryPojo.java
+  s_9a61baafb3a75e::t_71aada339b9bbd 1-58
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/IAgentConfigService.java
+  s_9a61baafb3a75e::t_1f5dce9905fddd 7,18
+  s_9a61baafb3a75e::t_0b45a9f5360a08 19
+agentforge-service/agentforge-service-ui/src/styles.css
+  s_9a61baafb3a75e::t_4d2ac631d8e03e 117
+website/docs/about/introduction.md
+  s_223e8cd56993ba::t_52fa9804fb1b87 8,12-13,16,19-26,29-62,64,66
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/memory/store/MysqlChatMemoryStore.java
+  s_9a61baafb3a75e::t_71aada339b9bbd 1-86
+"website/i18n/en/docusaurus-plugin-content-blog/02、通用ReActagent层/functioncall核心扩展业务tool/http/适配HTTP协议转换FunctionCall协议01、AgentForge HTTP工具模块核心设计原理.md"
+  s_223e8cd56993ba::t_8565cd58b3f8ef 23,37,51,65,75,90,100,108,129,144,168,179,188,199,252,318,341,375,451,455,476
+agentforge-service/agentforge-service-ui/src/pages/models/styles/_toast.scss
+  s_e304c506b7b8a0::t_6f190e46de2e1b 12,14-16,18,21-22,32-37
+  s_e304c506b7b8a0::t_d4e12b3f86ab4f 38
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentConfigPage.vue
+  s_9a61baafb3a75e::t_4f58d40f0a8973 100
+  s_9a61baafb3a75e::t_1f5dce9905fddd 64
+  s_9a61baafb3a75e::t_2f5ab21d6cc64e 118
+  s_9a61baafb3a75e::t_7be89ec8b5af3c 5,27-31,61,69,90,95-97
+  s_9a61baafb3a75e::t_ae23cf9233865f 36-39,98-99
+  s_9a61baafb3a75e::t_4d2ac631d8e03e 114
+  s_9a61baafb3a75e::t_f2f40124c88dce 33-35,40-44,101
+  s_9a61baafb3a75e::t_f0f6cae2148395 7,62-63,65,85
+agentforge-model/agentforge-model-registry/src/main/java/cloud/changlu/agentforge/model/registry/models/OpenAiModel.java
+  s_0a59fba8bf3157::t_1ae4c07bb9dbcc 112-116
+  s_0a59fba8bf3157::t_efa7a4c4e16f6e 78-82
+agentforge-model/agentforge-model-openai/src/main/java/cloud/changlu/agentforge/model/openai/OpenAiStreamingChatModel.java
+  s_0a59fba8bf3157::t_1ae4c07bb9dbcc 51,71,106,199,228-232,285,301,402
+  s_0a59fba8bf3157::t_60a332dfa39167 299
+agentforge-service/agentforge-service-ui/vite.config.js
+  s_9a61baafb3a75e::t_1f5dce9905fddd 12
+  s_9a61baafb3a75e::t_f24b4ad7ecdb70 7
+  s_9a61baafb3a75e::t_b1e5edcaa34520 13-14
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/memory/factory/extension/ChatMemoryProviderFactoryExtension.java
+  s_9a61baafb3a75e::t_9c58ae7fcf8bdf 1-11
+agentforge-service/agentforge-service-ui/src/pages/published/PublishedAgentChatPage.vue
+  s_9a61baafb3a75e::t_f24b4ad7ecdb70 6,8,36-37,52,54,64,68,89-90,92-96,100-101,103,105,109-111,114,117-129,162-165,176
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/初版核心模型 & agent构建设计.md"
+  s_215e0ce7950b2e::t_6515a09468c936 7,37,46,99,188
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/agent/memory/mapper/AgentMemoryMapper.xml
+  s_9a61baafb3a75e::t_71aada339b9bbd 1-37
+agentforge-service/agentforge-service-ui/public/model-logos/deepseek.svg
+  s_e304c506b7b8a0::t_7348c02c027023 1
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/memory/store/ChatMessageCodec.java
+  s_215e0ce7950b2e::t_85d15d07b03aa6 1-22,25-90,93-109,112-251
+  s_215e0ce7950b2e::t_58837285e5eb43 23-24,91-92,110-111
+website/versioned_docs/version-1.0/quickstart/getting-started.md
+  s_223e8cd56993ba::t_0dac70e8f96797 6-27,31-34,36-51
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/protocol/processor/tool/AiToolCallProcessor.java
+  s_0a59fba8bf3157::t_6d5cdcb64d6e31 13,19
+  s_0a59fba8bf3157::t_0d48b775627fdc 20
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/StandardReActAgentManager.java
+  s_9a61baafb3a75e::t_877d092e4d7fc3 17-18,24-25
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/protocol/processor/AiResponseProcessor.java
+  s_0a59fba8bf3157::t_6d5cdcb64d6e31 11,16-17
+  s_0a59fba8bf3157::t_0d48b775627fdc 24
+website/src/theme/BlogSidebar/styles.module.css
+  s_223e8cd56993ba::t_1b18a58801a808 1,3,6-8
+  s_223e8cd56993ba::t_f2fb5550d133e7 84,86-87
+  s_223e8cd56993ba::t_da213f15e3e7f5 5,10,131-135
+  s_223e8cd56993ba::t_ca9f74a94b6dda 9
+  s_223e8cd56993ba::t_b8cdf3a70a3246 11
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/agent memory实现/基于MySQL实现Agent的ChatMemory上下文持久化.md"
+  s_9a61baafb3a75e::t_5d88b5cbdbd5ad 1-653
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e6f5705f26871e7725c0debd514ccf05bb961389",
+  "prompts": {},
+  "sessions": {
+    "s_0a59fba8bf3157": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17234-5a78-7b31-8486-a9e57a9ddf6d",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_215e0ce7950b2e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e8d90dfc7ffewTN6hhkXeCeIvD",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_223e8cd56993ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1724a-fc04-7db2-b50d-01d5c87030c1",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_3accdfc829fc52": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e8c2e1cdeffe4q6ix82Jd9aGLM",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_832745611f9d6b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e8c0ee51fffe6hCAzeHv4TiFqx",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_9a61baafb3a75e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17370-7dda-7580-aad4-e8563e63455c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_e304c506b7b8a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17249-fccf-71b2-9ab4-16f94329a761",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
