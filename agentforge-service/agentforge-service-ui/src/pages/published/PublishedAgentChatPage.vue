@@ -3,10 +3,9 @@
     <aside class="sidebar">
       <div class="sidebar-head">
         <div class="brand">
-          <span class="brand-logo"><img src="/logo.png" alt="AgentForge" /></span>
+          <span class="brand-logo"><img :src="agentAvatar" :alt="agentName" /></span>
           <div>
-            <div class="brand-name">AgentForge</div>
-            <div class="brand-sub">AgentForge Service</div>
+            <div class="brand-name">{{ agentName }}</div>
           </div>
         </div>
         <el-button size="small" icon="el-icon-plus" class="new-btn" @click="newChat">新建对话</el-button>
@@ -28,21 +27,14 @@
           <div class="chat-title">{{ title }}</div>
           <el-tag v-if="running" size="mini" type="success"><i class="el-icon-loading"></i> 运行中</el-tag>
         </div>
-        <div class="header-right">
-          <span class="model-tag">deepseek-flash</span>
-          <el-select v-model="mode" size="mini" class="mode-select">
-            <el-option v-for="m in renderModes" :key="m.key" :label="m.label" :value="m.key" />
-          </el-select>
-          <el-button size="mini" :type="showDebug ? 'primary' : 'default'" icon="el-icon-monitor" @click="showDebug = !showDebug">事件流</el-button>
-        </div>
       </div>
 
       <div class="message-input-wrapper" :class="{ 'input-at-bottom': messages.length > 0 }">
       <section ref="feed" class="chat-scroll">
         <div class="chat-inner">
           <div v-if="!messages.length" class="welcome">
-            <h2>今天想解决什么问题？</h2>
-            <p>AgentForge 已就绪，支持流式回答、思考过程与工具调用展示。</p>
+            <h2>{{ agentLoading ? '正在加载 Agent...' : (canChat ? '今天想解决什么问题？' : '请从已发布的 Agent 进入') }}</h2>
+            <p>{{ canChat ? ((agentBasic && agentBasic.description) || 'Agent 已就绪，可以开始对话。') : (agentError || '当前地址缺少有效的 Agent 标识，暂时无法发起正式对话。') }}</p>
           </div>
 
           <template v-for="(message, index) in messages">
@@ -57,15 +49,9 @@
               </div>
             </div>
             <div v-else :key="index" class="message-row assistant">
-              <div class="bot-avatar"><img src="/logo.png" alt="AgentForge" /></div>
+              <div class="bot-avatar"><img :src="agentAvatar" :alt="agentName" /></div>
               <div class="bot-body">
-                <component :is="modeComponent" :message="message" />
-                <div v-if="message.status !== 'running'" class="msg-actions">
-                  <button class="mini-btn" title="复制回答" :disabled="!message.content" @click="copy(message.content)">
-                    <i class="el-icon-document-copy"></i>
-                  </button>
-                  <span v-if="message.status === 'error'" class="status-tag error">失败</span>
-                </div>
+                <AgentMessageContent :message="message" mode="elegant" />
               </div>
             </div>
           </template>
@@ -75,11 +61,11 @@
       <div class="composer-wrap">
         <div class="composer-inner">
           <div class="composer-box" :class="{ focus: focused }">
-            <textarea ref="composerInput" v-model="draft" rows="1" placeholder="给 AgentForge 发送消息..." @focus="focused=true" @blur="focused=false" @input="autoGrow" @compositionstart="composing=true" @compositionend="composing=false" @keydown.enter="onEnter"></textarea>
+            <textarea ref="composerInput" v-model="draft" rows="1" :disabled="!canChat" :placeholder="canChat ? '发送消息...' : '请从有效的已发布 Agent 入口访问'" @focus="focused=true" @blur="focused=false" @input="autoGrow" @compositionstart="composing=true" @compositionend="composing=false" @keydown.enter="onEnter"></textarea>
             <button
               class="send-btn"
               :class="{ stop: running }"
-              :disabled="!running && !draft.trim()"
+              :disabled="!canChat || (!running && !draft.trim())"
               :title="running ? '停止' : '发送'"
               @click="running ? stop() : send()"
             >
@@ -96,44 +82,51 @@
       </div>
     </main>
 
-    <DebugDrawer v-if="showDebug" :events="rawEvents" @clear="clearRawEvents" @close="showDebug = false" />
   </div>
 </template>
 
 <script>
-import DebugDrawer from './components/DebugDrawer.vue'
-import { RENDER_MODES, DEFAULT_RENDER_MODE, getRenderMode } from './modes'
-import { postSse } from './utils/sse'
+import AgentMessageContent from '../../components/AgentMessageContent.vue'
+import { postSse } from '../../utils/sse'
 
-const MODE_KEY = 'agentforge.render.mode'
-
-function resolveInitialMode() {
-  const saved = localStorage.getItem(MODE_KEY)
-  return RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE
+function resolveAid() {
+  const queryAid = new URLSearchParams(window.location.search).get('aid')
+  if (queryAid) return queryAid
+  const match = window.location.pathname.match(/^\/agent\/published\/([^/]+)\/?$/)
+  return match ? decodeURIComponent(match[1]) : ''
 }
 
 export default {
-  components: { DebugDrawer },
+  name: 'PublishedAgentChatPage',
+  components: { AgentMessageContent },
   data: () => ({
+    aid: resolveAid(), agentBasic: null, agentLoading: false, agentError: '',
     draft: '', focused: false, running: false, sessionId: '', controller: null, messages: [],
-    rawEvents: [], rawSeq: 0, showDebug: false, composing: false,
-    mode: resolveInitialMode()
+    composing: false
   }),
   computed: {
     title() { return this.messages.find((m) => m.role === 'user')?.text || '新对话' },
-    renderModes() { return RENDER_MODES },
-    modeComponent() { return getRenderMode(this.mode).component }
-  },
-  watch: {
-    mode(value) { localStorage.setItem(MODE_KEY, value) }
+    agentName() { return this.agentBasic?.name || 'AgentForge' },
+    agentAvatar() { return this.agentBasic?.avatar || '/logo.png' },
+    canChat() { return Boolean(this.aid && this.agentBasic && !this.agentError) }
   },
   created() {
-    // 覆盖历史遗留的无效模式值，避免下拉框显示旧标识
-    localStorage.setItem(MODE_KEY, this.mode)
+    this.loadAgentBasic()
   },
   methods: {
-    newChat() { this.stop(); this.messages = []; this.sessionId = ''; this.draft = ''; this.clearRawEvents() },
-    clearRawEvents() { this.rawEvents = []; this.rawSeq = 0 },
+    async loadAgentBasic() {
+      if (!this.aid) return
+      this.agentLoading = true; this.agentError = ''
+      try {
+        const response = await fetch('/api/agent-config/published/' + encodeURIComponent(this.aid) + '/basic')
+        if (!response.ok) throw new Error('Agent 不存在或尚未发布')
+        this.agentBasic = await response.json()
+      } catch (error) {
+        this.agentError = error.message || 'Agent 基本信息加载失败'
+        this.$message.error(this.agentError)
+      } finally { this.agentLoading = false }
+    },
+    newChat() { this.stop(); this.messages = []; this.sessionId = ''; this.draft = '' },
     async copy(text) {
       if (!text) return
       try {
@@ -166,6 +159,10 @@ export default {
     },
     async send() {
       const text = this.draft.trim()
+      if (!this.canChat) {
+        this.$message.warning('当前 Agent 不存在或尚未发布')
+        return
+      }
       if (!text || this.running) return
       this.draft = ''
       this.$nextTick(this.autoGrow)
@@ -176,7 +173,7 @@ export default {
       this.controller = new AbortController()
       this.scroll()
       try {
-        await postSse('/api/chat/stream', { sessionId: this.sessionId, message: text }, {
+        await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: false }, {
           signal: this.controller.signal,
           onEvent: (event) => this.handleEvent(answer, event)
         })
@@ -197,8 +194,6 @@ export default {
       }
     },
     handleEvent(answer, event) {
-      this.rawEvents.push({ seq: ++this.rawSeq, at: Date.now(), event })
-      if (this.rawEvents.length > 500) this.rawEvents.splice(0, this.rawEvents.length - 500)
       switch (event.event) {
         case 'session':
           if (event.content) this.sessionId = event.content

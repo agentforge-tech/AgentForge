@@ -40,6 +40,7 @@ public final class OpenAiChatModel implements ChatModel {
     private final HttpTransport httpTransport;
     private final int connectTimeoutMillis;
     private final int readTimeoutMillis;
+    private final boolean returnThinking;
 
     private OpenAiChatModel(Builder builder) {
         this.baseUrl = trimTrailingSlash(builder.baseUrl);
@@ -59,6 +60,7 @@ public final class OpenAiChatModel implements ChatModel {
         this.httpTransport = builder.httpTransport;
         this.connectTimeoutMillis = builder.connectTimeoutMillis;
         this.readTimeoutMillis = builder.readTimeoutMillis;
+        this.returnThinking = builder.returnThinking;
     }
 
     public static Builder builder() {
@@ -98,7 +100,7 @@ public final class OpenAiChatModel implements ChatModel {
                         response.statusCode(),
                         response.body());
             }
-            return parseResponse(response.body());
+            return parseResponse(response.body(), returnThinking);
         } catch (IOException e) {
             throw new ModelException("OpenAI request failed", e);
         }
@@ -123,7 +125,7 @@ public final class OpenAiChatModel implements ChatModel {
         return payload;
     }
 
-    private static ChatResponse parseResponse(String body) {
+    private static ChatResponse parseResponse(String body, boolean returnThinking) {
         Map<String, Object> root = Json.parseObject(body);
         List<Object> choices = Json.array(root.get("choices"));
         if (choices == null || choices.isEmpty()) {
@@ -136,16 +138,21 @@ public final class OpenAiChatModel implements ChatModel {
         }
 
         String text = OpenAiMessages.extractContent(message.get("content"));
+        String thinking = returnThinking ? extractThinking(message) : null;
         // Preserve the historically empty-string semantics for plain textual messages,
         // but keep null when the assistant only produced tool calls.
         List<Object> toolCalls = Json.array(message.get("tool_calls"));
         List<ToolExecutionRequest> toolExecutionRequests = OpenAiMessages.parseToolCalls(toolCalls);
-        AiMessage aiMessage =
+        String messageText =
                 toolExecutionRequests.isEmpty()
-                        ? AiMessage.from(text == null ? "" : text)
-                        : AiMessage.from(
-                                text == null || text.isEmpty() ? null : text,
-                                toolExecutionRequests);
+                        ? (text == null ? "" : text)
+                        : (text == null || text.isEmpty() ? null : text);
+        AiMessage aiMessage =
+                AiMessage.builder()
+                        .text(messageText)
+                        .thinking(thinking)
+                        .toolExecutionRequests(toolExecutionRequests)
+                        .build();
         ChatResponse.Builder response =
                 ChatResponse.builder()
                         .aiMessage(aiMessage)
@@ -162,6 +169,14 @@ public final class OpenAiChatModel implements ChatModel {
             response.tokenUsage(new TokenUsage(input, output, total));
         }
         return response.build();
+    }
+
+    private static String extractThinking(Map<String, Object> message) {
+        String thinking = Json.string(message.get("reasoning_content"));
+        if (thinking == null || thinking.isEmpty()) {
+            thinking = Json.string(message.get("thinking"));
+        }
+        return thinking;
     }
 
     private static FinishReason mapFinishReason(Object reasonValue) {
@@ -217,6 +232,7 @@ public final class OpenAiChatModel implements ChatModel {
         private HttpTransport httpTransport = new JdkHttpTransport();
         private int connectTimeoutMillis = 10_000;
         private int readTimeoutMillis = 60_000;
+        private boolean returnThinking = true;
 
         private Builder() {}
 
@@ -242,6 +258,11 @@ public final class OpenAiChatModel implements ChatModel {
 
         public Builder maxTokens(Integer maxTokens) {
             this.maxTokens = maxTokens;
+            return this;
+        }
+
+        public Builder returnThinking(boolean returnThinking) {
+            this.returnThinking = returnThinking;
             return this;
         }
 

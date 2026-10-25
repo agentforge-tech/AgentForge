@@ -10,8 +10,8 @@ export const RENDER_MODES = [
   },
   {
     key: 'elegant',
-    label: '优雅交互模式',
-    description: '面向用户的优雅对话式渲染',
+    label: '发布模式 · 优雅交互',
+    description: '面向发布后用户的对话展示',
     component: ElegantMessage
   }
 ]

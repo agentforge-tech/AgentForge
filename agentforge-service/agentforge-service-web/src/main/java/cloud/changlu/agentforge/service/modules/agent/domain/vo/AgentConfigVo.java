@@ -12,6 +12,7 @@ public class AgentConfigVo {
     private Long modelId;
     private String modelName;
     private String systemPrompt;
+    private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
     private Integer publish;
     private Integer isPublic;
@@ -74,6 +75,14 @@ public class AgentConfigVo {
 
     public void setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
+    }
+
+    public Integer getChatMemoryType() {
+        return chatMemoryType;
+    }
+
+    public void setChatMemoryType(Integer chatMemoryType) {
+        this.chatMemoryType = chatMemoryType;
     }
 
     public Integer getChatMemoryMaxMessages() {

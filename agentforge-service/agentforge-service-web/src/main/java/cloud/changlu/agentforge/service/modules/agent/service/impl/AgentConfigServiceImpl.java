@@ -1,6 +1,7 @@
 package cloud.changlu.agentforge.service.modules.agent.service.impl;
 
 import cloud.changlu.agentforge.service.common.pager.PageResult;
+import cloud.changlu.agentforge.service.common.util.AidGeneratorUtil;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
 import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentModelConfig;
@@ -9,6 +10,7 @@ import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgen
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigQueryReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigUpsertReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentConfigVo;
+import cloud.changlu.agentforge.service.modules.agent.domain.vo.PublishedAgentBasicVo;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.IAgentManager;
 import cloud.changlu.agentforge.service.modules.agent.runtime.factory.AgentManagerFactory;
 import cloud.changlu.agentforge.service.modules.agent.service.IAgentConfigService;
@@ -20,14 +22,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /** Agent 配置服务实现。 */
 @Service
 public class AgentConfigServiceImpl implements IAgentConfigService {
 
-    private static final int REACT_AGENT = 1;
+    private static final int STANDARD_AGENT_TYPE = 1;
     private static final long DEFAULT_USER_ID = 1L;
 
     private final AgentConfigMapper agentConfigMapper;
@@ -71,6 +72,23 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
     }
 
     @Override
+    public PublishedAgentBasicVo getPublishedBasicByAid(String aid) {
+        if (aid == null || aid.trim().isEmpty()) {
+            throw new IllegalArgumentException("aid 不能为空");
+        }
+        AgentConfigPojo pojo = agentConfigMapper.selectByAid(aid.trim());
+        if (pojo == null || !Integer.valueOf(1).equals(pojo.getPublish())) {
+            throw new IllegalArgumentException("Agent 不存在、已删除或尚未发布");
+        }
+        PublishedAgentBasicVo vo = new PublishedAgentBasicVo();
+        vo.setAid(pojo.getAid());
+        vo.setName(pojo.getName());
+        vo.setAvatar(pojo.getAvatar());
+        vo.setDescription(pojo.getDescription());
+        return vo;
+    }
+
+    @Override
     public AgentConfigVo upsert(AgentConfigUpsertReq req) {
         if (req == null || req.getName() == null || req.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Agent 名称不能为空");
@@ -86,13 +104,17 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         Date now = new Date();
         AgentConfigPojo pojo;
         if (req.getId() == null) {
+            int agentType = req.getType() == null ? STANDARD_AGENT_TYPE : req.getType();
+            if (agentType != STANDARD_AGENT_TYPE) {
+                throw new IllegalArgumentException("不支持的 Agent 类别: " + agentType);
+            }
             pojo = new AgentConfigPojo();
-            pojo.setType(REACT_AGENT);
-            pojo.setAid(UUID.randomUUID().toString().replace("-", ""));
+            pojo.setType(agentType);
+            pojo.setAid(AidGeneratorUtil.getInstance().nextId());
             pojo.setPublish(0);
             pojo.setIsPublic(0);
             pojo.setAvatar("");
-            pojo.setDescription("");
+            pojo.setDescription(normalizeDescription(req.getDescription()));
             pojo.setIsDeleted(0);
             pojo.setCreateUserId(DEFAULT_USER_ID);
             pojo.setCreateTime(now);
@@ -102,21 +124,29 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
                     buildAgentConfig(
                             req.getModelId(),
                             req.getSystemPrompt(),
+                            req.getChatMemoryType(),
                             req.getChatMemoryMaxMessages()));
             agentConfigMapper.insert(pojo);
         } else {
             pojo = requireAgent(req.getId());
             pojo.setName(req.getName().trim());
+            pojo.setDescription(normalizeDescription(req.getDescription()));
             StandardAgentConfig oldConfig = parseAgentConfig(pojo.getAgentConfig());
             String prompt =
                     req.getSystemPrompt() == null
                             ? oldConfig.getSystemPrompt()
                             : req.getSystemPrompt();
+            ChatMemoryConfig oldMemoryConfig = oldConfig.getChatMemoryConfig();
+            Integer memoryType =
+                    req.getChatMemoryType() == null
+                            ? resolveMemoryType(oldMemoryConfig)
+                            : req.getChatMemoryType();
             Integer maxMessages =
                     req.getChatMemoryMaxMessages() == null
-                            ? oldConfig.getChatMemoryConfig().getChatMemoryMaxMessages()
+                            ? resolveMaxMessages(oldMemoryConfig)
                             : req.getChatMemoryMaxMessages();
-            pojo.setAgentConfig(buildAgentConfig(req.getModelId(), prompt, maxMessages));
+            pojo.setAgentConfig(
+                    buildAgentConfig(req.getModelId(), prompt, memoryType, maxMessages));
             pojo.setModifyTime(now);
             agentConfigMapper.update(pojo);
         }
@@ -161,7 +191,12 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         return pojo;
     }
 
-    private String buildAgentConfig(Long modelId, String prompt, Integer maxMessages) {
+    private String normalizeDescription(String description) {
+        return description == null ? "" : description.trim();
+    }
+
+    private String buildAgentConfig(
+            Long modelId, String prompt, Integer memoryType, Integer maxMessages) {
         AgentModelConfig chatModel = new AgentModelConfig();
         chatModel.setLlmModelId(modelId);
         StandardAgentConfig config = new StandardAgentConfig();
@@ -171,8 +206,11 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
                         : prompt);
         config.setChatModel(chatModel);
         ChatMemoryConfig memoryConfig = new ChatMemoryConfig();
+        if (memoryType != null) {
+            memoryConfig.setType(memoryType);
+        }
         if (maxMessages != null && maxMessages > 0) {
-            memoryConfig.setChatMemoryMaxMessages(maxMessages);
+            memoryConfig.setMemoryConfig("{\"maxMessage\":" + maxMessages + "}");
         }
         config.setChatMemoryConfig(memoryConfig);
         return StandardAgentConfig.toJson(config, objectMapper);
@@ -196,10 +234,8 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         vo.setModifyTime(pojo.getModifyTime());
         StandardAgentConfig config = parseAgentConfig(pojo.getAgentConfig());
         vo.setSystemPrompt(config.getSystemPrompt());
-        vo.setChatMemoryMaxMessages(
-                config.getChatMemoryConfig() == null
-                        ? 100
-                        : config.getChatMemoryConfig().getChatMemoryMaxMessages());
+        vo.setChatMemoryType(resolveMemoryType(config.getChatMemoryConfig()));
+        vo.setChatMemoryMaxMessages(resolveMaxMessages(config.getChatMemoryConfig()));
         Long modelId = readModelId(pojo.getAgentConfig());
         vo.setModelId(modelId);
         if (modelId != null) {
@@ -207,6 +243,27 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
             vo.setModelName(model == null ? "模型已删除" : model.getName());
         }
         return vo;
+    }
+
+    private int resolveMemoryType(ChatMemoryConfig config) {
+        return config == null || config.getType() == null ? 1 : config.getType();
+    }
+
+    private int resolveMaxMessages(ChatMemoryConfig config) {
+        if (config == null
+                || config.getMemoryConfig() == null
+                || config.getMemoryConfig().trim().isEmpty()) {
+            return 1000;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode maxMessage =
+                    objectMapper.readTree(config.getMemoryConfig()).get("maxMessage");
+            return maxMessage != null && maxMessage.isInt() && maxMessage.asInt() > 0
+                    ? maxMessage.asInt()
+                    : 1000;
+        } catch (Exception ignored) {
+            return 1000;
+        }
     }
 
     private Long readModelId(String agentConfig) {

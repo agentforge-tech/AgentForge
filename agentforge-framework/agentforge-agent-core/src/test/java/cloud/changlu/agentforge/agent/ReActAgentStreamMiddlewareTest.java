@@ -4,7 +4,7 @@ import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.exception.AgentException;
-import cloud.changlu.agentforge.agent.memory.MessageWindowChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.window.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.support.RecordingMiddleware;
 import cloud.changlu.agentforge.agent.support.ScriptedStreamingChatModel;
 import cloud.changlu.agentforge.agent.support.WeatherTools;

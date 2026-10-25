@@ -17,15 +17,11 @@
     </div>
     <el-collapse-transition>
       <div v-show="open" class="elegant-tool-body">
-        <div v-if="part.inputParams" class="elegant-tool-section">
-          <div class="elegant-tool-label">入参</div>
-          <pre class="elegant-tool-code">{{ format(part.inputParams) }}</pre>
-        </div>
         <div v-if="part.outputResult" class="elegant-tool-section">
           <div class="elegant-tool-label">结果</div>
           <pre class="elegant-tool-code">{{ format(part.outputResult) }}</pre>
         </div>
-        <div v-if="!part.inputParams && !part.outputResult" class="elegant-tool-empty">暂无详情</div>
+        <div v-else class="elegant-tool-empty">暂无返回结果</div>
       </div>
     </el-collapse-transition>
   </div>

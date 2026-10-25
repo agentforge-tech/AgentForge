@@ -8,13 +8,13 @@ public class AiSessionProcessor implements IStreamSceneProcessor {
 
     @Override
     public String getSceneCode() {
-        return StreamEventEnums.EventTypeEnum.SESSION.getCode();
+        return StreamEventEnums.EventEnum.SESSION.getCode();
     }
 
     // 会话创建
     public static StreamEventResponse sessionCreated(String sessionId) {
-        return StreamEventResponse.of(StreamEventEnums.EventTypeEnum.SESSION.getCode())
-                .type(StreamEventEnums.SessionTypeEnum.CREATED.getCode())
+        return StreamEventResponse.of(
+                        StreamEventEnums.EventEnum.SESSION, StreamEventEnums.TypeEnum.CREATED)
                 .content(sessionId)
                 .finish(false);
     }

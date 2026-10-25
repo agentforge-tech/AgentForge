@@ -58,6 +58,7 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
     private final HttpTransport httpTransport;
     private final int connectTimeoutMillis;
     private final int readTimeoutMillis;
+    private final boolean returnThinking;
 
     private AnthropicStreamingChatModel(Builder builder) {
         this.baseUrl = trimTrailingSlash(builder.baseUrl);
@@ -78,6 +79,7 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
         this.httpTransport = builder.httpTransport;
         this.connectTimeoutMillis = builder.connectTimeoutMillis;
         this.readTimeoutMillis = builder.readTimeoutMillis;
+        this.returnThinking = builder.returnThinking;
     }
 
     public static Builder builder() {
@@ -111,7 +113,7 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
                         .readTimeoutMillis(readTimeoutMillis)
                         .build();
 
-        final AnthropicStreamState state = new AnthropicStreamState(handler);
+        final AnthropicStreamState state = new AnthropicStreamState(handler, returnThinking);
         try {
             httpTransport.executeStreaming(request, state);
         } catch (Throwable error) {
@@ -200,6 +202,7 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
         private HttpTransport httpTransport = new JdkHttpTransport();
         private int connectTimeoutMillis = 10_000;
         private int readTimeoutMillis = 60_000;
+        private boolean returnThinking = true;
 
         private Builder() {}
 
@@ -232,6 +235,11 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
 
         public Builder maxTokens(Integer maxTokens) {
             this.maxTokens = maxTokens;
+            return this;
+        }
+
+        public Builder returnThinking(boolean returnThinking) {
+            this.returnThinking = returnThinking;
             return this;
         }
 
@@ -287,6 +295,7 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
     private static final class AnthropicStreamState implements StreamingHttpResponseHandler {
 
         private final StreamingChatResponseHandler handler;
+        private final boolean returnThinking;
         private final StringBuilder text = new StringBuilder();
         private final StringBuilder thinking = new StringBuilder();
         private final StringBuilder errorBody = new StringBuilder();
@@ -301,8 +310,9 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
         private boolean terminated;
         private String pendingEvent;
 
-        private AnthropicStreamState(StreamingChatResponseHandler handler) {
+        private AnthropicStreamState(StreamingChatResponseHandler handler, boolean returnThinking) {
             this.handler = handler;
+            this.returnThinking = returnThinking;
         }
 
         @Override
@@ -457,6 +467,9 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
                 return;
             }
             if ("thinking_delta".equals(deltaType)) {
+                if (!returnThinking) {
+                    return;
+                }
                 String partial = Json.string(delta.get("thinking"));
                 if (partial == null || partial.isEmpty()) {
                     return;

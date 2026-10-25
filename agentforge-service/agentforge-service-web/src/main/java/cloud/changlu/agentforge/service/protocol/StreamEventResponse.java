@@ -1,6 +1,10 @@
 package cloud.changlu.agentforge.service.protocol;
 
+import cloud.changlu.agentforge.service.protocol.enums.StreamEventEnums;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.Objects;
 
 /**
  * Service unified SSE event. eventId and deliveryId are intentionally omitted for the first phase.
@@ -20,8 +24,23 @@ public class StreamEventResponse {
         this.event = event;
     }
 
-    public static StreamEventResponse of(String event) {
-        return new StreamEventResponse(event);
+    public static StreamEventResponse of(StreamEventEnums.EventEnum event) {
+        Objects.requireNonNull(event, "event must not be null");
+        if (!event.getTypes().isEmpty()) {
+            throw new IllegalArgumentException("Event " + event.getCode() + " requires a type");
+        }
+        return new StreamEventResponse(event.getCode());
+    }
+
+    public static StreamEventResponse of(
+            StreamEventEnums.EventEnum event, StreamEventEnums.TypeEnum type) {
+        Objects.requireNonNull(event, "event must not be null");
+        Objects.requireNonNull(type, "type must not be null");
+        if (!event.supports(type)) {
+            throw new IllegalArgumentException(
+                    "Event " + event.getCode() + " does not support type " + type.getCode());
+        }
+        return new StreamEventResponse(event.getCode()).type(type.getCode());
     }
 
     public StreamEventResponse type(String type) {

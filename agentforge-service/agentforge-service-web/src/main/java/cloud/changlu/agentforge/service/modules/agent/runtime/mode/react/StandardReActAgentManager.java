@@ -14,13 +14,15 @@ import org.springframework.stereotype.Component;
 
 /** ReActAgent 运行时管理器，按 aid 维护已初始化的 Agent。 */
 @Component
-public class ReActAgentManager extends AbstractAgentManager<ReActAgent, StandardAgentConfig> {
+public class StandardReActAgentManager
+        extends AbstractAgentManager<ReActAgent, StandardAgentConfig> {
 
     private static final int STANDARD_AGENT_TYPE = 1;
     private final ReActAgentFactory reActAgentFactory;
     private final ObjectMapper objectMapper;
 
-    public ReActAgentManager(ReActAgentFactory reActAgentFactory, ObjectMapper objectMapper) {
+    public StandardReActAgentManager(
+            ReActAgentFactory reActAgentFactory, ObjectMapper objectMapper) {
         this.reActAgentFactory = reActAgentFactory;
         this.objectMapper = objectMapper;
     }

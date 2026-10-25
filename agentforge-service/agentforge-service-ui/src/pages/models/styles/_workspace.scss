@@ -53,7 +53,9 @@
 
 .af-content__inner {
   max-width: 1500px;
+  min-height: 100%;
   margin: 0 auto;
+  @include flex(flex-start, stretch, column);
 }
 
 .af-page-head {
@@ -384,6 +386,19 @@
     font-weight: 700;
     background: var(--provider, #{$color-brand});
     box-shadow: 0 4px 12px rgba(23, 43, 77, 0.14);
+
+    &--logo {
+      background: #f4f6ff;
+      border: 1px solid #e2e7ff;
+      box-shadow: 0 4px 12px rgba(77, 107, 254, 0.14);
+    }
+
+    img {
+      display: block;
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+    }
   }
 
   &__heading {
@@ -487,7 +502,40 @@
 .af-pagination {
   @include flex(flex-end, center);
   gap: 6px;
-  margin-top: $space-6;
+  margin-top: auto;
+  padding-top: $space-6;
+  flex-wrap: wrap;
+
+  &__summary {
+    color: $color-text-muted;
+    font-size: 12.5px;
+  }
+
+  &__size,
+  &__buttons {
+    @include flex(flex-end, center);
+    gap: 6px;
+  }
+
+  &__size {
+    color: $color-text-muted;
+    font-size: 12.5px;
+
+    select {
+      height: 34px;
+      padding: 0 24px 0 9px;
+      border: 1px solid $color-border-strong;
+      border-radius: $radius-md;
+      outline: none;
+      background: $color-bg;
+      color: $color-text-secondary;
+
+      &:focus {
+        border-color: $color-brand;
+        box-shadow: 0 0 0 3px rgba(75, 142, 247, 0.12);
+      }
+    }
+  }
 }
 
 .af-page-btn {
@@ -683,6 +731,15 @@
 
   .af-topbar {
     padding: 0 $space-4;
+  }
+
+  .af-pagination {
+    justify-content: center;
+
+    &__summary {
+      width: 100%;
+      text-align: center;
+    }
   }
 
 }

@@ -8,20 +8,19 @@ public class AiResponseProcessor implements IStreamSceneProcessor {
 
     @Override
     public String getSceneCode() {
-        return StreamEventEnums.EventTypeEnum.RESP.getCode();
+        return StreamEventEnums.EventEnum.RESP.getCode();
     }
 
     // AI文本响应
     public static StreamEventResponse respText(String content, Boolean isFinish) {
-        return StreamEventResponse.of(StreamEventEnums.EventTypeEnum.RESP.getCode())
-                .type(StreamEventEnums.StepTypeEnum.TEXT.getCode())
+        return StreamEventResponse.of(
+                        StreamEventEnums.EventEnum.RESP, StreamEventEnums.TypeEnum.TEXT)
                 .content(content)
                 .finish(isFinish);
     }
 
     // AI响应结束
     public static StreamEventResponse respEnd(Boolean isFinish) {
-        return StreamEventResponse.of(StreamEventEnums.EventTypeEnum.RESP_END.getCode())
-                .finish(isFinish);
+        return StreamEventResponse.of(StreamEventEnums.EventEnum.RESP_END).finish(isFinish);
     }
 }

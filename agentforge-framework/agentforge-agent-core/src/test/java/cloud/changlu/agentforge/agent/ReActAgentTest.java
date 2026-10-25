@@ -4,7 +4,7 @@ import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
-import cloud.changlu.agentforge.agent.memory.MessageWindowChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.window.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.step.ChatResultState;
 import cloud.changlu.agentforge.agent.support.ScriptedChatModel;

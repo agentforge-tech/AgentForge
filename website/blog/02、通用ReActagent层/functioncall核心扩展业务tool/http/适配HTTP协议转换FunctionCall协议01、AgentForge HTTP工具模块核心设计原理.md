@@ -20,7 +20,7 @@ tags: [AgentForge, 通用ReActagent层, Function Calling, HTTP]
 
 ## 一、背景与问题引入
 
-## 1.1、场景驱动：接入钉钉机器人时，我们卡在了哪
+### 1.1、场景驱动：接入钉钉机器人时，我们卡在了哪
 
 在为 AgentForge 做外部能力接入时，我们遇到一个很现实的场景：
 
@@ -34,7 +34,7 @@ tags: [AgentForge, 通用ReActagent层, Function Calling, HTTP]
 
 <br/>
 
-## 1.2、问题引导：如何让模型"说人话"就能调 HTTP？
+### 1.2、问题引导：如何让模型"说人话"就能调 HTTP？
 
 > **问题**：如何让模型把一句自然语言，变成一次**参数正确、地址可控**的 HTTP 调用？
 
@@ -48,7 +48,7 @@ tags: [AgentForge, 通用ReActagent层, Function Calling, HTTP]
 
 <br/>
 
-## 1.3、设计目标与约束
+### 1.3、设计目标与约束
 
 | 目标 | 说明 |
 |---|---|
@@ -62,7 +62,7 @@ tags: [AgentForge, 通用ReActagent层, Function Calling, HTTP]
 
 ## 二、核心概念讲解
 
-## 2.1、三个核心抽象
+### 2.1、三个核心抽象
 
 ```text
 HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一组方法
@@ -72,7 +72,7 @@ HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一�
 
 <br/>
 
-## 2.2、参数的四维模型（重点）
+### 2.2、参数的四维模型（重点）
 
 一个参数被四个维度描述，正是它让"声明"到"真实请求"的映射成为可能：
 
@@ -87,7 +87,7 @@ HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一�
 
 <br/>
 
-## 2.3、与 Agent 工具抽象的关系
+### 2.3、与 Agent 工具抽象的关系
 
 | HTTP 模块 | AgentForge 契约 |
 |---|---|
@@ -97,7 +97,7 @@ HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一�
 
 <br/>
 
-## 2.4、为什么还要支持 curl
+### 2.4、为什么还要支持 curl
 
 开发者手里最常见的"接口样本"就是一段 curl。支持 `curl → HttpPlugin`，能把"复制粘贴一段 curl"直接变成可注入 Agent 的工具；反向 `HttpPlugin → curl` 则方便调试与文档化。
 
@@ -105,7 +105,7 @@ HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一�
 
 ## 三、实现思路
 
-## 3.1、三种方案对比
+### 3.1、三种方案对比
 
 **方案一：每个接口写一个 `@Tool` 方法**
 
@@ -126,7 +126,7 @@ HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一�
 
 <br/>
 
-## 3.2、核心流程：List → Spec + Executor
+### 3.2、核心流程：List → Spec + Executor
 
 `HttpToolFactory.buildHttpTools(httpPlugin)` 对每个 `HttpPluginMethod` 生成一对：
 
@@ -141,7 +141,7 @@ HttpPluginMethod
 
 <br/>
 
-## 3.3、参数处理流水线（核心）
+### 3.3、参数处理流水线（核心）
 
 `HttpToolExecutor.execute` 内部按固定顺序处理：
 
@@ -165,7 +165,7 @@ HttpRequest(url, method, headers, body) ──► HttpTransport.execute
 
 <br/>
 
-## 3.4、请求体的"智能判断"
+### 3.4、请求体的"智能判断"
 
 ```text
 GET / DELETE   → 强制用 Query（即使配了 BODY 也不发 Body）
@@ -176,7 +176,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 <br/>
 
-## 3.5、重试与容错
+### 3.5、重试与容错
 
 - 仅对 **GET / DELETE** 的 `connection reset` 做**一次**重试（幂等语义下安全）；
 - 其余异常在 `execute` 中兜底为文本 `"HTTP请求失败: {message}"`。
@@ -185,7 +185,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 <br/>
 
-## 3.6、curl 解析与互转
+### 3.6、curl 解析与互转
 
 | 方向 | 入口 | 说明 |
 |---|---|---|
@@ -196,7 +196,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 <br/>
 
-## 3.7、能力矩阵：请求方法与参数格式
+### 3.7、能力矩阵：请求方法与参数格式
 
 **① 支持的 HTTP 方法（`HttpPluginEnums.HttpMethod`）**
 
@@ -249,7 +249,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 ## 四、实战代码
 
-## 4.1、最小接入
+### 4.1、最小接入
 
 ```java
 HttpPlugin plugin =
@@ -315,7 +315,7 @@ QUERY 参数: {q=杭州}
 
 <br/>
 
-## 4.2、通过 `IHttpPlugin` 扩展
+### 4.2、通过 `IHttpPlugin` 扩展
 
 ```java
 public class DingTalkPlugin implements IHttpPlugin {
@@ -338,7 +338,7 @@ toolService.tools(new DingTalkPlugin().buildHttpTools());
 
 <br/>
 
-## 4.3、curl 一键转换
+### 4.3、curl 一键转换
 
 ```java
 CurlParseResult curl =
@@ -372,7 +372,7 @@ params  = [ title: string (BODY:title, required) ]
 
 <br/>
 
-## 4.4、一次模型调用如何被闭环
+### 4.4、一次模型调用如何被闭环
 
 > **对应单测**：`HttpToolLoopTest#shouldCloseTheWeatherLoopThroughToolService`——注入 `RecordingHttpTransport`，离线完整走通"声明 → 注册 → 命中 → 组装 → 发请求 → 回灌"。
 
@@ -448,11 +448,11 @@ ToolExecutionRequest{ id="call_1", name="getWeather", arguments="{\"city\":\"杭
 
 ## 五、验证测试
 
-## 5.1、单元测试概览
+### 5.1、单元测试概览
 
 用 `RecordingHttpTransport` 记录收到的 `HttpRequest`，断言 URL / 请求头 / 请求体，无需真实网络。
 
-## 5.2、测试清单（当前实现，全部通过）
+### 5.2、测试清单（当前实现，全部通过）
 
 | 用例 | 覆盖点 |
 |---|---|
@@ -473,7 +473,7 @@ ToolExecutionRequest{ id="call_1", name="getWeather", arguments="{\"city\":\"杭
 
 <br/>
 
-## 5.3、边界与风险
+### 5.3、边界与风险
 
 - **错误语义**：`execute` 把异常降级为文本，`isError=false`，需要结构化错误要自行包装。
 - **鉴权复杂度**：静态头 / 参数够用；OAuth 刷新、签名等需宿主层实现。

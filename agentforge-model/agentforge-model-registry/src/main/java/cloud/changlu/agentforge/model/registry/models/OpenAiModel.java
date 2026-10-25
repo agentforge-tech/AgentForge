@@ -75,6 +75,11 @@ public class OpenAiModel extends BaseModel {
         if (isNotEmpty(maxTokens)) {
             builder.maxTokens(Integer.parseInt(maxTokens));
         }
+
+        String returnThinking = props.getProperty(LlmConstant.RETURN_THINKING);
+        if (isNotEmpty(returnThinking)) {
+            builder.returnThinking(Boolean.parseBoolean(returnThinking));
+        }
     }
 
     // 重载方法用于 StreamingChatModel
@@ -103,6 +108,11 @@ public class OpenAiModel extends BaseModel {
         String maxTokens = props.getProperty(LlmConstant.MAX_TOKENS);
         if (isNotEmpty(maxTokens)) {
             builder.maxTokens(Integer.parseInt(maxTokens));
+        }
+
+        String returnThinking = props.getProperty(LlmConstant.RETURN_THINKING);
+        if (isNotEmpty(returnThinking)) {
+            builder.returnThinking(Boolean.parseBoolean(returnThinking));
         }
     }
 }

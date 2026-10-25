@@ -1,5 +1,7 @@
-package cloud.changlu.agentforge.agent.memory;
+package cloud.changlu.agentforge.agent.memory.window;
 
+import cloud.changlu.agentforge.agent.memory.ChatMemory;
+import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.SystemMessage;

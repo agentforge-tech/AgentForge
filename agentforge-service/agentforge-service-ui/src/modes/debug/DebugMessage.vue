@@ -108,7 +108,7 @@ export default {
 
 .answer { margin: 2px 0 8px; }
 
-.typing { display: flex; gap: 5px; padding: 6px 2px; }
+.typing { display: flex; min-height: 32px; align-items: center; gap: 5px; padding: 0 2px; }
 .typing span {
   width: 7px; height: 7px; border-radius: 50%; background: #c4cdd9;
   animation: blink 1.2s infinite ease-in-out;

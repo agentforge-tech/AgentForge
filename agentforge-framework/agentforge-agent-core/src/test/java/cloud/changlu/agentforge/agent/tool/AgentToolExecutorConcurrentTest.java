@@ -4,7 +4,7 @@ import cloud.changlu.agentforge.agent.component.middleware.AgentMiddlewareManage
 import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
-import cloud.changlu.agentforge.agent.memory.MessageWindowChatMemory;
+import cloud.changlu.agentforge.agent.memory.window.MessageWindowChatMemory;
 import cloud.changlu.agentforge.agent.support.WeatherTools;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionResultMessage;

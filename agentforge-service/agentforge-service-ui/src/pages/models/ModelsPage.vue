@@ -15,14 +15,6 @@
       </div>
 
       <nav class="af-sidebar__scroll">
-        <a class="af-nav-item af-nav-item--link" href="/chat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
-          </svg>
-          <span class="af-nav-item__label">对话</span>
-          <span class="af-nav-item__hint">进入</span>
-        </a>
-
         <div class="af-nav-group af-nav-group--agent">
           <button class="af-nav-group__head" @click="agentGroupOpen = !agentGroupOpen" type="button" :aria-expanded="agentGroupOpen">
             <span>Agent 驾驶舱</span>
@@ -81,7 +73,6 @@
           <span class="af-user__avatar">A</span>
           <div class="af-user__meta">
             <div class="af-user__name">Agent 开发者</div>
-            <div class="af-user__plan">专业版 · Pro</div>
           </div>
         </div>
       </div>
@@ -118,12 +109,6 @@
 
       <section class="af-content">
         <div class="af-content__inner">
-          <div class="af-page-head">
-            <div class="af-page-head__text">
-              <h1 class="af-page-head__title">模型列表</h1>
-            </div>
-          </div>
-
           <!-- 工具栏 -->
           <div class="af-toolbar">
             <div class="af-search">
@@ -168,8 +153,13 @@
           <div v-else-if="models.length" class="af-grid">
             <article v-for="m in models" :key="m.id" class="af-model-card">
               <div class="af-model-card__head">
-                <span class="af-model-card__avatar" :style="{ '--provider': providerColor(m.provider) }">
-                  {{ initial(m.name) }}
+                <span
+                  class="af-model-card__avatar"
+                  :class="{ 'af-model-card__avatar--logo': modelLogo(m) }"
+                  :style="{ '--provider': providerColor(m.provider) }"
+                >
+                  <img v-if="modelLogo(m)" :src="modelLogo(m)" :alt="modelBrand(m) + ' logo'" />
+                  <template v-else>{{ initial(m.name) }}</template>
                 </span>
                 <div class="af-model-card__heading">
                   <div class="af-model-card__title">
@@ -223,24 +213,36 @@
             <button v-else class="af-btn af-btn--primary af-btn--sm" type="button" @click="openCreate">新建模型</button>
           </div>
 
-          <nav v-if="!loading && totalPage > 1" class="af-pagination" aria-label="模型列表分页">
-            <button class="af-page-btn" type="button" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
-              上一页
-            </button>
-            <button
-              v-for="page in pageNumbers"
-              :key="page"
-              class="af-page-btn af-page-btn--number"
-              :class="{ 'af-page-btn--active': page === currentPage }"
-              type="button"
-              :aria-current="page === currentPage ? 'page' : null"
-              @click="changePage(page)"
-            >
-              {{ page }}
-            </button>
-            <button class="af-page-btn" type="button" :disabled="currentPage === totalPage" @click="changePage(currentPage + 1)">
-              下一页
-            </button>
+          <nav v-if="!loading && totalCount > 0" class="af-pagination" aria-label="模型列表分页">
+            <div class="af-pagination__summary">共 {{ totalCount }} 个模型，第 {{ currentPage }} / {{ totalPage }} 页</div>
+            <label class="af-pagination__size">
+              <span>每页</span>
+              <select v-model.number="pageSize" aria-label="每页显示数量" @change="changePageSize">
+                <option :value="12">12</option>
+                <option :value="24">24</option>
+                <option :value="48">48</option>
+              </select>
+              <span>条</span>
+            </label>
+            <div class="af-pagination__buttons">
+              <button class="af-page-btn" type="button" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+                上一页
+              </button>
+              <button
+                v-for="page in pageNumbers"
+                :key="page"
+                class="af-page-btn af-page-btn--number"
+                :class="{ 'af-page-btn--active': page === currentPage }"
+                type="button"
+                :aria-current="page === currentPage ? 'page' : null"
+                @click="changePage(page)"
+              >
+                {{ page }}
+              </button>
+              <button class="af-page-btn" type="button" :disabled="currentPage === totalPage" @click="changePage(currentPage + 1)">
+                下一页
+              </button>
+            </div>
           </nav>
         </div>
       </section>
@@ -660,6 +662,10 @@ export default {
       this.currentPage = page
       this.loadModels()
     },
+    changePageSize() {
+      this.currentPage = 1
+      this.loadModels()
+    },
     resetFilters() {
       this.keyword = ''
       this.filter = 'all'
@@ -668,6 +674,22 @@ export default {
     },
     initial(name) {
       return (name || '?').trim().charAt(0).toUpperCase()
+    },
+    modelBrand(model) {
+      const identity = [model && model.name, model && model.modelname]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      if (identity.includes('deepseek')) return 'DeepSeek'
+      if (/\bgpt(?:[-_. ]|\d|$)/.test(identity)) return 'OpenAI'
+      return ''
+    },
+    modelLogo(model) {
+      const logos = {
+        DeepSeek: '/model-logos/deepseek.svg',
+        OpenAI: '/model-logos/openai.svg'
+      }
+      return logos[this.modelBrand(model)] || ''
     },
     providerColor(provider) {
       return PROVIDER_COLORS[provider] || '#4b8ef7'

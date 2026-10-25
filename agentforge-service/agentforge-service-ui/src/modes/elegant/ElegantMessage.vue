@@ -97,7 +97,7 @@ export default {
 
 .answer { margin: 2px 0 8px; }
 
-.elegant-typing { padding: 6px 2px; }
+.elegant-typing { display: flex; min-height: 32px; align-items: center; padding: 0 2px; }
 .elegant-typing-text {
   font-size: 13.5px;
   font-weight: 500;

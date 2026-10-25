@@ -20,7 +20,7 @@ One-sentence conclusion: **The HTTP tool module declaratively maps "a set of HTT
 
 ## 1. Background and Problem Introduction
 
-## 1.1 Scenario-driven: where we got stuck while integrating a DingTalk bot
+### 1.1 Scenario-driven: where we got stuck while integrating a DingTalk bot
 
 While building external capability integration for AgentForge, we encountered a very realistic scenario:
 
@@ -34,7 +34,7 @@ This brought three concrete pain points:
 
 <br/>
 
-## 1.2 Problem-led: how to let the model call HTTP by "speaking natural language"?
+### 1.2 Problem-led: how to let the model call HTTP by "speaking natural language"?
 
 > **Problem**: How can the model turn a natural-language sentence into an HTTP call with **correct parameters and a controllable address**?
 
@@ -48,7 +48,7 @@ This is exactly what this module does.
 
 <br/>
 
-## 1.3 Design goals and constraints
+### 1.3 Design goals and constraints
 
 | Goal | Description |
 |---|---|
@@ -62,7 +62,7 @@ This is exactly what this module does.
 
 ## 2. Core Concepts
 
-## 2.1 Three core abstractions
+### 2.1 Three core abstractions
 
 ```text
 HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一组方法
@@ -72,7 +72,7 @@ HttpPlugin                    # 一个服务：baseUrl + 公共请求头 + 一�
 
 <br/>
 
-## 2.2 The four-dimensional parameter model (key)
+### 2.2 The four-dimensional parameter model (key)
 
 A parameter is described by four dimensions, and this is precisely what makes the mapping from "declaration" to "actual request" possible:
 
@@ -87,7 +87,7 @@ A parameter is described by four dimensions, and this is precisely what makes th
 
 <br/>
 
-## 2.3 Relationship with the Agent tool abstraction
+### 2.3 Relationship with the Agent tool abstraction
 
 | HTTP module | AgentForge contract |
 |---|---|
@@ -97,7 +97,7 @@ A parameter is described by four dimensions, and this is precisely what makes th
 
 <br/>
 
-## 2.4 Why curl support is also needed
+### 2.4 Why curl support is also needed
 
 The most common "endpoint sample" in a developer's hands is a curl command. Supporting `curl → HttpPlugin` lets "copy-paste a curl command" directly become an Agent-injectable tool; the reverse `HttpPlugin → curl` is convenient for debugging and documentation.
 
@@ -105,7 +105,7 @@ The most common "endpoint sample" in a developer's hands is a curl command. Supp
 
 ## 3. Implementation Approach
 
-## 3.1 Comparison of three approaches
+### 3.1 Comparison of three approaches
 
 **Approach 1: Write a `@Tool` method for every endpoint**
 
@@ -126,7 +126,7 @@ The most common "endpoint sample" in a developer's hands is a curl command. Supp
 
 <br/>
 
-## 3.2 Core flow: List → Spec + Executor
+### 3.2 Core flow: List → Spec + Executor
 
 `HttpToolFactory.buildHttpTools(httpPlugin)` produces a pair for each `HttpPluginMethod`:
 
@@ -141,7 +141,7 @@ HttpPluginMethod
 
 <br/>
 
-## 3.3 Parameter processing pipeline (core)
+### 3.3 Parameter processing pipeline (core)
 
 Inside `HttpToolExecutor.execute`, processing follows a fixed order:
 
@@ -165,7 +165,7 @@ HttpRequest(url, method, headers, body) ──► HttpTransport.execute
 
 <br/>
 
-## 3.4 "Intelligent judgment" of the request body
+### 3.4 "Intelligent judgment" of the request body
 
 ```text
 GET / DELETE   → 强制用 Query（即使配了 BODY 也不发 Body）
@@ -176,7 +176,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 <br/>
 
-## 3.5 Retry and fault tolerance
+### 3.5 Retry and fault tolerance
 
 - Retry **once** only on `connection reset` for **GET / DELETE** (safe under idempotent semantics);
 - Other exceptions are caught in `execute` and degraded to the text `"HTTP请求失败: {message}"`.
@@ -185,7 +185,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 <br/>
 
-## 3.6 curl parsing and interconversion
+### 3.6 curl parsing and interconversion
 
 | Direction | Entry point | Description |
 |---|---|---|
@@ -196,7 +196,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 <br/>
 
-## 3.7 Capability matrix: request methods and parameter formats
+### 3.7 Capability matrix: request methods and parameter formats
 
 **① Supported HTTP methods (`HttpPluginEnums.HttpMethod`)**
 
@@ -249,7 +249,7 @@ POST / PUT / PATCH → 只有当存在 BODY 参数（已传或有默认值）时
 
 ## 4. Practical Code
 
-## 4.1 Minimal integration
+### 4.1 Minimal integration
 
 ```java
 HttpPlugin plugin =
@@ -315,7 +315,7 @@ QUERY 参数: {q=杭州}
 
 <br/>
 
-## 4.2 Extending via `IHttpPlugin`
+### 4.2 Extending via `IHttpPlugin`
 
 ```java
 public class DingTalkPlugin implements IHttpPlugin {
@@ -338,7 +338,7 @@ toolService.tools(new DingTalkPlugin().buildHttpTools());
 
 <br/>
 
-## 4.3 One-click curl conversion
+### 4.3 One-click curl conversion
 
 ```java
 CurlParseResult curl =
@@ -372,7 +372,7 @@ params  = [ title: string (BODY:title, required) ]
 
 <br/>
 
-## 4.4 How a single model invocation is closed out
+### 4.4 How a single model invocation is closed out
 
 > **Corresponding unit test**: `HttpToolLoopTest#shouldCloseTheWeatherLoopThroughToolService`—injects a `RecordingHttpTransport` and runs the full offline path "declare → register → hit → assemble → send request → feed back".
 
@@ -448,11 +448,11 @@ The response body text is fed back as the tool result → the model produces its
 
 ## 5. Verification and Testing
 
-## 5.1 Unit test overview
+### 5.1 Unit test overview
 
 A `RecordingHttpTransport` records the received `HttpRequest`, asserting the URL / request headers / request body, with no real network required.
 
-## 5.2 Test list (current implementation, all passing)
+### 5.2 Test list (current implementation, all passing)
 
 | Case | Coverage |
 |---|---|
@@ -473,7 +473,7 @@ A `RecordingHttpTransport` records the received `HttpRequest`, asserting the URL
 
 <br/>
 
-## 5.3 Boundaries and risks
+### 5.3 Boundaries and risks
 
 - **Error semantics**: `execute` degrades exceptions to text, with `isError=false`; structured errors must be wrapped by the caller.
 - **Authentication complexity**: Static headers / parameters suffice; OAuth refresh, signing, etc. must be implemented at the host layer.

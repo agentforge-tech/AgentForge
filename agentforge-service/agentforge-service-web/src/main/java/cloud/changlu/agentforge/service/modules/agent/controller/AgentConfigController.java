@@ -4,6 +4,7 @@ import cloud.changlu.agentforge.service.common.pager.PageResult;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigQueryReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigUpsertReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentConfigVo;
+import cloud.changlu.agentforge.service.modules.agent.domain.vo.PublishedAgentBasicVo;
 import cloud.changlu.agentforge.service.modules.agent.service.IAgentConfigService;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -37,6 +38,11 @@ public class AgentConfigController {
     @GetMapping("/{id}")
     public AgentConfigVo getInfo(@PathVariable("id") Long id) {
         return agentConfigService.getById(id);
+    }
+
+    @GetMapping("/published/{aid}/basic")
+    public PublishedAgentBasicVo getPublishedBasic(@PathVariable("aid") String aid) {
+        return agentConfigService.getPublishedBasicByAid(aid);
     }
 
     @PostMapping("/upsert")

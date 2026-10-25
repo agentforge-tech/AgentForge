@@ -17,7 +17,7 @@
       </div>
     </div>
     <div ref="feed" class="agent-debug-feed">
-      <div v-if="!messages.length" class="agent-debug-empty"><span>✦</span><b>开始一次调试对话</b><p>支持调试事件时间线与优雅交互两种展示模式。</p></div>
+      <div v-if="!messages.length" class="agent-debug-empty"><span>✦</span><b>开始一次调试对话</b><p>支持调试事件时间线与发布后交互展示两种模式。</p></div>
       <template v-for="(message, index) in messages">
         <div v-if="message.role === 'user'" :key="index" class="agent-debug-message-row agent-debug-message-row--user">
           <div class="agent-debug-user-block">
@@ -30,11 +30,7 @@
         <div v-else :key="index" class="agent-debug-message-row agent-debug-message-row--assistant">
           <div class="agent-debug-bot-avatar"><img src="/logo.png" alt="AgentForge" /></div>
           <div class="agent-debug-bot-body">
-            <component :is="modeComponent" :message="message" />
-            <div v-if="message.status !== 'running'" class="agent-debug-message-actions">
-              <button class="agent-debug-mini-btn" type="button" title="复制回答" :disabled="!message.content" @click="copy(message.content)"><i class="el-icon-document-copy"></i></button>
-              <span v-if="message.status === 'error'" class="agent-debug-status-error">失败</span>
-            </div>
+            <AgentMessageContent :message="message" :mode="mode" />
           </div>
         </div>
       </template>
@@ -47,15 +43,17 @@
 </template>
 
 <script>
-import { RENDER_MODES, DEFAULT_RENDER_MODE, getRenderMode } from '../../modes'
+import { RENDER_MODES, DEFAULT_RENDER_MODE } from '../../modes'
+import AgentMessageContent from '../../components/AgentMessageContent.vue'
 import { postSse } from '../../utils/sse'
 
 const MODE_KEY = 'agentforge.render.mode'
 export default {
   name: 'AgentDebugPanel',
+  components: { AgentMessageContent },
   props: { aid: { type: String, required: true } },
   data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [] } },
-  computed: { renderModes() { return RENDER_MODES }, modeComponent() { return getRenderMode(this.mode).component } },
+  computed: { renderModes() { return RENDER_MODES } },
   watch: { mode(value) { localStorage.setItem(MODE_KEY, value) } },
   created() { localStorage.setItem(MODE_KEY, this.mode) },
   beforeDestroy() { if (this.controller) this.controller.abort() },

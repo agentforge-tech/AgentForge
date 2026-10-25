@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.agent.memory.dao.AgentMemoryMapper">
+
+    <resultMap id="AgentMemoryResult" type="cloud.changlu.agentforge.service.modules.agent.memory.domain.AgentMemoryPojo">
+        <id property="id" column="id"/>
+        <result property="memoryId" column="memory_id"/>
+        <result property="content" column="content"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, memory_id, content, create_time, modify_time
+    </sql>
+
+    <select id="selectByMemoryId" resultMap="AgentMemoryResult">
+        select <include refid="columns"/> from ai_agent_memrory
+        where memory_id = #{memoryId}
+    </select>
+
+    <insert id="insert">
+        insert into ai_agent_memrory (memory_id, content)
+        values (#{memoryId}, #{content})
+    </insert>
+
+    <update id="updateByMemoryId">
+        update ai_agent_memrory set content = #{content}
+        where memory_id = #{memoryId}
+    </update>
+
+    <delete id="deleteByMemoryId">
+        delete from ai_agent_memrory where memory_id = #{memoryId}
+    </delete>
+</mapper>

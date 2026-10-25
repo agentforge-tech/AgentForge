@@ -5,8 +5,11 @@ public class AgentConfigUpsertReq {
 
     private Long id;
     private String name;
+    private Integer type;
+    private String description;
     private Long modelId;
     private String systemPrompt;
+    private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
 
     public Long getId() {
@@ -25,6 +28,22 @@ public class AgentConfigUpsertReq {
         this.name = name;
     }
 
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public Long getModelId() {
         return modelId;
     }
@@ -39,6 +58,14 @@ public class AgentConfigUpsertReq {
 
     public void setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
+    }
+
+    public Integer getChatMemoryType() {
+        return chatMemoryType;
+    }
+
+    public void setChatMemoryType(Integer chatMemoryType) {
+        this.chatMemoryType = chatMemoryType;
     }
 
     public Integer getChatMemoryMaxMessages() {

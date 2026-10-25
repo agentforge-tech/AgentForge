@@ -4,7 +4,7 @@ AgentForge 首版以框架层（`agentforge-model` / `agentforge-agent-core`）�
 
 接下来需要落地 `agentforge-service` 业务层：把「模型配置」「Agent 配置」从代码里的硬编码（见 `AgentConfiguration` 中直接 `builder().build()`）下沉为**可持久化、可配置、可管理**的数据，从而支撑「我的模型」「Agent 构建/发布」「对话」等业务能力。
 
-本文先梳理**初版核心模型（ai_model_config）与 Agent（ai_agent_config）两张核心表**的结构设计。表结构直接参考 ai-chat 项目（`/Users/edy/changlu_workspace/daishuyun/code/diy/ai-chat`）已稳定运行的 `llm_model`、`agent_config` 设计（AgentForge 统一加 `ai_` 表前缀），并结合 AgentForge 已有核心类（`LlmBasicConfig`、`AgentSettings`、`ReActAgent`）做最小适配。
+本文先梳理**初版核心模型（ai_model_config）与 Agent（ai_agent_config）两张核心表**的结构设计。表结构设计参照 LangChain4j 的模型/记忆抽象（`ChatModel`、`ChatMemory`、`ChatMemoryStore`）进行建模（AgentForge 统一加 `ai_` 表前缀），并结合 AgentForge 已有核心类（`LlmBasicConfig`、`AgentSettings`、`ReActAgent`）做最小适配。
 
 
 
@@ -34,7 +34,7 @@ ReActAgent       ← 由 Agent 配置 + 构建好的 ChatModel + ToolService 装
 
 1. **配置与运行分离**：表只存配置，运行态的 `ReActAgent` 每次按需装配，便于热更新与多租户隔离。
 2. **主配置 JSON 化**：Agent 的可变能力（模型、工具、提示词等）统一收敛到 `agent_config` 大字段，减少后期加字段的 DDL 成本。
-3. **逻辑删除 + 公开标记**：与 ai-chat 保持一致，`is_deleted` 支持资源软删除，`ai_agent_config.is_public` 支持 Agent 开放共享。
+3. **逻辑删除 + 公开标记**：`is_deleted` 支持资源软删除，`ai_agent_config.is_public` 支持 Agent 开放共享。
 4. **aid 对外唯一标识**：Agent 使用 64 位字符串 `aid` 作为对外/跨模块引用标识，`id` 仅内部使用。
 
 
@@ -43,7 +43,7 @@ ReActAgent       ← 由 Agent 配置 + 构建好的 ChatModel + ToolService 装
 
 ## 1、ai_model_config 模型配置表
 
-> 参考 ai-chat `llm_model`，结合 AgentForge 当前仅支持 `OPENAI(1)`、`ANTHROPIC(2)` 两种协议做 provider 适配。
+> 参照 LangChain4j 的 `ChatModel` 抽象，结合 AgentForge 当前仅支持 `OPENAI(1)`、`ANTHROPIC(2)` 两种协议做 provider 适配。
 
 ```sql
 CREATE TABLE `ai_model_config` (
@@ -96,7 +96,7 @@ CREATE TABLE `ai_model_config` (
 
 ## 2、ai_agent_config Agent 配置表
 
-> 参考 ai-chat `agent_config`（含后续增量：`create_user_id`、`is_public`、`avatar`、`description`、`exper_config` 等），初版裁剪掉 `biz_type`、`knowledge_id`。
+> 参照 LangChain4j 的 Agent 运行参数组织方式（`ChatModel` + `ChatMemory` + 工具集合），字段包含 `create_user_id`、`is_public`、`avatar`、`description`、`exper_config` 等，初版裁剪掉 `biz_type`、`knowledge_id`。
 
 ```sql
 CREATE TABLE `ai_agent_config` (
@@ -185,7 +185,7 @@ ai_agent_config 一行
 
 # 后续扩展
 
-1. **对话会话表**：`ai_agent_chat_session` / `ai_agent_chat_message`（参考 ai-chat）承载多轮会话与消息持久化。
+1. **对话会话表**：`ai_agent_chat_session` / `ai_agent_chat_message`（参照 LangChain4j 的 `ChatMemoryStore` 设计）承载多轮会话与消息持久化。
 2. **工具/插件表**：http 插件、mcp server 注册表，配合 `tools[]` 引用。
 3. **发布与开放**：`publish` + `is_public` + `aid` 支撑 Agent 广场与开放 API。
 4. **多租户/权限**：`create_user_id` 与协作者权限表承接数据隔离。

@@ -48,6 +48,7 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
     private final HttpTransport httpTransport;
     private final int connectTimeoutMillis;
     private final int readTimeoutMillis;
+    private final boolean returnThinking;
 
     private OpenAiStreamingChatModel(Builder builder) {
         this.baseUrl = trimTrailingSlash(builder.baseUrl);
@@ -67,6 +68,7 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
         this.httpTransport = builder.httpTransport;
         this.connectTimeoutMillis = builder.connectTimeoutMillis;
         this.readTimeoutMillis = builder.readTimeoutMillis;
+        this.returnThinking = builder.returnThinking;
     }
 
     public static Builder builder() {
@@ -101,7 +103,7 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
             request = copyWithHeader(request, "Authorization", "Bearer " + apiKey);
         }
 
-        final OpenAiStreamState state = new OpenAiStreamState(handler);
+        final OpenAiStreamState state = new OpenAiStreamState(handler, returnThinking);
         try {
             httpTransport.executeStreaming(request, state);
         } catch (Throwable error) {
@@ -194,6 +196,7 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
         private HttpTransport httpTransport = new JdkHttpTransport();
         private int connectTimeoutMillis = 10_000;
         private int readTimeoutMillis = 60_000;
+        private boolean returnThinking = true;
 
         private Builder() {}
 
@@ -219,6 +222,11 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
 
         public Builder maxTokens(Integer maxTokens) {
             this.maxTokens = maxTokens;
+            return this;
+        }
+
+        public Builder returnThinking(boolean returnThinking) {
+            this.returnThinking = returnThinking;
             return this;
         }
 
@@ -274,6 +282,7 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
     private static final class OpenAiStreamState implements StreamingHttpResponseHandler {
 
         private final StreamingChatResponseHandler handler;
+        private final boolean returnThinking;
         private final StringBuilder text = new StringBuilder();
         private final StringBuilder thinking = new StringBuilder();
         private final StringBuilder errorBody = new StringBuilder();
@@ -287,8 +296,9 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
         private TokenUsage tokenUsage;
         private boolean terminated;
 
-        private OpenAiStreamState(StreamingChatResponseHandler handler) {
+        private OpenAiStreamState(StreamingChatResponseHandler handler, boolean returnThinking) {
             this.handler = handler;
+            this.returnThinking = returnThinking;
         }
 
         @Override
@@ -389,7 +399,7 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
                 }
             }
 
-            String partialThinking = extractThinking(delta);
+            String partialThinking = returnThinking ? extractThinking(delta) : null;
             if (partialThinking != null && !partialThinking.isEmpty()) {
                 thinking.append(partialThinking);
                 try {

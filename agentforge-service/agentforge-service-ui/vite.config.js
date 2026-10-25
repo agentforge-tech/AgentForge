@@ -4,13 +4,14 @@ import { resolve } from 'node:path'
 
 // 单站点多页面：
 //   /        → 我的模型（管理列表，src/pages/models）
-//   /chat    → 对话门户（src/App.vue）
+//   /agent/published/{aid} → 已发布 Agent 对话页（src/pages/published）
 // 两个页面各自独立入口、共享一套构建产物，统一由本配置开发与打包。
 function rewriteChatPath() {
   const redirect = (req) => {
     const [path, query] = (req.url || '').split('?')
-    if (path === '/chat' || path === '/agents' || path === '/agents/config') {
-      req.url = path === '/agents/config' ? '/agents/' + (query ? '?' + query : '') : path + '/' + (query ? '?' + query : '')
+    if (path === '/chat' || path.startsWith('/chat/') || path.startsWith('/agent/published/') || path === '/agents' || path === '/agents/config') {
+      const target = path === '/agents/config' ? '/agents/' : path === '/agents' ? '/agents/' : '/chat/'
+      req.url = target + (query ? '?' + query : '')
     }
   }
   return {
