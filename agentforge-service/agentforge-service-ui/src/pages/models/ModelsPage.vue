@@ -2,81 +2,7 @@
   <div class="af-models" :class="{ 'af-models--nav-open': navOpen }">
     <div v-if="navOpen" class="af-sidebar-backdrop" @click="navOpen = false"></div>
 
-    <!-- ------------------------------ 左侧导航 ------------------------------ -->
-    <aside class="af-sidebar">
-      <div class="af-sidebar__head">
-        <div class="af-brand">
-          <span class="af-brand__logo"><img src="/logo.png" alt="AgentForge" /></span>
-          <div>
-            <div class="af-brand__name">AgentForge</div>
-            <div class="af-brand__sub">AgentForge Service</div>
-          </div>
-        </div>
-      </div>
-
-      <nav class="af-sidebar__scroll">
-        <div class="af-nav-group af-nav-group--agent">
-          <button class="af-nav-group__head" @click="agentGroupOpen = !agentGroupOpen" type="button" :aria-expanded="agentGroupOpen">
-            <span>Agent 驾驶舱</span>
-            <svg
-              class="af-nav-group__chevron"
-              :class="{ 'af-nav-group__chevron--collapsed': !agentGroupOpen }"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-
-          <transition name="af-fade">
-            <div v-show="agentGroupOpen" class="af-nav-group__body">
-              <a class="af-nav-item af-nav-item--link" href="/agents">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="8" r="3" />
-                  <path d="M5 20a7 7 0 0 1 14 0M4 5l2 1M20 5l-2 1M12 2v2" />
-                </svg>
-                <span class="af-nav-item__label">我的 Agent</span>
-              </a>
-            </div>
-          </transition>
-        </div>
-
-        <div class="af-nav-group af-nav-group--resources">
-          <button class="af-nav-group__head" @click="groupOpen = !groupOpen" type="button" :aria-expanded="groupOpen">
-            <span>我的资源库</span>
-            <svg
-              class="af-nav-group__chevron"
-              :class="{ 'af-nav-group__chevron--collapsed': !groupOpen }"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-
-          <transition name="af-fade">
-            <div v-show="groupOpen" class="af-nav-group__body">
-              <button class="af-nav-item af-nav-item--active" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" />
-                  <path d="M12 11L4 6.5M12 11l8-4.5M12 11v9" />
-                </svg>
-                <span class="af-nav-item__label">模型列表</span>
-              </button>
-            </div>
-          </transition>
-        </div>
-      </nav>
-
-      <div class="af-sidebar__footer">
-        <div class="af-user">
-          <span class="af-user__avatar">A</span>
-          <div class="af-user__meta">
-            <div class="af-user__name">Agent 开发者</div>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <AppSidebar active="models" />
 
     <!-- ------------------------------ 主工作区 ------------------------------ -->
     <main class="af-workspace">
@@ -307,34 +233,6 @@
               </div>
             </div>
 
-            <transition name="af-fade">
-              <div
-                v-if="formTestResult"
-                class="af-test-result"
-                :class="formTestResult.success ? 'af-test-result--success' : 'af-test-result--error'"
-                role="status"
-              >
-                <span class="af-test-result__icon">
-                  <svg v-if="formTestResult.success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </span>
-                <div class="af-test-result__content">
-                  <div class="af-test-result__title">
-                    {{ formTestResult.title }}
-                  </div>
-                  <div class="af-test-result__message">{{ formTestResult.message }}</div>
-                </div>
-                <button class="af-test-result__close" type="button" aria-label="关闭测试结果" @click="formTestResult = null">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </transition>
           </div>
 
           <div class="af-modal__footer">
@@ -374,6 +272,7 @@
 </template>
 
 <script>
+import AppSidebar from '../../components/AppSidebar.vue'
 import {
   fetchOptions,
   fetchModels,
@@ -391,10 +290,9 @@ const PROVIDER_COLORS = {
 
 export default {
   name: 'ModelsPage',
+  components: { AppSidebar },
   data() {
     return {
-      agentGroupOpen: true,
-      groupOpen: true,
       navOpen: false,
       keyword: '',
       filter: 'all',
@@ -407,7 +305,6 @@ export default {
       testing: null,
       editingId: null,
       testingForm: null,
-      formTestResult: null,
       options: { providers: [], modelTypes: [] },
       models: [],
       currentPage: 1,
@@ -492,7 +389,6 @@ export default {
     },
     openCreate() {
       this.form = this.emptyForm()
-      this.formTestResult = null
       if (this.options.providers.length) this.form.provider = this.options.providers[0].value
       if (this.options.modelTypes.length) this.form.modelType = this.options.modelTypes[0].value
       this.dialogVisible = true
@@ -502,7 +398,6 @@ export default {
       this.editingId = model.id
       try {
         const detail = await getModel(model.id)
-        this.formTestResult = null
         this.form = {
           id: detail.id,
           name: detail.name,
@@ -592,58 +487,34 @@ export default {
     },
     async onTestFormConnectivity() {
       if (!this.form.url || !this.form.modelname) {
-        this.formTestResult = {
-          success: false,
-          title: '连通性测试未通过',
-          message: '请先填写连接地址和模型名称后再进行测试。'
-        }
+        this.toast('请先填写连接地址和模型名称后再进行测试', true)
         return
       }
       this.testingForm = 'connectivity'
-      this.formTestResult = null
       try {
         const result = await testConnectivity(this.formTestPayload())
         const success = Boolean(result && result.success)
-        this.formTestResult = {
-          success,
-          title: success ? '连通性测试通过' : '连通性测试未通过',
-          message: (result && result.message) || '测试已完成，但服务端未返回详细信息。'
-        }
+        const message = (result && result.message) || '测试已完成，但服务端未返回详细信息'
+        this.toast((success ? '连通性测试通过：' : '连通性测试未通过：') + message, !success)
       } catch (e) {
-        this.formTestResult = {
-          success: false,
-          title: '连通性测试未通过',
-          message: e.message || '请求失败，请检查模型配置后重试。'
-        }
+        this.toast('连通性测试未通过：' + (e.message || '请求失败，请检查模型配置后重试'), true)
       } finally {
         this.testingForm = null
       }
     },
     async onTestFormFunctionCall() {
       if (!this.form.url || !this.form.modelname) {
-        this.formTestResult = {
-          success: false,
-          title: 'Function Call 测试未通过',
-          message: '请先填写连接地址和模型名称后再进行测试。'
-        }
+        this.toast('请先填写连接地址和模型名称后再进行测试', true)
         return
       }
       this.testingForm = 'functionCall'
-      this.formTestResult = null
       try {
         const result = await testFunctionCall(this.formTestPayload())
         const success = Boolean(result && result.success)
-        this.formTestResult = {
-          success,
-          title: success ? 'Function Call 测试通过' : 'Function Call 测试未通过',
-          message: (result && result.message) || '测试已完成，但服务端未返回详细信息。'
-        }
+        const message = (result && result.message) || '测试已完成，但服务端未返回详细信息'
+        this.toast((success ? 'Function Call 测试通过：' : 'Function Call 测试未通过：') + message, !success)
       } catch (e) {
-        this.formTestResult = {
-          success: false,
-          title: 'Function Call 测试未通过',
-          message: e.message || '请求失败，请检查模型配置后重试。'
-        }
+        this.toast('Function Call 测试未通过：' + (e.message || '请求失败，请检查模型配置后重试'), true)
       } finally {
         this.testingForm = null
       }

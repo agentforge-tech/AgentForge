@@ -45,6 +45,10 @@ public abstract class BaseAgent implements IAgent {
                 .request(request)
                 .chatModel(getChatModel())
                 .chatMemory(chatMemory)
+                .extensions(
+                        request.getExtensions() == null
+                                ? new java.util.HashMap<String, Object>()
+                                : new java.util.HashMap<String, Object>(request.getExtensions()))
                 .build();
     }
 

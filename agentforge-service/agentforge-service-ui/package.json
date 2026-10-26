@@ -8,8 +8,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dompurify": "^3.4.17",
     "element-ui": "^2.15.14",
     "highlight.js": "^11.11.1",
+    "katex": "^0.19.1",
     "markdown-it": "^14.1.0",
     "vue": "^2.7.16"
   },

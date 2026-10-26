@@ -153,7 +153,9 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         AgentConfigPojo saved = agentConfigMapper.selectById(pojo.getId());
         IAgentManager<Object, Object> agentManager =
                 agentManagerFactory.getAgentManagerByType(saved.getType());
-        agentManager.createAndStoreAgent(saved.getAid(), saved.getAgentConfig(), false);
+        // The configuration has changed. Evict both published and debug instances for every
+        // channel, and let the next request lazily rebuild them from the latest configuration.
+        agentManager.removeAgent(saved.getAid());
         return toVo(saved);
     }
 

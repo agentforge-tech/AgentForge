@@ -45,7 +45,11 @@
         </div>
       </section>
 
-      <AgentDebugPanel :aid="detail.aid" />
+      <AgentDebugPanel
+        :aid="detail.aid"
+        :agent-name="form.name"
+        :agent-avatar="detail.avatar || '/logo.png'"
+      />
     </main>
     <div v-if="tip" class="af-toast af-toast--show" :class="{ 'af-toast--error': tipError }">{{ tip }}</div>
   </div>
@@ -88,7 +92,7 @@ export default {
 @keyframes agent-publish-pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 3px rgba(36, 179, 107, .13), 0 0 7px rgba(36, 179, 107, .55); } 50% { opacity: .72; box-shadow: 0 0 0 5px rgba(36, 179, 107, .05), 0 0 11px rgba(36, 179, 107, .8); } }
 .agent-config-back { color: $color-text-secondary; text-decoration: none; font-size: 13px; }
 .agent-config-title { display: flex; align-items: center; gap: 2px; white-space: nowrap; &__label { color: $color-text-secondary; font-size: 15px; font-weight: 600; } strong { max-width: 260px; overflow: hidden; font-size: 17px; text-overflow: ellipsis; } }
-.agent-config-layout { height: calc(100vh - 64px); display: grid; grid-template-columns: minmax(300px, 1.05fr) minmax(300px, .9fr) minmax(340px, 1.05fr); gap: 12px; padding: 12px; }
+.agent-config-layout { height: calc(100vh - 64px); display: grid; grid-template-columns: minmax(260px, .78fr) minmax(300px, .9fr) minmax(400px, 1.32fr); gap: 12px; padding: 12px; }
 .agent-config-panel { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid $color-border; border-radius: 12px; background: #fff; box-shadow: $shadow-xs; &__head { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; border-bottom: 1px solid $color-border; b { font-size: 14px; } p { margin: 5px 0 0; color: $color-text-muted; font-size: 11.5px; } } }
 .agent-config-prompt textarea { flex: 1; width: 100%; resize: none; border: 0; outline: 0; padding: 18px; color: $color-text; font: 13px/1.75 $font-mono; }
 .agent-config-fields { display: flex; flex-direction: column; gap: 20px; padding: 18px; }
@@ -104,18 +108,21 @@ export default {
 .agent-debug-head { gap: 10px; }
 .agent-debug-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .agent-debug-mode { width: 172px; }
-.agent-debug-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0; border: 1px solid #f2c8c5; border-radius: 5px; background: #fff5f4; color: #d94b43; cursor: pointer; box-shadow: 0 1px 2px rgba(217, 75, 67, .08); transition: all .15s; svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; } &:hover { border-color: #e56b64; background: #feeceb; color: #c9362e; box-shadow: 0 2px 6px rgba(217, 75, 67, .18); transform: translateY(-1px); } &:active { transform: translateY(0); box-shadow: none; } }
-.agent-debug-feed { flex: 1; overflow-y: auto; padding: 16px; }
+.agent-debug-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0; border: 1px solid #cbd8e9; border-radius: 5px; background: #f6f9fd; color: #657791; cursor: pointer; box-shadow: 0 1px 2px rgba(59, 111, 182, .06); transition: all .15s; svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; } &:hover { border-color: #8eb3e5; background: #edf4fd; color: #3b6fb6; box-shadow: 0 2px 6px rgba(59, 111, 182, .14); transform: translateY(-1px); } &:active { transform: translateY(0); box-shadow: none; } }
+.agent-debug-feed { flex: 1; overflow-y: auto; padding: 16px 32px; }
 .agent-debug-empty { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; color: $color-text-muted; span { margin-bottom: 12px; color: $color-brand; font-size: 30px; } b { color: $color-text-secondary; font-size: 13px; } p { max-width: 240px; font-size: 11.5px; line-height: 1.6; } }
-.agent-debug-message-row { display: flex; width: 100%; margin-bottom: 20px; font-size: 13px; &--user { justify-content: flex-end; } &--assistant { justify-content: flex-start; gap: 12px; } }
+.agent-debug-message-row { display: flex; width: 100%; margin-bottom: 20px; font-size: 13px; &--user { justify-content: flex-end; } &--assistant { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; justify-items: stretch; } }
 .agent-debug-user-block { display: flex; max-width: 78%; flex-direction: column; align-items: flex-end; gap: 4px; }
-.agent-debug-user-bubble { max-width: 100%; padding: 10px 14px; border-radius: 14px 14px 4px 14px; background: linear-gradient(135deg, #7cb0ff, #4b8ef7); box-shadow: 0 2px 10px rgba(96, 158, 255, .28); color: #fff; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.agent-debug-user-bubble { max-width: 100%; padding: 10px 15px; border: 1px solid rgba(122, 166, 225, .28); border-radius: 16px 16px 5px 16px; background: linear-gradient(145deg, #f5f9ff 0%, #e9f2ff 100%); box-shadow: 0 1px 2px rgba(44, 83, 130, .05), 0 5px 16px rgba(74, 126, 194, .08); color: #2f527b; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.agent-debug-bot-identity { display: flex; width: 100%; min-width: 0; align-items: center; gap: 9px; margin: 0; padding: 0; }
 .agent-debug-bot-avatar { display: flex; width: 32px; height: 32px; flex-shrink: 0; align-items: center; justify-content: center; overflow: hidden; border-radius: 9px; background: #f4f8ff; img { display: block; width: 100%; height: 100%; object-fit: cover; } }
-.agent-debug-bot-body { max-width: calc(100% - 44px); min-width: 0; flex: 1; }
+.agent-debug-bot-name { min-width: 0; overflow: hidden; color: #344054; font-size: 13px; font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.agent-debug-bot-body { width: 100%; min-width: 0; margin: 0; padding: 0; }
+.agent-debug-bot-body .agent-message-content, .agent-debug-bot-body .agent-message, .agent-debug-bot-body .answer, .agent-debug-bot-body .af-markdown { margin-left: 0; padding-left: 0; }
 .agent-debug-message-actions { display: flex; align-items: center; gap: 6px; }
 .agent-debug-mini-btn { padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; color: #98a2b3; cursor: pointer; font-size: 14px; line-height: 1; transition: all .15s; &:hover { background: #f0f3f8; color: #3b6fb6; } &:disabled { cursor: not-allowed; opacity: .4; } }
 .agent-debug-status-error { padding: 1px 6px; border-radius: 4px; background: #fff0f0; color: #d64545; font-size: 11px; }
-.agent-debug-input { display: flex; align-items: center; gap: 10px; margin: 0 12px 12px; padding: 8px; border: 1px solid $color-border; border-radius: 12px; background: #fff; box-shadow: 0 4px 16px rgba(31, 56, 88, .07); textarea { flex: 1; height: 54px; resize: none; border: 0; border-radius: 8px; padding: 10px 8px; outline: 0; background: transparent; color: $color-text; font: inherit; font-size: 13px; line-height: 1.55; } .af-btn { min-width: 68px; height: 36px; align-self: center; border-radius: 9px; } }
+.agent-debug-input { display: flex; align-items: center; gap: 10px; margin: 0 28px 12px; padding: 8px; border: 1px solid $color-border; border-radius: 12px; background: #fff; box-shadow: 0 4px 16px rgba(31, 56, 88, .07); textarea { flex: 1; height: 54px; resize: none; border: 0; border-radius: 8px; padding: 10px 8px; outline: 0; background: transparent; color: $color-text; font: inherit; font-size: 13px; line-height: 1.55; } .af-btn { min-width: 68px; height: 36px; align-self: center; border-radius: 9px; } }
 .af-agent-card { cursor: pointer; }
 @media (max-width: 1100px) { .agent-config-layout { height: auto; grid-template-columns: 1fr 1fr; } .agent-debug { min-height: 520px; grid-column: 1 / -1; } }
 @media (max-width: 720px) { .agent-config-head { grid-template-columns: 1fr auto; } .agent-config-title { display: none; } .agent-config-layout { grid-template-columns: 1fr; } .agent-config-panel { min-height: 480px; } .agent-debug { grid-column: auto; } }

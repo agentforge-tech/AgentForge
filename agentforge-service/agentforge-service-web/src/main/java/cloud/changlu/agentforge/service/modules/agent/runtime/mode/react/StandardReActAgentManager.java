@@ -6,6 +6,7 @@ import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.stream.TokenStream;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
+import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.AbstractAgentManager;
 import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitContext;
 
@@ -63,6 +64,18 @@ public class StandardReActAgentManager
         if (sessionId == null || sessionId.trim().isEmpty()) {
             sessionId = (isDebug ? "debug-" : "chat-") + req.getAid();
         }
-        return AgentRequest.builder().memoryId(sessionId).question(req.getMessage().trim()).build();
+        java.util.Map<String, Object> extensions = new java.util.HashMap<>();
+        extensions.put(SessionLifecycleMiddleware.EXT_SESSION_ID, sessionId);
+        if (req.getAiMessageId() != null) {
+            extensions.put(SessionLifecycleMiddleware.EXT_AI_MESSAGE_ID, req.getAiMessageId());
+        }
+        if (req.getSessionPk() != null) {
+            extensions.put("session.sessionPk", req.getSessionPk());
+        }
+        return AgentRequest.builder()
+                .memoryId(sessionId)
+                .question(req.getMessage().trim())
+                .extensions(extensions)
+                .build();
     }
 }

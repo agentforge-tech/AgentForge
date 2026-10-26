@@ -11,13 +11,62 @@
         <el-button size="small" icon="el-icon-plus" class="new-btn" @click="newChat">新建对话</el-button>
       </div>
       <div class="sidebar-scroll">
-        <div class="section">
-          <div class="section-title">当前会话</div>
-          <div v-if="sessionId" class="session-item active">
-            <i class="el-icon-chat-dot-round"></i><span>{{ title }}</span>
+        <div v-if="topSessions.length" class="section">
+          <div class="section-title">置顶会话</div>
+          <div
+            v-for="item in topSessions"
+            :key="'top-' + item.id"
+            class="session-item session-row"
+            :class="{ active: item.id === activeSessionId }"
+            @click="openSession(item)"
+          >
+            <span class="session-body">
+              <span class="session-text" :title="item.title">{{ item.title }}</span>
+              <span class="session-time">{{ formatSessionTime(item) }}</span>
+            </span>
+            <span class="session-actions">
+              <i class="el-icon-edit" title="重命名" @click.stop="renameSession(item)"></i>
+              <i class="session-action-icon" title="取消置顶" @click.stop="toggleTop(item, false)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 4h6l-1 7 4 3v2H6v-2l4-3-1-7z" />
+                  <path d="M12 16v5" />
+                </svg>
+              </i>
+              <i class="el-icon-delete" title="删除" @click.stop="removeSession(item)"></i>
+            </span>
           </div>
-          <div v-else class="empty">暂无会话</div>
         </div>
+        <div class="section">
+          <div class="section-title">历史会话</div>
+          <div
+            v-for="item in normalSessions"
+            :key="item.id"
+            class="session-item session-row"
+            :class="{ active: item.id === activeSessionId }"
+            @click="openSession(item)"
+          >
+            <span class="session-body">
+              <span class="session-text" :title="item.title">{{ item.title }}</span>
+              <span class="session-time">{{ formatSessionTime(item) }}</span>
+            </span>
+            <span class="session-actions">
+              <i class="el-icon-edit" title="重命名" @click.stop="renameSession(item)"></i>
+              <i class="session-action-icon" title="置顶" @click.stop="toggleTop(item, true)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 4h6l-1 7 4 3v2H6v-2l4-3-1-7z" />
+                  <path d="M12 16v5" />
+                </svg>
+              </i>
+              <i class="el-icon-delete" title="删除" @click.stop="removeSession(item)"></i>
+            </span>
+          </div>
+          <div v-if="!topSessions.length && !normalSessions.length" class="empty">
+            {{ sessionLoading ? '加载中...' : '暂无历史会话' }}
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <AppUserPanel />
       </div>
     </aside>
 
@@ -25,7 +74,6 @@
       <div class="chat-header">
         <div class="header-left">
           <div class="chat-title">{{ title }}</div>
-          <el-tag v-if="running" size="mini" type="success"><i class="el-icon-loading"></i> 运行中</el-tag>
         </div>
       </div>
 
@@ -34,7 +82,8 @@
         <div class="chat-inner">
           <div v-if="!messages.length" class="welcome">
             <h2>{{ agentLoading ? '正在加载 Agent...' : (canChat ? '今天想解决什么问题？' : '请从已发布的 Agent 进入') }}</h2>
-            <p>{{ canChat ? ((agentBasic && agentBasic.description) || 'Agent 已就绪，可以开始对话。') : (agentError || '当前地址缺少有效的 Agent 标识，暂时无法发起正式对话。') }}</p>
+            <p v-if="!canChat">{{ agentError || '当前地址缺少有效的 Agent 标识，暂时无法发起正式对话。' }}</p>
+            <p v-else-if="agentBasic && agentBasic.description">{{ agentBasic.description }}</p>
           </div>
 
           <template v-for="(message, index) in messages">
@@ -49,7 +98,10 @@
               </div>
             </div>
             <div v-else :key="index" class="message-row assistant">
-              <div class="bot-avatar"><img :src="agentAvatar" :alt="agentName" /></div>
+              <div class="bot-identity">
+                <div class="bot-avatar"><img :src="agentAvatar" :alt="agentName" /></div>
+                <span class="bot-name">{{ agentName }}</span>
+              </div>
               <div class="bot-body">
                 <AgentMessageContent :message="message" mode="elegant" />
               </div>
@@ -87,7 +139,25 @@
 
 <script>
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
+import AppUserPanel from '../../components/AppUserPanel.vue'
 import { postSse } from '../../utils/sse'
+import {
+  fetchSessionList,
+  fetchTopSessionList,
+  setSessionTop,
+  changeSessionTitle,
+  deleteSession,
+  fetchSessionMessages,
+  resolveSessionTitle
+} from '../../utils/sessionApi'
+import { replaySessionMessages } from '../../utils/sessionReplay'
+
+/** 输入框最大高度（px），超过后内部滚动，不再继续撑高 */
+const COMPOSER_MAX_HEIGHT = 120
+
+function resolveSessionId() {
+  return new URLSearchParams(window.location.search).get('sessionId') || ''
+}
 
 function resolveAid() {
   const queryAid = new URLSearchParams(window.location.search).get('aid')
@@ -98,20 +168,26 @@ function resolveAid() {
 
 export default {
   name: 'PublishedAgentChatPage',
-  components: { AgentMessageContent },
+  components: { AgentMessageContent, AppUserPanel },
   data: () => ({
     aid: resolveAid(), agentBasic: null, agentLoading: false, agentError: '',
     draft: '', focused: false, running: false, sessionId: '', controller: null, messages: [],
-    composing: false
+    composing: false,
+    topSessions: [], normalSessions: [], sessionLoading: false,
+    activeSessionId: null, sessionTitle: '',
+    // 支持通过 ?sessionId= 直接恢复到某个历史会话（刷新/分享链接场景）
+    pendingSessionId: resolveSessionId()
   }),
   computed: {
-    title() { return this.messages.find((m) => m.role === 'user')?.text || '新对话' },
+    title() {
+      return this.sessionTitle || this.messages.find((m) => m.role === 'user')?.text || '新对话'
+    },
     agentName() { return this.agentBasic?.name || 'AgentForge' },
     agentAvatar() { return this.agentBasic?.avatar || '/logo.png' },
     canChat() { return Boolean(this.aid && this.agentBasic && !this.agentError) }
   },
   created() {
-    this.loadAgentBasic()
+    this.loadAgentBasic().then(() => this.loadSessions())
   },
   methods: {
     async loadAgentBasic() {
@@ -126,7 +202,108 @@ export default {
         this.$message.error(this.agentError)
       } finally { this.agentLoading = false }
     },
-    newChat() { this.stop(); this.messages = []; this.sessionId = ''; this.draft = '' },
+    newChat() {
+      this.stop()
+      this.messages = []
+      this.sessionId = ''
+      this.draft = ''
+      this.sessionTitle = ''
+      this.activeSessionId = null
+    },
+    /** 会话时间展示：优先最后消息时间，其次修改/创建时间，格式 yyyy-MM-dd HH:mm */
+    formatSessionTime(item) {
+      const raw = item.lastMessageAt || item.modifyTime || item.createTime
+      if (!raw) return ''
+      const text = String(raw).replace('T', ' ').replace(/\..*$/, '').replace(/[+-]\d{2}:?\d{2}$/, '')
+      return text.slice(0, 16)
+    },
+    async loadSessions() {
+      if (!this.aid) return
+      this.sessionLoading = true
+      try {
+        const [top, normal] = await Promise.all([
+          fetchTopSessionList(this.aid),
+          fetchSessionList(this.aid, 20)
+        ])
+        this.topSessions = top || []
+        this.normalSessions = normal || []
+        const wanted = this.sessionId || this.pendingSessionId
+        if (wanted) {
+          const current = [...this.topSessions, ...this.normalSessions].find(
+            (item) => item.sessionId === wanted
+          )
+          if (current && this.activeSessionId !== current.id) {
+            this.activeSessionId = current.id
+            this.sessionTitle = current.title
+            this.sessionId = current.sessionId
+            this.pendingSessionId = ''
+            await this.loadMessages(current.id)
+          }
+        }
+      } catch (error) {
+        this.$message.error(error.message || '会话列表加载失败')
+      } finally {
+        this.sessionLoading = false
+      }
+    },
+    async openSession(item) {
+      if (!item || this.running) return
+      this.activeSessionId = item.id
+      this.sessionId = item.sessionId
+      this.sessionTitle = item.title
+      await this.loadMessages(item.id)
+    },
+    async loadMessages(sessionRefId) {
+      try {
+        const records = await fetchSessionMessages(sessionRefId)
+        this.messages = replaySessionMessages(records)
+        this.scroll()
+      } catch (error) {
+        this.$message.error(error.message || '会话消息加载失败')
+      }
+    },
+    async renameSession(item) {
+      try {
+        const { value } = await this.$prompt('请输入新的会话名称', '重命名会话', {
+          inputValue: item.title,
+          inputValidator: (val) => (val && val.trim() ? true : '会话名称不能为空')
+        })
+        const updated = await changeSessionTitle(item.id, value.trim())
+        item.title = updated.title
+        if (this.activeSessionId === item.id) this.sessionTitle = updated.title
+        this.$message.success('已重命名')
+      } catch (error) {
+        if (error !== 'cancel' && error !== 'close') {
+          this.$message.error(error.message || '重命名失败')
+        }
+      }
+    },
+    async toggleTop(item, isTop) {
+      try {
+        await setSessionTop(item.id, isTop)
+        await this.loadSessions()
+        this.$message.success(isTop ? '已置顶' : '已取消置顶')
+      } catch (error) {
+        this.$message.error(error.message || '操作失败')
+      }
+    },
+    async removeSession(item) {
+      try {
+        await this.$confirm('删除后该会话及其消息将不可恢复，是否继续？', '删除会话', {
+          type: 'warning'
+        })
+      } catch (_error) {
+        return
+      }
+      try {
+        await deleteSession(item.id)
+        if (this.activeSessionId === item.id) this.newChat()
+        await this.loadSessions()
+        this.$message.success('已删除')
+      } catch (error) {
+        this.$message.error(error.message || '删除失败')
+      }
+    },
     async copy(text) {
       if (!text) return
       try {
@@ -145,8 +322,12 @@ export default {
     autoGrow() {
       const el = this.$refs.composerInput
       if (!el) return
+      // 高度自适应：单行保持默认高度，多行按内容增长，超过上限后内部滚动
       el.style.height = 'auto'
-      el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+      const contentHeight = el.scrollHeight
+      el.style.height = Math.min(contentHeight, COMPOSER_MAX_HEIGHT) + 'px'
+      // 只有内容真正超出上限（需要换行滚动）时才出现滚动条
+      el.style.overflowY = contentHeight > COMPOSER_MAX_HEIGHT ? 'auto' : 'hidden'
     },
     onEnter(event) {
       // 输入法组合中（如中文选词回车确认）不触发发送，仅正常上屏
@@ -175,7 +356,7 @@ export default {
       try {
         await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: false }, {
           signal: this.controller.signal,
-          onEvent: (event) => this.handleEvent(answer, event)
+          onEvent: (event) => this.handleEvent(answer, event, text)
         })
       } catch (error) {
         if (error.name !== 'AbortError') {
@@ -191,12 +372,16 @@ export default {
         this.running = false
         this.controller = null
         this.scroll()
+        this.loadSessions()
       }
     },
-    handleEvent(answer, event) {
+    handleEvent(answer, event, questionText) {
       switch (event.event) {
         case 'session':
-          if (event.content) this.sessionId = event.content
+          if (event.content) {
+            this.sessionId = event.content
+            if (!this.sessionTitle) this.sessionTitle = resolveSessionTitle(questionText)
+          }
           break
         case 'think':
           this.applyThink(answer, event)

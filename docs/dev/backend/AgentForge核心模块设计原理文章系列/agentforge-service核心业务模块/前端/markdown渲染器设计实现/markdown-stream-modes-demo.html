@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgentForge Markdown 流式渲染模式 Demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.19.0/dist/katex.min.css" integrity="sha384-3rdsX6e5mueWyoweR9NIVmtEsUkokpBT/0ALqKKIBMr9j4qhHkaIkAcGgsE6uVlp" crossorigin="anonymous" />
+<script src="https://cdn.jsdelivr.net/npm/katex@0.19.0/dist/katex.min.js" integrity="sha384-QFFtAGzvvj+bfgCGxXJlNZZR1nXEZgvG8tDLCCY1F19xl20WlfTYgguB4VcNdxYk" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #f7f8fb;
+    --panel: #ffffff;
+    --border: #e5e8ef;
+    --text: #1f2937;
+    --text-2: #4b5563;
+    --muted: #98a2b3;
+    --primary: #3b6fb6;
+    --primary-soft: #eaf1fd;
+    --code-bg: #f6f8fa;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  html {
+    /* 内容变长时预留滚动条宽度，避免视口突然变窄导致全文换行抖动。 */
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 64px; }
+  header h1 { margin: 0 0 6px; font-size: 20px; }
+  header p { margin: 0 0 20px; color: var(--text-2); font-size: 13px; }
+
+  .toolbar {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(247,248,251,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0 14px;
+    margin-bottom: 18px;
+  }
+  .modes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .mode-btn {
+    border: 1px solid var(--border); background: #fff; color: var(--text-2);
+    border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+    transition: all .15s;
+  }
+  .mode-btn:hover { border-color: #9cc0f5; color: var(--primary); }
+  .mode-btn.active {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+    box-shadow: 0 2px 8px rgba(59,111,182,.28);
+  }
+  .mode-desc { font-size: 12px; color: var(--text-2); min-height: 18px; margin-bottom: 6px; }
+  .mode-config {
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+    min-height: 24px; margin: 0 0 10px; color: var(--muted); font-size: 12px;
+  }
+  .mode-config-label { color: var(--text-2); font-weight: 600; }
+  .mode-config code {
+    color: var(--primary); background: var(--primary-soft);
+    border-radius: 4px; padding: 1px 5px; font-family: 'SFMono-Regular', Consolas, monospace;
+  }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+  .ctl { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+  .ctl input[type=range] { width: 108px; accent-color: var(--primary); }
+  .ctl output { min-width: 42px; color: var(--primary); font-variant-numeric: tabular-nums; }
+  .actions { display: flex; gap: 8px; margin-left: auto; }
+  .btn {
+    border: 1px solid var(--border); background: #fff; color: var(--text-2);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  .btn:hover { border-color: #9cc0f5; color: var(--primary); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  .chat {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; min-height: 320px;
+  }
+  .chat-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .answer {
+    font-size: 14px; line-height: 1.75; color: #24292f;
+    overflow-wrap: anywhere; word-break: normal;
+  }
+  .answer.is-streaming { overflow-anchor: none; }
+
+  /* ---------- Markdown 基础排版（与 MarkdownView 对齐） ---------- */
+  .md { display: flow-root; }
+  .md > *:first-child { margin-top: 0; }
+  .md > *:last-child { margin-bottom: 0; }
+  /*
+   * 布局一致性约束（不可删）：
+   * 流式期间 stable/tail 是两个相邻 .md 容器，tail 的首元素会命中
+   * `.md > *:first-child { margin-top: 0 }`。但它在 finish() 合并后的全量 DOM 中并非
+   * 首元素，会恢复默认 margin-top，造成「流式结束瞬间段落跳位」。
+   * 下列规则预先恢复跨 stable/tail 边界的间距，使流式 DOM 与最终 DOM 等价。
+   * 该问题同时影响 typewriter 和 typewriter-blur，与模糊动画无关。
+   */
+  #stable:not(:empty) + #tail:not(:empty) > p:first-child,
+  #stable:not(:empty) + #tail:not(:empty) > ul:first-child,
+  #stable:not(:empty) + #tail:not(:empty) > ol:first-child { margin-top: 8px; }
+  #stable:not(:empty) + #tail:not(:empty) > h1:first-child,
+  #stable:not(:empty) + #tail:not(:empty) > h2:first-child,
+  #stable:not(:empty) + #tail:not(:empty) > h3:first-child { margin-top: 16px; }
+  #stable:not(:empty) + #tail:not(:empty) > blockquote:first-child,
+  #stable:not(:empty) + #tail:not(:empty) > pre:first-child,
+  #stable:not(:empty) + #tail:not(:empty) > table:first-child { margin-top: 10px; }
+  #stable:not(:empty) + #tail:not(:empty) > .math-block:first-child { margin-top: 12px; }
+  .md p { margin: 8px 0; }
+  .md h1, .md h2, .md h3 { margin: 16px 0 8px; font-weight: 600; line-height: 1.35; }
+  .md h1 { font-size: 20px; border-bottom: 1px solid #eaecef; padding-bottom: 6px; }
+  .md h2 { font-size: 17px; border-bottom: 1px solid #eaecef; padding-bottom: 5px; }
+  .md h3 { font-size: 15px; }
+  .md ul, .md ol { padding-left: 22px; margin: 8px 0; }
+  .md li { margin: 3px 0; }
+  .md blockquote {
+    margin: 10px 0; padding: 6px 12px; color: #6a737d;
+    border-left: 4px solid #dfe2e5; background: #fafbfc;
+  }
+  .md code {
+    background: rgba(27,31,35,.06); border-radius: 4px; padding: 2px 5px;
+    font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px;
+  }
+  .md pre {
+    background: var(--code-bg); border-radius: 8px; padding: 12px;
+    overflow: auto; margin: 10px 0; position: relative;
+  }
+  .md pre code { background: transparent; padding: 0; font-size: 12.5px; }
+  .md table { border-collapse: collapse; margin: 10px 0; width: 100%; }
+  .md th, .md td { border: 1px solid #dfe2e5; padding: 6px 10px; text-align: left; }
+  .md th { background: #f6f8fa; font-weight: 600; }
+  .md a { color: #0969da; text-decoration: none; }
+  .md a:hover { text-decoration: underline; }
+  .md hr { border: 0; border-top: 1px solid #eaecef; margin: 14px 0; }
+  .md .math-inline { display: inline-block; margin: 0 2px; }
+  .md .math-block {
+    margin: 12px 0; padding: 12px 16px; overflow-x: auto; text-align: center;
+    background: #faf8ff; border: 1px solid #e9e2ff; border-radius: 8px;
+  }
+  .md .task-item { list-style: none; margin-left: -20px; }
+  .md .task-item input { margin: 0 7px 0 0; vertical-align: -1px; }
+
+  /* 流式期间代码块不高亮时的占位标记 */
+  .code-lang {
+    position: absolute; top: 6px; right: 10px;
+    font-size: 11px; color: var(--muted); user-select: none;
+  }
+
+  /* ---------- 光标 ---------- */
+  .af-caret {
+    display: inline-block; width: 2px; height: 1em; margin-left: 2px;
+    background: var(--primary); vertical-align: -0.15em;
+    animation: af-blink 1s steps(2, start) infinite;
+  }
+  .af-caret.idle { animation: none; opacity: .35; }
+  @keyframes af-blink { 0%,49% { opacity: 1 } 50%,100% { opacity: 0 } }
+
+  /* ---------- 逐字模糊显影 ---------- */
+  /* 逐字显影：极轻柔化（0.9px）+ 较高起始透明度，70ms 内收敛。
+     约束：duration 应 ≈ charDelay × 1.5~2，保证最多 1~2 个字处于模糊态，不产生残影。 */
+  .af-char-blur { animation: af-char-blur var(--af-char-dur, 70ms) ease-out both; }
+  @keyframes af-char-blur {
+    from { filter: blur(0.9px); opacity: .68; }
+    to   { filter: blur(0);     opacity: 1; }
+  }
+
+  /* ---------- 指标面板 ---------- */
+  .metrics {
+    margin-top: 14px; display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px; font-size: 12px; color: var(--text-2);
+  }
+  .metric {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px;
+  }
+  .metric b { display: block; font-size: 16px; color: var(--primary); font-variant-numeric: tabular-nums; }
+  .metric span { color: var(--muted); }
+
+  .legend { margin-top: 18px; font-size: 12px; color: var(--muted); line-height: 1.9; }
+  .legend code { background: #eef1f6; border-radius: 4px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AgentForge Markdown 流式渲染模式 Demo</h1>
+    <p>对应文档《AI正文Markdown流式渲染方案调研与优化设计》3.10 多模式渲染器设计（AfMarkdown）。切换模式与参数，点击「开始流式」对比效果。</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="modes" id="modes"></div>
+    <div class="mode-desc" id="modeDesc"></div>
+    <div class="mode-config" id="modeConfig" aria-live="polite"></div>
+    <div class="controls">
+      <label class="ctl">出字间隔 <input type="range" id="charDelay" min="0" max="120" step="5" value="40" /><output id="charDelayOut">40ms</output></label>
+      <label class="ctl">网络节奏
+        <select id="netSpeed" style="border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:12px;">
+          <option value="fast">快（8ms/chunk）</option>
+          <option value="normal" selected>正常（25ms/chunk）</option>
+          <option value="slow">慢（60ms/chunk）</option>
+          <option value="burst">突发（200ms 一次 30 字）</option>
+        </select>
+      </label>
+      <div class="actions">
+        <button class="btn" id="resetBtn">重置</button>
+        <button class="btn primary" id="playBtn">开始流式</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="chat-label" id="chatLabel">输出区</div>
+    <div class="answer" id="answer">
+      <div class="md" id="stable"></div>
+      <div class="md" id="tail"></div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><b id="mFrames">0</b><span>渲染帧数</span></div>
+    <div class="metric"><b id="mParse">0</b><span>Markdown 解析次数</span></div>
+    <div class="metric"><b id="mChars">0</b><span>已显示字符</span></div>
+    <div class="metric"><b id="mElapsed">0ms</b><span>总耗时</span></div>
+    <div class="metric"><b id="mDrop">0</b><span>丢弃帧（合帧）</span></div>
+  </div>
+
+  <div class="legend">
+    模式说明：<code>instant</code> 无动画基线 · <code>typewriter</code> 逐字 + 光标 ·
+    <code>typewriter-blur</code> 逐字 + 每字模糊渐清（从左到右显影）
+  </div>
+</div>
+
+<script>
+/* ============================================================
+ * 极简 Markdown 渲染器（仅用于 Demo，覆盖本文档涉及的语法子集）
+ * 真实实现使用 markdown-it + highlight.js + DOMPurify
+ * ============================================================ */
+const MD = (() => {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\$([^$\n]+)\$/g, '<span class="math-inline" role="math">$1</span>')
+
+  function render(src) {
+    const lines = String(src).replace(/\r\n/g, '\n').split('\n')
+    const out = []
+    let i = 0
+    let listType = null
+
+    const closeList = () => { if (listType) { out.push(`</${listType}>`); listType = null } }
+
+    while (i < lines.length) {
+      const line = lines[i]
+
+      // Demo 稳定展示 LaTeX 源式；正式组件应在块稳定后交给 KaTeX/MathJax。
+      if (/^\s*\$\$\s*$/.test(line)) {
+        closeList()
+        const buf = []
+        i++
+        while (i < lines.length && !/^\s*\$\$\s*$/.test(lines[i])) { buf.push(lines[i]); i++ }
+        if (i < lines.length) i++
+        out.push(`<div class="math-block" role="math">${esc(buf.join('\n'))}</div>`)
+        continue
+      }
+
+      // fenced code
+      if (/^```/.test(line)) {
+        const lang = line.slice(3).trim()
+        const buf = []
+        if (i < lines.length) i++
+        while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++ }
+        i++
+        out.push(`<pre><span class="code-lang">${esc(lang || 'text')}</span><code>${esc(buf.join('\n'))}</code></pre>`)
+        continue
+      }
+
+      // table
+      if (/\|/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:-]+\|[\s:|-]*$/.test(lines[i + 1])) {
+        const head = line.split('|').map((c) => c.trim()).filter((c, idx, arr) => !(c === '' && (idx === 0 || idx === arr.length - 1)))
+        const aligns = lines[i + 1].split('|').map((c) => c.trim()).filter((c, idx, arr) => !(c === '' && (idx === 0 || idx === arr.length - 1)))
+          .map((c) => (c.startsWith(':') && c.endsWith(':') ? 'center' : c.endsWith(':') ? 'right' : 'left'))
+        i += 2
+        const rows = []
+        while (i < lines.length && /\|/.test(lines[i])) {
+          rows.push(lines[i].split('|').map((c) => c.trim()).filter((c, idx, arr) => !(c === '' && (idx === 0 || idx === arr.length - 1))))
+          i++
+        }
+        out.push('<table><thead><tr>' +
+          head.map((h, idx) => `<th style="text-align:${aligns[idx] || 'left'}">${inline(h)}</th>`).join('') +
+          '</tr></thead><tbody>' +
+          rows.map((r) => '<tr>' + r.map((c, idx) => `<td style="text-align:${aligns[idx] || 'left'}">${inline(c)}</td>`).join('') + '</tr>').join('') +
+          '</tbody></table>')
+        continue
+      }
+
+      // heading
+      const h = line.match(/^(#{1,6})\s+(.*)$/)
+      if (h) { closeList(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue }
+
+      // hr
+      if (/^\s*(---|\*\*\*)\s*$/.test(line)) { closeList(); out.push('<hr />'); i++; continue }
+
+      // blockquote
+      if (/^>\s?/.test(line)) {
+        closeList()
+        const buf = []
+        while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, '')); i++ }
+        out.push(`<blockquote>${buf.map(inline).join('<br />')}</blockquote>`)
+        continue
+      }
+
+      // list
+      const ul = line.match(/^\s*[-*+]\s+(.*)$/)
+      const ol = line.match(/^\s*\d+\.\s+(.*)$/)
+      if (ul || ol) {
+        const type = ul ? 'ul' : 'ol'
+        if (listType !== type) { closeList(); out.push(`<${type}>`); listType = type }
+        const itemText = (ul || ol)[1]
+        const task = itemText.match(/^\[([ xX])\]\s+(.*)$/)
+        out.push(task
+          ? `<li class="task-item"><input type="checkbox" disabled ${task[1].toLowerCase() === 'x' ? 'checked' : ''} />${inline(task[2])}</li>`
+          : `<li>${inline(itemText)}</li>`)
+        i++
+        continue
+      }
+
+      // blank
+      if (!line.trim()) { closeList(); i++; continue }
+
+      // paragraph
+      closeList()
+      const buf = []
+      while (i < lines.length && lines[i].trim() && !/^```/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i]) && !/^>\s?/.test(lines[i]) && !/^\s*[-*+]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i])) {
+        buf.push(lines[i]); i++
+      }
+      out.push(`<p>${inline(buf.join(' '))}</p>`)
+    }
+    closeList()
+    return out.join('\n')
+  }
+
+  return { render, inline }
+})()
+
+/* ============================================================
+ * 通用 AI 回答测试集：覆盖标题、段落、强调、链接、引用、列表、任务、
+ * 表格、行内/块级公式、代码块、分隔线与中英文/emoji 混排。
+ * ============================================================ */
+const SAMPLE = `# AI 项目方案分析：流式 Markdown 渲染
+
+下面给出一份**可执行的综合方案**。目标是在保持阅读连续性的同时，稳定渲染 Markdown、数学公式和代码。关键术语是渲染尾块（\`tail block\`），可参考 [Markdown Guide](https://www.markdownguide.org/)。
+
+> 核心原则：网络 token 的到达节奏不等于用户应该看到的节奏。已稳定块应缓存，仅更新尾块。
+
+## 1. 需求拆解
+
+系统需要同时处理：
+
+1. 普通段落与**粗体**、*斜体*、行内代码 \`requestAnimationFrame\`。
+2. 有序列表、无序列表、引用、链接和分隔线。
+3. 表格、围栏代码块以及未闭合 Markdown 语法。
+4. 行内公式 $E = mc^2$ 和独立公式块。
+
+### 功能清单
+
+- [x] 稳定块缓存
+- [x] 尾块逐字渲染
+- [x] 中文、English 与 emoji 🚀 混排
+- [ ] Mermaid / KaTeX 异步渲染隔离
+
+## 2. 方案对比
+
+| 模式 | 更新粒度 | 视觉效果 | 性能成本 | 推荐场景 |
+| :--- | :---: | :--- | ---: | :--- |
+| instant | chunk | 无动画 | 低 | 调试、降级 |
+| typewriter | 字符 | 逐字 + caret | 中 | 默认对话 |
+| typewriter-blur | 字符 | 模糊渐清 | 较高 | 精致生成感 |
+
+## 3. 数学模型
+
+若已接收字符数为 $R(t)$，已显示字符数为 $V(t)$，则当前积压量为 $L(t)=R(t)-V(t)$。可用下式动态调整每帧输出量：
+
+$$
+s(t) = \\begin{cases}
+1, & L(t) \\le 60 \\\\
+\\left\\lceil \\dfrac{L(t)}{20} \\right\\rceil, & L(t) > 60
+\\end{cases}
+$$
+
+当 $L(t) > 60$ 时启用加速，否则保持每 40ms 显示一个字符。
+
+## 4. 参考实现
+
+\`\`\`javascript
+function nextStep(received, visible) {
+  const lag = received - visible
+  return lag > 60 ? Math.ceil(lag / 20) : 1
+}
+
+requestAnimationFrame(renderFrame)
+\`\`\`
+
+---
+
+## 5. 结论
+
+- **默认**：使用 typewriter，\`charDelay = 40ms\`。
+- **观感优先**：使用 typewriter-blur，但不显示光标。
+- **性能优先**：超长回答自动降级为 instant。
+
+最终验收标准：内容在三种模式下的最终 DOM 结构一致，且不出现闪烁、跳行或残留动画。`
+
+/* ============================================================
+ * 模式定义
+ * ============================================================ */
+const MODES = {
+  instant: {
+    label: 'instant',
+    desc: '基线：token 到达即渲染，无动画。用于调试面板观察模型真实到达节奏，也是所有模式的降级兜底。',
+    bestConfig: [['缓冲', '关闭'], ['动画', '无'], ['光标', '关闭']],
+    buffered: false
+  },
+  typewriter: {
+    label: 'typewriter',
+    desc: '对话感：按 code point 逐字匀速推进 + 光标。零分词依赖，中英文一致，正式对话页默认模式。',
+    bestConfig: [['charDelay', '40ms'], ['maxLag', '60 字'], ['caret', 'true']],
+    buffered: true
+  },
+  'typewriter-blur': {
+    label: 'typewriter-blur',
+    desc: '生成感：从左到右逐字出现，每个新字符自带极轻的模糊→清晰入场（逐字显影），不显示光标。出字节奏 40ms/字，模糊 70ms 收敛，最多 1~2 字处于模糊态。',
+    bestConfig: [['charDelay', '40ms'], ['blurDuration', '70ms'], ['blurRadius', '0.9px'], ['blurTail', '2 字'], ['caret', 'false']],
+    buffered: true
+  },
+}
+
+/* ============================================================
+ * 状态与 DOM
+ * ============================================================ */
+const el = {
+  modes: document.getElementById('modes'),
+  modeDesc: document.getElementById('modeDesc'),
+  modeConfig: document.getElementById('modeConfig'),
+  answer: document.getElementById('answer'),
+  stable: document.getElementById('stable'),
+  tail: document.getElementById('tail'),
+  chatLabel: document.getElementById('chatLabel'),
+  play: document.getElementById('playBtn'),
+  reset: document.getElementById('resetBtn'),
+  charDelay: document.getElementById('charDelay'),
+  charDelayOut: document.getElementById('charDelayOut'),
+  netSpeed: document.getElementById('netSpeed'),
+  mFrames: document.getElementById('mFrames'),
+  mParse: document.getElementById('mParse'),
+  mChars: document.getElementById('mChars'),
+  mElapsed: document.getElementById('mElapsed'),
+  mDrop: document.getElementById('mDrop')
+}
+
+const state = {
+  mode: 'typewriter',
+  running: false,
+  source: '',        // 已收到的网络文本
+  visibleChars: 0,   // 已显示的字符数（typewriter 系）
+  raf: null,
+  netTimer: null,
+  parseCount: 0,
+  frames: 0,
+  dropped: 0,
+  lastFrameAt: 0,
+  startedAt: 0,
+  caretEl: null,
+  idleTimer: null,
+  lastRenderedSource: null,
+  lastRenderedLen: 0,
+  lastFlushAt: 0,
+  metricsRaf: null,
+  blurredUpTo: 0,
+  lastStableText: ''
+}
+
+const NET_SPEED = {
+  fast:   { chunk: 8,  size: 4 },
+  normal: { chunk: 25, size: 6 },
+  slow:   { chunk: 60, size: 6 },
+  burst:  { chunk: 200, size: 30 }
+}
+
+/* ============================================================
+ * 工具
+ * ============================================================ */
+const toArray = (s) => Array.from(s)   // 按 code point 切分，避免切坏 emoji
+
+/** 公式只在定界符闭合后排版；CDN 不可用时保留可读的 LaTeX 源式。 */
+function typesetMath(root) {
+  if (!window.katex) return
+  root.querySelectorAll('.math-inline, .math-block').forEach((node) => {
+    if (node.dataset.typeset === 'true') return
+    const tex = node.textContent
+    window.katex.render(tex, node, {
+      displayMode: node.classList.contains('math-block'),
+      throwOnError: false,
+      strict: false
+    })
+    node.dataset.typeset = 'true'
+  })
+}
+
+function setMetrics(resetClock = false) {
+  el.mFrames.textContent = state.frames
+  el.mParse.textContent = state.parseCount
+  el.mChars.textContent = state.visibleChars
+  if (resetClock) el.mElapsed.textContent = '0ms'
+  el.mDrop.textContent = state.dropped
+}
+
+function ensureCaret() {
+  if (state.caretEl) return
+  const caret = document.createElement('span')
+  caret.className = 'af-caret'
+  caret.setAttribute('aria-hidden', 'true')
+  state.caretEl = caret
+}
+
+function removeCaret() {
+  if (state.caretEl && state.caretEl.parentNode) state.caretEl.parentNode.removeChild(state.caretEl)
+  state.caretEl = null
+  if (state.idleTimer) { clearTimeout(state.idleTimer); state.idleTimer = null }
+}
+
+/** 把光标挂到最后一个文本节点的末尾 */
+function mountCaret() {
+  ensureCaret()
+  const root = el.tail
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  let last = null
+  while (walker.nextNode()) last = walker.currentNode
+  if (last && last.parentNode && !/^(PRE|CODE)$/.test(last.parentNode.nodeName)) {
+    last.parentNode.insertBefore(state.caretEl, last.nextSibling)
+  } else {
+    root.appendChild(state.caretEl)
+  }
+  state.caretEl.classList.remove('idle')
+  if (state.idleTimer) clearTimeout(state.idleTimer)
+  state.idleTimer = setTimeout(() => state.caretEl && state.caretEl.classList.add('idle'), 2000)
+}
+
+/* ============================================================
+ * 渲染核心
+ * ============================================================ */
+
+/**
+ * 按顶层空行切分块，返回 { stableText, tailText }。
+ * 已完成的块（后面还有内容）视为 stable，最后一块视为 tail —— 只重绘 tail，避免整段重排。
+ */
+function splitBlocks(text) {
+  const parts = text.split(/\n{2,}/)
+  if (parts.length <= 1) return { stableText: '', tailText: text }
+  const tailText = parts.pop()
+  return { stableText: parts.join('\n\n'), tailText }
+}
+
+/** typewriter 系：稳定块只渲染一次并缓存，尾块每帧重建 */
+function renderTypewriter() {
+  const chars = toArray(state.source)
+  const visible = chars.slice(0, state.visibleChars).join('')
+  const { stableText, tailText } = splitBlocks(visible)
+
+  // 稳定块：内容不变则不触碰 DOM（关键：避免整段重绘造成"一行行闪"）
+  if (stableText !== state.lastStableText) {
+    el.stable.innerHTML = stableText ? MD.render(stableText) : ''
+    typesetMath(el.stable)
+    state.lastStableText = stableText
+    state.parseCount++
+  }
+
+  // 尾块：只有这里随帧变化
+  el.tail.innerHTML = tailText ? MD.render(tailText) : ''
+  state.parseCount++
+  state.frames++
+
+  if (state.mode === 'typewriter-blur') {
+    // 关键约束：只给「最新 1~2 个字符」加入场动画。
+    // 若对"整段新增字符"加动画，段落变长时会一次性糊一大片，产生残影/晕眩。
+    const tailLen = toArray(tailText).length
+    const from = state.blurredUpTo || 0
+    if (tailLen > from) {
+      const fresh = Math.min(tailLen - from, 2)
+      markNewCharsAnimated(el.tail, tailLen - fresh, tailLen, tailLen)
+    }
+    state.blurredUpTo = tailLen
+  }
+
+  typesetMath(el.tail)
+
+  // caret 是纯 typewriter 的对话状态提示；blur 模式已有字符入场反馈，不再叠加光标。
+  if (state.mode === 'typewriter') mountCaret()
+  else removeCaret()
+  setMetrics()
+}
+
+/**
+ * 给第 [from, to) 个「可见字符」加动画类，只处理文本节点，跳过代码块。
+ * @param {HTMLElement} root
+ * @param {number} from 起始字符序号（含）
+ * @param {number} to   结束字符序号（不含）
+ * @param {number} visibleChars 当前可见字符总数（用于从尾部倒推）
+ */
+function markNewCharsAnimated(root, from, to, visibleChars) {
+  // 从尾部倒推：末尾共 (visibleChars - from) 个字符需要动画
+  let need = visibleChars - from
+  if (need <= 0) return
+  // 安全上限：避免异常情况下一次包裹过多节点
+  need = Math.min(need, 200)
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const textNodes = []
+  let n
+  while ((n = walker.nextNode())) {
+    if (!/^(PRE|CODE)$/.test(n.parentNode.nodeName)) textNodes.push(n)
+  }
+
+  let remaining = need
+  for (let i = textNodes.length - 1; i >= 0 && remaining > 0; i--) {
+    const node = textNodes[i]
+    const charsOfNode = toArray(node.nodeValue || '')
+    if (!charsOfNode.length) continue
+    const take = Math.min(remaining, charsOfNode.length)
+    const headText = charsOfNode.slice(0, charsOfNode.length - take).join('')
+    const tailChars = charsOfNode.slice(charsOfNode.length - take)
+
+    const frag = document.createDocumentFragment()
+    if (headText) frag.appendChild(document.createTextNode(headText))
+    tailChars.forEach((ch) => {
+      const span = document.createElement('span')
+      span.className = 'af-char-blur'
+      span.textContent = ch
+      frag.appendChild(span)
+      remaining--
+    })
+    node.parentNode.replaceChild(frag, node)
+  }
+}
+
+/** instant：直接把已收到的内容渲染出来 */
+function renderInstant() {
+  el.tail.innerHTML = MD.render(state.source)
+  typesetMath(el.tail)
+  el.stable.innerHTML = ''
+  state.parseCount++
+  state.frames++
+  state.visibleChars = toArray(state.source).length
+  removeCaret()
+  setMetrics()
+}
+
+/* ============================================================
+ * 流式驱动（网络层 + 渲染层分离）
+ * ============================================================ */
+const SAMPLE_CHARS = toArray(SAMPLE)
+
+function netConfig() {
+  return NET_SPEED[el.netSpeed.value] || NET_SPEED.normal
+}
+
+/** 网络层：按节奏把 SAMPLE 切片追加到 state.source（模拟 SSE 到达） */
+function pumpNetwork() {
+  if (!state.running) return
+  const cfg = netConfig()
+  const received = toArray(state.source).length
+  if (received < SAMPLE_CHARS.length) {
+    state.source += SAMPLE_CHARS.slice(received, received + cfg.size).join('')
+    state.netTimer = setTimeout(pumpNetwork, cfg.chunk)
+  } else {
+    state.netTimer = null
+  }
+}
+
+/** 渲染层：每帧只做一次渲染决策 */
+function tick() {
+  if (!state.running) return
+
+  const total = toArray(state.source).length
+  const mode = state.mode
+  const sourceChanged = state.lastRenderedSource !== state.source
+
+  if (mode === 'instant') {
+    if (sourceChanged) {
+      state.lastRenderedSource = state.source
+      renderInstant()
+    }
+  } else {
+    // typewriter / typewriter-blur：按 charDelay 推进可见字符数
+    const charDelay = Number(el.charDelay.value)
+    const lag = total - state.visibleChars
+    const step = lag > 60 ? Math.ceil(lag / 20) : 1
+    const now = performance.now()
+    if (state.visibleChars < total && (!state.lastFrameAt || now - state.lastFrameAt >= charDelay)) {
+      state.visibleChars = Math.min(total, state.visibleChars + step)
+      state.lastFrameAt = now
+      renderTypewriter()
+    }
+  }
+
+  // 收口：网络发完 + 渲染追平
+  if (!state.netTimer) {
+    const renderDone = mode === 'instant' ? state.lastRenderedSource === state.source : state.visibleChars >= total
+    if (renderDone) { finish(); return }
+  }
+
+  state.raf = requestAnimationFrame(tick)
+}
+
+/* ============================================================
+ * 控制
+ * ============================================================ */
+function selectMode(mode) {
+  state.mode = mode
+  Array.from(el.modes.children).forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.mode === mode)
+  })
+  el.modeDesc.textContent = MODES[mode].desc
+  el.modeConfig.replaceChildren()
+  const label = document.createElement('span')
+  label.className = 'mode-config-label'
+  label.textContent = '最佳参数：'
+  el.modeConfig.appendChild(label)
+  MODES[mode].bestConfig.forEach(([name, value]) => {
+    const item = document.createElement('span')
+    const key = document.createElement('code')
+    key.textContent = name
+    item.append(key, document.createTextNode(' = ' + value))
+    el.modeConfig.appendChild(item)
+  })
+  reset()
+}
+
+function reset() {
+  state.running = false
+  if (state.raf) { cancelAnimationFrame(state.raf); state.raf = null }
+  if (state.netTimer) { clearTimeout(state.netTimer); state.netTimer = null }
+  if (state.metricsRaf) { cancelAnimationFrame(state.metricsRaf); state.metricsRaf = null }
+  state.source = ''
+  state.visibleChars = 0
+  state.parseCount = 0
+  state.frames = 0
+  state.dropped = 0
+  state.lastFrameAt = 0
+  state.startedAt = 0
+  state.lastRenderedSource = null
+  state.lastRenderedLen = 0
+  state.lastFlushAt = 0
+  state.blurredUpTo = 0
+  state.lastStableText = ''
+  removeCaret()
+  el.answer.classList.remove('is-streaming')
+  el.stable.innerHTML = ''
+  el.tail.innerHTML = ''
+  el.play.textContent = '开始流式'
+  el.play.disabled = false
+  el.chatLabel.textContent = '输出区 · ' + state.mode
+  setMetrics(true)
+}
+
+function start() {
+  reset()
+  state.running = true
+  el.answer.classList.add('is-streaming')
+  state.startedAt = Date.now()
+  el.play.textContent = '播放中…'
+  el.chatLabel.textContent = '输出区 · ' + state.mode + ' · 流式中'
+  pumpNetwork()
+  state.raf = requestAnimationFrame(tick)
+  updateClock()
+}
+
+/** 时长显示独立刷新，避免干扰渲染帧计数 */
+function updateClock() {
+  if (!state.running) return
+  el.mElapsed.textContent = (Date.now() - state.startedAt) + 'ms'
+  state.metricsRaf = requestAnimationFrame(updateClock)
+}
+
+function finish() {
+  state.running = false
+  if (state.raf) { cancelAnimationFrame(state.raf); state.raf = null }
+  if (state.netTimer) { clearTimeout(state.netTimer); state.netTimer = null }
+  if (state.metricsRaf) { cancelAnimationFrame(state.metricsRaf); state.metricsRaf = null }
+
+  // 最终渲染：撤掉所有临时动画类，与历史重放结果一致。
+  // 此处会将 stable + tail 合并为单容器；CSS 必须保证合并前后块间距一致，
+  // 否则 tail 首元素会因 :first-child 身份消失而恢复 margin-top，产生结束瞬间跳位。
+  el.stable.innerHTML = MD.render(state.source)
+  typesetMath(el.stable)
+  el.tail.innerHTML = ''
+  removeCaret()
+  el.answer.classList.remove('is-streaming')
+  state.parseCount++
+  setMetrics()
+  el.mElapsed.textContent = (Date.now() - state.startedAt) + 'ms'
+  el.play.textContent = '重新播放'
+  el.chatLabel.textContent = '输出区 · ' + state.mode + ' · 已完成（' + SAMPLE_CHARS.length + ' 字）'
+}
+
+/* ============================================================
+ * 初始化
+ * ============================================================ */
+Object.keys(MODES).forEach((key) => {
+  const btn = document.createElement('button')
+  btn.className = 'mode-btn'
+  btn.dataset.mode = key
+  btn.textContent = MODES[key].label
+  btn.addEventListener('click', () => selectMode(key))
+  el.modes.appendChild(btn)
+})
+
+el.charDelay.addEventListener('input', () => { el.charDelayOut.textContent = el.charDelay.value + 'ms' })
+el.play.addEventListener('click', start)
+el.reset.addEventListener('click', () => reset())
+
+selectMode('typewriter')
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `ai_agent_session` (
     `id`             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `session_id`     VARCHAR(64)  NOT NULL COMMENT '对外会话标识，同时作为 Agent memoryId',
     `aid`            VARCHAR(64)  NOT NULL COMMENT '关联 ai_agent_config.aid（逻辑外键）',
-    `title`          VARCHAR(255) NOT NULL DEFAULT '新会话' COMMENT '会话标题',
+    `title`          VARCHAR(255) NOT NULL DEFAULT '新会话' COMMENT '会话标题：取首条用户消息前 TITLE_MAX_LENGTH（20）个字符',
     `status`         TINYINT      NOT NULL DEFAULT 0 COMMENT '会话状态：0空闲、1运行中、2完成、3失败',
     `is_debug`       TINYINT      NOT NULL DEFAULT 0 COMMENT '是否调试会话：0否、1是',
     `pin_order`      INT          NOT NULL DEFAULT 0 COMMENT '置顶序号：0未置顶，正数越大越靠前',

@@ -40,7 +40,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: true } }
+    // 后端地址可通过 VITE_PROXY_TARGET 覆盖，便于本地换端口联调
+    proxy: {
+      '/api': { target: process.env.VITE_PROXY_TARGET || 'http://localhost:8080', changeOrigin: true }
+    }
   },
   build: {
     outDir: 'dist',

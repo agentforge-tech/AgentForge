@@ -6,12 +6,10 @@
         <el-select v-model="mode" size="mini" class="agent-debug-mode" aria-label="调试展示模式">
           <el-option v-for="item in renderModes" :key="item.key" :label="item.label" :value="item.key" />
         </el-select>
-        <button class="agent-debug-clear-btn" type="button" title="清空并新建会话" aria-label="清空并新建会话" @click="newSession">
+        <button class="agent-debug-clear-btn" type="button" title="清空当前会话" aria-label="清空当前会话" @click="newSession">
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h16" />
-            <path d="M9 7V4.8c0-.44.36-.8.8-.8h4.4c.44 0 .8.36.8.8V7" />
-            <path d="M6.5 7l.7 12a1 1 0 0 0 1 .94h7.6a1 1 0 0 0 1-.94l.7-12" />
-            <path d="M10 11v5M14 11v5" />
+            <path d="M20 7v5h-5" />
+            <path d="M18.5 16.5A8 8 0 1 1 20 12" />
           </svg>
         </button>
       </div>
@@ -28,7 +26,10 @@
           </div>
         </div>
         <div v-else :key="index" class="agent-debug-message-row agent-debug-message-row--assistant">
-          <div class="agent-debug-bot-avatar"><img src="/logo.png" alt="AgentForge" /></div>
+          <div class="agent-debug-bot-identity">
+            <div class="agent-debug-bot-avatar"><img :src="agentAvatar" :alt="displayAgentName" /></div>
+            <span class="agent-debug-bot-name">{{ displayAgentName }}</span>
+          </div>
           <div class="agent-debug-bot-body">
             <AgentMessageContent :message="message" :mode="mode" />
           </div>
@@ -51,9 +52,16 @@ const MODE_KEY = 'agentforge.render.mode'
 export default {
   name: 'AgentDebugPanel',
   components: { AgentMessageContent },
-  props: { aid: { type: String, required: true } },
+  props: {
+    aid: { type: String, required: true },
+    agentName: { type: String, default: '' },
+    agentAvatar: { type: String, default: '/logo.png' }
+  },
   data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [] } },
-  computed: { renderModes() { return RENDER_MODES } },
+  computed: {
+    renderModes() { return RENDER_MODES },
+    displayAgentName() { return this.agentName || 'AgentForge' }
+  },
   watch: { mode(value) { localStorage.setItem(MODE_KEY, value) } },
   created() { localStorage.setItem(MODE_KEY, this.mode) },
   beforeDestroy() { if (this.controller) this.controller.abort() },

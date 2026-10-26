@@ -1,10 +1,12 @@
-package cloud.changlu.agentforge.service.stream;
+package cloud.changlu.agentforge.service.modules.agent.middleware;
 
 import cloud.changlu.agentforge.agent.component.middleware.IStreamingIAgentMiddleware;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.StopResult;
 import cloud.changlu.agentforge.agent.stream.PartialThinking;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
+import cloud.changlu.agentforge.model.chat.request.ChatRequest;
+import cloud.changlu.agentforge.model.chat.response.ChatResponse;
 import cloud.changlu.agentforge.service.protocol.StreamEventResponse;
 import cloud.changlu.agentforge.service.protocol.ToolCallResult;
 import cloud.changlu.agentforge.service.protocol.processor.AiErrorProcessor;
@@ -111,6 +113,17 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         if (context != null) {
             context.sendTool(toolRequest, safeMessage(error), true);
         }
+    }
+
+    @Override
+    public ChatResponse afterModelCall(
+            int currentStep,
+            ChatRequest chatRequest,
+            ChatResponse chatResponse,
+            AgentChatContext chatContext) {
+        System.out.println(chatResponse);
+        return IStreamingIAgentMiddleware.super.afterModelCall(
+                currentStep, chatRequest, chatResponse, chatContext);
     }
 
     @Override

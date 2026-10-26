@@ -1,34 +1,7 @@
 <template>
   <div class="af-models" :class="{ 'af-models--nav-open': navOpen }">
     <div v-if="navOpen" class="af-sidebar-backdrop" @click="navOpen = false"></div>
-    <aside class="af-sidebar">
-      <div class="af-sidebar__head">
-        <div class="af-brand">
-          <span class="af-brand__logo"><img src="/logo.png" alt="AgentForge" /></span>
-          <div><div class="af-brand__name">AgentForge</div><div class="af-brand__sub">AgentForge Service</div></div>
-        </div>
-      </div>
-      <nav class="af-sidebar__scroll">
-        <div class="af-nav-group af-nav-group--agent">
-          <button class="af-nav-group__head" type="button"><span>Agent 驾驶舱</span></button>
-          <div class="af-nav-group__body">
-            <button class="af-nav-item af-nav-item--active" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
-              <span class="af-nav-item__label">我的 Agent</span>
-            </button>
-          </div>
-        </div>
-        <div class="af-nav-group af-nav-group--resources">
-          <button class="af-nav-group__head" type="button"><span>我的资源库</span></button>
-          <div class="af-nav-group__body">
-            <a class="af-nav-item af-nav-item--link" href="/">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11L4 6.5M12 11l8-4.5M12 11v9"/></svg>
-              <span class="af-nav-item__label">模型列表</span>
-            </a>
-          </div>
-        </div>
-      </nav>
-    </aside>
+    <AppSidebar active="agents" />
 
     <main class="af-workspace">
       <header class="af-topbar">
@@ -92,10 +65,12 @@
 </template>
 
 <script>
+import AppSidebar from '../../components/AppSidebar.vue'
 import { fetchAgents, fetchChatModels, getAgent, upsertAgent, deleteAgent } from './api'
 
 export default {
   name: 'AgentsPage',
+  components: { AppSidebar },
   data() {
     return { navOpen: false, keyword: '', searchTimer: null, loading: false, saving: false, agents: [], models: [], currentPage: 1, pageSize: 12, totalCount: 0, totalPage: 0, dialogVisible: false, form: { id: null, name: '', type: 1, description: '', modelId: null }, tip: '', tipError: false, tipTimer: null }
   },

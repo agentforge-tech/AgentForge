@@ -21,7 +21,11 @@
 
     <!-- 最终回答 -->
     <div v-if="message.content" class="answer">
-      <MarkdownView :content="message.content" />
+      <MarkdownView
+        :content="message.content"
+        :streaming="message.status === 'running'"
+        mode="typewriter-blur"
+      />
     </div>
 
     <div v-if="message.status === 'running' && !message.content" class="elegant-typing">
@@ -37,6 +41,7 @@
 
 <script>
 import MarkdownView from '../../components/MarkdownView.vue'
+import { formatElapsedDuration } from '../../utils/formatDuration'
 import ElegantThinkItem from './ElegantThinkItem.vue'
 import ElegantToolItem from './ElegantToolItem.vue'
 
@@ -54,7 +59,7 @@ export default {
       return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card')
     },
     elapsed() {
-      return this.message.elapsedMs ? (this.message.elapsedMs / 1000).toFixed(1) : ''
+      return formatElapsedDuration(this.message.elapsedMs)
     },
     statusTitle() {
       if (this.message.status === 'running') return '正在处理'
@@ -62,7 +67,7 @@ export default {
       return '已完成'
     },
     doneElapsed() {
-      return this.message.status !== 'running' && this.elapsed ? `${this.elapsed}s` : ''
+      return this.message.status !== 'running' ? this.elapsed : ''
     }
   },
   watch: {
@@ -80,7 +85,7 @@ export default {
   align-items: center;
   gap: 6px;
   width: fit-content;
-  min-height: 24px;
+  height: 32px; /* 与发布页左侧 .bot-avatar 保持同高，使状态行与 Logo 垂直居中 */
   padding: 0;
   cursor: pointer;
   user-select: none;
@@ -88,7 +93,7 @@ export default {
   color: #8490a2;
 }
 .elegant-thinking-head:hover .elegant-thinking-title { color: #4f6f9f; }
-.elegant-thinking-title { font-weight: 400; color: #7c889b; }
+.elegant-thinking-title { font-weight: 400; line-height: 1; color: #7c889b; transform: translateY(-0.5px); }
 .elegant-thinking.running .elegant-thinking-title { color: #657791; }
 .elegant-thinking-elapsed { color: #98a2b3; font-weight: 400; font-size: 11.5px; }
 .elegant-thinking-arrow { color: #aeb7c4; font-size: 11px; transition: transform 0.2s; }
@@ -97,11 +102,19 @@ export default {
 
 .answer { margin: 2px 0 8px; }
 
-.elegant-typing { display: flex; min-height: 32px; align-items: center; padding: 0 2px; }
+.elegant-typing {
+  display: flex;
+  align-items: center;
+  height: 32px; /* 与发布页左侧 .bot-avatar 高度一致 */
+  padding: 0;
+}
 .elegant-typing-text {
+  display: inline-block;
   font-size: 13.5px;
+  line-height: 1;
   font-weight: 500;
   letter-spacing: 0.5px;
+  transform: translateY(-0.5px); /* 校正中文字形相对行盒的视觉中心 */
   background: linear-gradient(90deg, #c4cdd9 0%, #c4cdd9 40%, #3b6fb6 50%, #c4cdd9 60%, #c4cdd9 100%);
   background-size: 220% 100%;
   -webkit-background-clip: text;
