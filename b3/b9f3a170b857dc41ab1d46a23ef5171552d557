@@ -1,0 +1,256 @@
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/service/IAgentSessionService.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-77
+website/i18n/en/docusaurus-plugin-content-docs/version-1.0.json
+  s_3accdfc829fc52::t_8cc232b0d09a2f 2-10
+agentforge-service/agentforge-service-ui/src/pages/models/ModelsPage.vue
+  s_0c3b62e056875d::t_f2f69ea2e6e49d 5,275,293
+  s_832745611f9d6b::t_61ac941aa4f855 490,497-498,500,507,514-515,517
+agentforge-service/agentforge-service-ui/src/utils/sessionReplay.js
+  s_832745611f9d6b::t_f67444da8784d0 1-134
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/enums/SessionDebugEnum.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-35
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/StandardReActAgentManager.java
+  s_832745611f9d6b::t_1548661021d8d6 67-79
+  s_0c3b62e056875d::t_c0a6c1975e9954 9
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/vo/SessionMessageVo.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-163
+agentforge-service/agentforge-service-ui/package.json
+  s_0c3b62e056875d::t_de16ad0b3421f7 11,14
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/req/SessionSetTopReq.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-24
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/dao/AgentSessionMessageMapper.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-52
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentsPage.vue
+  s_0c3b62e056875d::t_f2f69ea2e6e49d 4,68,73
+agentforge-service/agentforge-service-ui/src/pages/published/PublishedAgentChatPage.vue
+  s_0c3b62e056875d::t_586fbb792ce3cd 68,70
+  s_832745611f9d6b::t_6765274a310c10 158-160,177-179,230-231,233,235,238-240,254-256,258
+  s_832745611f9d6b::t_dfe3e903b2cc02 23-26,48-51,212-218
+  s_832745611f9d6b::t_3b60db714fdd4a 155-157,325,327-330
+  s_79f09de21ef3cf::t_1080c04739b803 101-104
+  s_832745611f9d6b::t_fdb020701f7c0b 232,234,236-237,241-242,359,378,383
+  s_832745611f9d6b::t_f8713a360d2860 144-153,175-176,182-184,190
+  s_832745611f9d6b::t_6bc3dc695669af 85-86
+  s_0c3b62e056875d::t_bb4caa5d227ecb 69,142,171
+  s_832745611f9d6b::t_fd61e23d90545a 14-22,27-28,35-38,40-47,52-53,60-64
+  s_832745611f9d6b::t_bd069778e1a3c4 29-34,54-59
+  s_832745611f9d6b::t_7fa7b7f167e835 205-211,219-229,243-253,257,259-306,375,381-382,384
+  s_832745611f9d6b::t_d8c61c20c6556c 154
+website/src/css/custom.css
+  s_3accdfc829fc52::t_ccd3c6b0a726e7 1
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/enums/SessionStatusEnum.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-37
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/vo/SessionVo.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-133
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent标准会话 & message核心表设计/Agent工具调用思考参数与前端优雅交互设计.md"
+  s_0c3b62e056875d::t_349b2d4d2afca7 1-197,199,201-231
+  s_0c3b62e056875d::t_1b6a4e7600427b 198
+  s_0c3b62e056875d::t_c475172d0f45cc 200
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/constant/ToolConstants.java
+  s_0c3b62e056875d::t_44c8d725ced8b2 1-6,8-15
+  s_0c3b62e056875d::t_d263e8cd636997 7
+website/docusaurus.config.js
+  s_3accdfc829fc52::t_4b1d5d72e76c75 13
+  s_3accdfc829fc52::t_5ee96cc5f8f04f 16
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/controller/AgentSessionMessageController.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-39
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/web/ChatController.java
+  s_0c3b62e056875d::t_c0a6c1975e9954 7-8
+  s_832745611f9d6b::t_d46e7dfd6abab9 12
+  s_832745611f9d6b::t_07e6878c80d16f 36-37,44-46,50-51,70-77,88,98,100-102,110,126-128
+  s_0c3b62e056875d::t_32f5b07a147390 129-130
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/dao/AgentSessionMapper.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-60
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/middleware/SessionLifecycleMiddleware.java
+  s_0c3b62e056875d::t_e0b6cdbb553d17 1-363
+agentforge-service/agentforge-service-ui/src/components/AppUserPanel.vue
+  s_0c3b62e056875d::t_c87f1d836b65fd 1-24
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/req/SessionListReq.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-24
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/impl/AgentConfigServiceImpl.java
+  s_0c3b62e056875d::t_5d1b7f11246bc7 156-158
+agentforge-service/sql/increment/1.0.x/20261025010000_v1.0.x.sql
+  s_832745611f9d6b::t_ab0ac259cbdeab 9
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/enums/SessionMessageStatusEnum.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-38
+agentforge-service/agentforge-service-ui/src/modes/elegant/ElegantMessage.vue
+  s_0c3b62e056875d::t_33df64cd2482cd 70
+  s_0c3b62e056875d::t_cf809730b0376f 88,96
+  s_0c3b62e056875d::t_91de91701f1601 24-28
+  s_0c3b62e056875d::t_dac8473f724f79 44,62
+  s_0c3b62e056875d::t_76aa818a1a97d0 105-110,112,114,117
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/ai交互模式设计/Agent调试模式与发布模式优雅交互渲染设计.md
+  s_0c3b62e056875d::t_06e2ad5589ae1d 164,233
+  s_0c3b62e056875d::t_ce55a59a0a784a 1-163,165-232,234-286
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/enums/SessionMessageRoleEnum.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-35
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentConfigPage.vue
+  s_0c3b62e056875d::t_9a8b266b3ced93 116
+  s_79f09de21ef3cf::t_c4c0eb69d39424 111
+  s_79f09de21ef3cf::t_79ed3b94ef3fca 95
+  s_79f09de21ef3cf::t_347050266acd17 112,125
+  s_79f09de21ef3cf::t_d660fa30749499 48-52,114,117,119-121
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/req/SessionIdReq.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-15
+agentforge-service/agentforge-service-ui/src/components/MarkdownView.vue
+  s_0c3b62e056875d::t_bf3ae282597e4c 2,92,95-96,100-108,115,124,135,144,149
+  s_0c3b62e056875d::t_a0d1acfe5e5e3c 3-5,11-13,15-55,57,59-64,66,68-78,84-91,97-99,109-114,116-123,125-134,136-143,145-148,150-174,181-183,186-196,198,206,208,213,215-220
+agentforge-service/agentforge-service-ui/src/utils/formatDuration.js
+  s_0c3b62e056875d::t_dac8473f724f79 1-14
+agentforge-service/agentforge-service-ui/src/modes/elegant/ElegantToolItem.vue
+  s_0c3b62e056875d::t_721d7fb8cd19f9 46
+  s_0c3b62e056875d::t_3104ed327d7eb7 15,43-45,47-48,57-65,97-105
+  s_0c3b62e056875d::t_d263e8cd636997 32-33
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/AgentSessionMessagePojo.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-134
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentDebugPanel.vue
+  s_79f09de21ef3cf::t_d660fa30749499 29-32,55-59,61-64
+  s_79f09de21ef3cf::t_03831b1b82e46e 9,11-12
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/domain/AgentRequest.java
+  s_832745611f9d6b::t_6e5060bc822a4b 14-16,22
+  s_832745611f9d6b::t_da3d311616c61d 45-52,56,68-69
+  s_832745611f9d6b::t_63f33398363b52 70-72
+agentforge-service/agentforge-service-ui/src/utils/sessionApi.js
+  s_832745611f9d6b::t_cbd4b5fa252921 1-65
+website/versioned_docs/version-1.0/roadmap/2026-roadmap.md
+  s_3accdfc829fc52::t_76787e7b93a60d 1-135
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/session/mapper/AgentSessionMapper.xml
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-113
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/session/mapper/AgentSessionMessageMapper.xml
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-92
+agentforge-service/agentforge-service-ui/src/modes/debug/DebugMessage.vue
+  s_0c3b62e056875d::t_dac8473f724f79 47,76
+  s_0c3b62e056875d::t_91de91701f1601 25-29
+  s_79f09de21ef3cf::t_ba58980bc776c6 91-93,101,107,110,112,114
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/ReActAgentFactory.java
+  s_832745611f9d6b::t_2d104b76cc8a28 31,38,43
+  s_0c3b62e056875d::t_c0a6c1975e9954 12-13
+  s_0c3b62e056875d::t_6a0e4a9919e93e 5,22-23,83-85
+  s_832745611f9d6b::t_933606f79868b6 75
+agentforge-service/agentforge-service-ui/src/components/AppSidebar.vue
+  s_0c3b62e056875d::t_c87f1d836b65fd 1-54
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/middleware/ServiceStreamingMiddleware.java
+  s_0c3b62e056875d::t_e0b6cdbb553d17 1,8-9,118,124,127-128
+  s_0c3b62e056875d::t_c0a6c1975e9954 119-123,125-126
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/util/SessionTitleUtil.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-32
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/req/SessionTopListReq.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-15
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/BaseAgent.java
+  s_832745611f9d6b::t_1c6e5676db13d0 48-51
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/service/impl/AgentSessionServiceImpl.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-229
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/config/AgentConfiguration.java
+  s_0c3b62e056875d::t_e0b6cdbb553d17 3-4
+  s_0c3b62e056875d::t_c0a6c1975e9954 5-6
+  s_832745611f9d6b::t_90d5cccf2c4c0e 10,23-29
+  s_0c3b62e056875d::t_4281b8c747853b 30-31
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/enums/DeletedEnum.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-23
+agentforge-service/agentforge-service-ui/src/styles.css
+  s_0c3b62e056875d::t_9a8b266b3ced93 141-145
+  s_832745611f9d6b::t_2154907f7d3718 87,89-93
+  s_832745611f9d6b::t_304b35515f5043 64,77
+  s_79f09de21ef3cf::t_1080c04739b803 150-151,153,160-163
+  s_832745611f9d6b::t_e04709cdc67025 63
+  s_832745611f9d6b::t_fa9a79c9e3bbeb 73,82-86,88
+  s_832745611f9d6b::t_28463e4b499bae 196-198
+  s_832745611f9d6b::t_6ccbd05986b2cf 69,71,74-75,79
+  s_832745611f9d6b::t_f220dc52e3aa24 76,78,80-81
+  s_0c3b62e056875d::t_586fbb792ce3cd 95-99
+  s_0c3b62e056875d::t_8dc7e46068dc44 51-60
+  s_79f09de21ef3cf::t_505b16ae5c6537 134-137,152,164-168
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/controller/AgentSessionController.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-72
+agentforge-service/agentforge-service-ui/vite.config.js
+  s_832745611f9d6b::t_9a704ecffff301 43-46
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/local/LocalToolFactory.java
+  s_0c3b62e056875d::t_6e4f57567fbb8c 12
+  s_0c3b62e056875d::t_44c8d725ced8b2 3,7,15-16,37,40-47,49-50,62-66,85-87,109-147
+  s_7108062014f0ed::t_33ddd3d3379735 36,38-39,48
+website/versioned_sidebars/version-1.0-sidebars.json
+  s_3accdfc829fc52::t_6a0962d1425636 1
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/AgentSessionPojo.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-107
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/req/SessionChangeTitleReq.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-24
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/tool/local/LocalToolFactoryTest.java
+  s_0c3b62e056875d::t_44c8d725ced8b2 3,64-66,68-71,73-87
+  s_0c3b62e056875d::t_6a0e4a9919e93e 67
+  s_0c3b62e056875d::t_6e4f57567fbb8c 72
+  s_0c3b62e056875d::t_f0026a26ab7472 88
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/enums/SessionStatusTransfer.java
+  s_832745611f9d6b::t_d46e7dfd6abab9 1-52
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/req/AgentChatReq.java
+  s_832745611f9d6b::t_6c366e2ef8bbb1 11-18
+  s_832745611f9d6b::t_bca4228fbdb2a5 51-74
+  s_832745611f9d6b::t_45606ef801f2d9 19
+website/i18n/en/docusaurus-plugin-content-docs/current.json
+  s_3accdfc829fc52::t_8cc232b0d09a2f 29-31
+agentforge-service/agentforge-service-ui/package-lock.json
+  s_0c3b62e056875d::t_808a00edefbec1 11,14,1123-1129,1203-1211,1246-1254,1379-1394
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent标准会话 & message核心表设计/AgentForge标准Agent会话与消息核心表设计.md"
+  s_832745611f9d6b::t_5aaba9b34573be 35,69-140,148,223-229,242-243,249,251-258,260,268-273,277-280,290,293,302,312,315-331,334-335,348,362-369,372,377-402,412,414-416,425,442-444,474,477-485,497-503,512-513,545-670,672,674-675,677-678
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent标准会话 & message核心表设计/Agent版本设计与Agent发布方案.md"
+  s_a0a32edb2118cf::t_fd27f439040c3a 1-789
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/markdown渲染器设计实现/AI正文Markdown流式渲染方案调研与优化设计.md
+  s_0c3b62e056875d::t_22d98ee9690f9d 1-687
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/markdown渲染器设计实现/markdown-stream-modes-demo.html
+  s_0c3b62e056875d::t_d0dc2d5400c4aa 1-833
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b3b9f3a170b857dc41ab1d46a23ef5171552d557",
+  "prompts": {},
+  "sessions": {
+    "s_0c3b62e056875d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a176a8-8e96-7641-abee-1f5c6965d031",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_3accdfc829fc52": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e8c2e1cdeffe4q6ix82Jd9aGLM",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_7108062014f0ed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a178a4-c04c-7492-b65d-2989956e22b2",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_79f09de21ef3cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a178db-1e7d-7c60-a7ce-555a277bf432",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_832745611f9d6b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e8c0ee51fffe6hCAzeHv4TiFqx",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_a0a32edb2118cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1790f-39cf-7fc2-b167-b8c9acb9f195",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
