@@ -1,0 +1,530 @@
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentConfigPage.vue
+  s_bbd3266b609220::t_0ff14fa5c042e0 7,15
+  s_bbd3266b609220::t_175c9d3c18b79a 269
+  s_4d2332b30e165b::t_c0cabde94c01a4 351
+  s_bbd3266b609220::t_94e06aeacb9698 338
+  s_4d2332b30e165b::t_6d91c8e7ea0d61 235-241,247,251-253
+  s_0b6ef20f302a4a::t_6857ff158819db 94,96-98,104-108,157-160,345-346,350,352,408-409
+  s_4d2332b30e165b::t_50d0e1dec1da62 349
+  s_4d2332b30e165b::t_787bd0c821d9c0 109-112,114-119,121,123-124,126-129,131,135,140,153
+  s_4d2332b30e165b::t_a0c1a7264310e9 344
+  s_4d2332b30e165b::t_8f4919ed14da63 78-79,81
+  s_d8814696f3f334::t_545e63c787de52 450-467
+  s_4d2332b30e165b::t_400e396373446b 423-424
+  s_bbd3266b609220::t_47a82685f7a240 17
+  s_4d2332b30e165b::t_8cea1508778b66 410
+  s_bbd3266b609220::t_0da9c6b8d1795c 266,272-274,293-294,311
+  s_bbd3266b609220::t_d408fc5d491ed7 225-226,244-245,325
+  s_bbd3266b609220::t_c643abda0dde51 8-11
+  s_bbd3266b609220::t_fc21608615bb3d 220,319-320,334
+  s_bbd3266b609220::t_41c0be41a1f020 248-250
+  s_bbd3266b609220::t_4eca262a421935 289
+  s_bbd3266b609220::t_a38eadbc6bb731 242,246
+  s_bbd3266b609220::t_0aef09de5fb08b 339
+  s_4d2332b30e165b::t_367e837e25b23a 388,390
+  s_4d2332b30e165b::t_e0bad448f09179 80
+  s_bbd3266b609220::t_e371646d6f0a2f 389
+  s_bbd3266b609220::t_b35dbf5925005d 42-43,163-164,166-172,174-206,208-209
+  s_4d2332b30e165b::t_090621f4897f3a 393-394
+  s_4d2332b30e165b::t_41e6e9c434b8ea 125,130,132-134,136-139,141-152
+  s_bbd3266b609220::t_6fa47b71be950f 86-87,89-93
+  s_4d2332b30e165b::t_e8a09fcfd6afb9 421-422,425-427
+  s_bbd3266b609220::t_0259ca7ec0cab7 399,402-406
+  s_0b6ef20f302a4a::t_c082512002b320 113,120,122,154-156,347-348,417
+  s_0b6ef20f302a4a::t_8255fb76a08d4a 13-14,16,73-77,82-85,99-103,340-342,353,364-365,387,391,395-396
+  s_d8814696f3f334::t_84cefb81cc4b9d 44-51
+  s_bbd3266b609220::t_a28ae5f5fcefae 12
+  s_bbd3266b609220::t_13ddf44ccf54b2 41,88,95,214-219,221-224,227-231,321-323,329-333
+  s_d8814696f3f334::t_780fa765f357b8 260
+  s_d8814696f3f334::t_dbefa8db48957d 290-292,295-310,312-314
+  s_4d2332b30e165b::t_e29a467921badb 343
+  s_bbd3266b609220::t_440f9dbf2467a9 366-368,392,397-398,400-401
+  s_d8814696f3f334::t_4bc3249ec5d0ec 285
+  s_bbd3266b609220::t_75e5779af91244 243,407
+  s_4d2332b30e165b::t_bb86677af3193e 411-416,418-420,428-429
+  s_4d2332b30e165b::t_b194306c70de53 430
+  s_d8814696f3f334::t_ce5c29e8da5637 161-162,165,173,207,210-213,232-234
+  s_bbd3266b609220::t_7e0ba8b7d532fd 259,271,315-318,324,326-328,335-337
+  s_4d2332b30e165b::t_776550cddc5692 270,275-276
+  s_4d2332b30e165b::t_4e16e8223d042c 277-279
+  s_bbd3266b609220::t_b420be3248652c 280
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/controller/McpPluginController.java
+  s_d8814696f3f334::t_67c17436de4a95 1-115
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/agent/mapper/AgentConfigVersionMapper.xml
+  s_0b6ef20f302a4a::t_b1d24ce7317a40 1-16,18-24,26-29,33-49,51-53,55,62
+  s_0b6ef20f302a4a::t_4cd0c17004dfaa 31-32
+  s_bbd3266b609220::t_4aaccb16e1adba 17,25,30,50,54,59
+  s_bbd3266b609220::t_8867d37d15c15c 56-58,60-61
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/dao/AgentConfigPublishedMapper.java
+  s_0b6ef20f302a4a::t_b1d24ce7317a40 1-17
+agentforge-service/agentforge-service-ui/src/styles.css
+  s_0b6ef20f302a4a::t_668888a20d909e 113
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/component/agent/McpAgentToolLoader.java
+  s_d8814696f3f334::t_27488be4caa179 100,115-116,132-133
+  s_d8814696f3f334::t_85b1dad750bf68 61-62,66
+  s_d8814696f3f334::t_00ad8e9f26992a 88,97
+  s_d8814696f3f334::t_103bd10aa2bb52 1-60,63-65,67-87,89-96,98-99,101-114,117-131,134-192
+agentforge-service/agentforge-service-web/src/test/java/cloud/changlu/agentforge/service/modules/agent/service/AgentRuntimeConfigResolverTest.java
+  s_bbd3266b609220::t_8e1eb1215c4a21 8,46
+  s_0b6ef20f302a4a::t_28ffddd1cfa2d3 1-7,9-45,47-82
+agentforge-service/agentforge-service-ui/src/pages/mcp/main.js
+  s_d8814696f3f334::t_c238e538816649 1-6
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/plugins/mcp/mapper/McpPluginMapper.xml
+  s_d8814696f3f334::t_d5b8b44c82a3af 1-118
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/web/ChatController.java
+  s_bbd3266b609220::t_8e1eb1215c4a21 3
+  s_bbd3266b609220::t_11b5db7cf86725 69
+  s_0b6ef20f302a4a::t_b5e0e171269f33 5,12,36,45,50
+  s_bbd3266b609220::t_5dfba9d522439e 14,25,66-68,70-71,120-133
+  s_bbd3266b609220::t_f58698eb45e5a1 134-136
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/controller/AgentChatController.java
+  s_bbd3266b609220::t_11b5db7cf86725 4,46
+  s_0b6ef20f302a4a::t_b5e0e171269f33 5,10,24,28-30
+  s_bbd3266b609220::t_5dfba9d522439e 43-45,47-48
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/domain/vo/McpToolTestVo.java
+  s_d8814696f3f334::t_b652a051f0487d 1-81
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/service/IMcpPluginService.java
+  s_d8814696f3f334::t_0a8e0398244c45 1-62
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/domain/vo/McpServerVo.java
+  s_d8814696f3f334::t_ed661b2dae6a8a 1-104
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/enums/McpTransportTypeEnum.java
+  s_d8814696f3f334::t_ed556e17bc1a6f 58-73
+  s_d8814696f3f334::t_291f755c450d72 12-57
+  s_d8814696f3f334::t_6cae69735255ff 9-11
+  s_d8814696f3f334::t_1066405cec283c 74
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/impl/AgentConfigServiceImpl.java
+  s_d8814696f3f334::t_d794bd80bb4ba4 426
+  s_4d2332b30e165b::t_9c833a35f6854d 147-149
+  s_d8814696f3f334::t_c55f733ed1d819 241-249
+  s_0b6ef20f302a4a::t_ec775bfd9edba6 6-7,9-10,17,28-30,36,45-46,53-54,59-60,86,91-92,100-101,106-111,113-122,126,129-130,133,135,137-138,150-153,165-166,168,172,174-177,179,181,185-219,222-240,250-252,255-264,266-290,302-361,373-374,416,436-446,448-453
+  s_0b6ef20f302a4a::t_678c9a8b692e3a 134,139-143
+  s_d8814696f3f334::t_6003371c436637 13
+  s_bbd3266b609220::t_d408fc5d491ed7 42
+  s_bbd3266b609220::t_0543dff5cfba37 136,154-163,253-254,265,362-369,371-372,447
+  s_d8814696f3f334::t_68021efb6c33ad 220-221
+  s_d8814696f3f334::t_207ee27876d2db 380-384,401
+  s_bbd3266b609220::t_cfbeba9a8b7b0b 370
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/req/AgentConfigVersionRemarkReq.java
+  s_bbd3266b609220::t_d408fc5d491ed7 6
+  s_bbd3266b609220::t_c601f5c213a634 1-5,7-16
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/vo/AgentConfigVersionVo.java
+  s_bbd3266b609220::t_4aaccb16e1adba 17,94-95,98-99
+  s_0b6ef20f302a4a::t_b1d24ce7317a40 1-16,18-91,100-125
+  s_bbd3266b609220::t_41375423e1f445 92-93,96-97
+agentforge-service/agentforge-service-ui/src/pages/mcp/McpPage.vue
+  s_d8814696f3f334::t_90a66458b09393 1-16,23-24,50-54,61,70-71,73,117,130,132,137-138,141,143,145,213-214,217-224,226-238,240-246,249,251,253,261-271,273-279,282-283,285,290-295,298-304,307-320,337-349,351,354,356-362,370-375,379-381,388-389,391,393-399,408-409,444-453,469-473,475-479,482-483,485-486,494-505,507-512,514-516,519-523,560-563,566-570,573-576,578-582,584-590,594-598,609-611,613-614,618-622,624-629,631-644,646,648-659,661,669-672,686-687,711-723,727,760,766-767,771-772,774
+  s_bbd3266b609220::t_394d155d56d8a0 260,280,297,660,662-666,668,758,761-762
+  s_d8814696f3f334::t_4a624a9e5d98e7 254-259
+  s_bbd3266b609220::t_4d95284d7e874d 17,19-21,25-45,47-49,55-60,62-69,72,74-78,80-116,118-129,131,133-136,139-140,142,144,146-212,215-216,225,239,247-248,250,252,272,284,286-289,296,305-306,321-328,330-336,350,352-353,355,363-369,376-378,382-387,392,400-407,410-443,454-468,474,480-481,484,487-493,506,517-518,524-559,564-565,571-572,577,583,591-593,599-608,612,615-617,623,630,645,647,673-681,683-685,688-710,724-726,728-734,740-757,759,763-765,768-770,773
+  s_bbd3266b609220::t_2016bc717ed74c 18,22,46,79,281,329,513,667,682
+  s_bbd3266b609220::t_a216fe81bfa1d0 390
+  s_bbd3266b609220::t_37138ad42fcd90 735-739
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/AgentConfigVersionPojo.java
+  s_bbd3266b609220::t_41375423e1f445 93-94,97-98
+  s_0b6ef20f302a4a::t_460621cd42fe8c 1-16,18-92,101-134
+  s_bbd3266b609220::t_4aaccb16e1adba 17,95-96,99-100
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/common/exception/AgentForgeException.java
+  s_bbd3266b609220::t_a2b39dbbcad0ad 1-44
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/ReActAgentFactory.java
+  s_d8814696f3f334::t_2def0e15a8afcb 93,95
+  s_d8814696f3f334::t_ab63503ff33cf6 84,88,94,96-98
+  s_d8814696f3f334::t_e4139dccbe8ef7 9,11,20,26
+  s_d8814696f3f334::t_5e6f8118cfbd90 37,44-45,51
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/controller/AgentConfigController.java
+  s_0b6ef20f302a4a::t_7f7e52af628bf5 7,55-66,68-69
+  s_4d2332b30e165b::t_7e47240e262f81 67
+  s_bbd3266b609220::t_831266bd50f7d8 6,70-79
+  s_bbd3266b609220::t_71638d9755fe75 80
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/vo/AgentConfigVo.java
+  s_0b6ef20f302a4a::t_678c9a8b692e3a 23,124-132
+  s_d8814696f3f334::t_e35bdeaaff1135 102-109
+  s_d8814696f3f334::t_ddf4c7ece72f88 3-4,6,20
+  s_0b6ef20f302a4a::t_460621cd42fe8c 22,118-123
+  s_0b6ef20f302a4a::t_77af2437d43b0b 133
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/common/ApiErrorVo.java
+  s_bbd3266b609220::t_dae042ca828a0d 12-15,21-24,26,38-44
+  s_bbd3266b609220::t_53c70fdd28da8b 45
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/domain/vo/McpServerDetailVo.java
+  s_d8814696f3f334::t_9d600047310357 1-24
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/agent/mapper/AgentConfigMapper.xml
+  s_0b6ef20f302a4a::t_460621cd42fe8c 44-49,78-81
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent标准会话 & message核心表设计/2、Agent版本设计与Agent发布方案.md"
+  s_4d2332b30e165b::t_665bd36f69c018 111,239,245,428,432-435,465,513,519
+  s_4d2332b30e165b::t_30c1e286f91608 258,261
+  s_bbd3266b609220::t_7576d6a2cba84f 172,466,477-478,482,486,488-492,510-511
+  s_0b6ef20f302a4a::t_493ce75ec457e5 192,198,203,205-208,229,249,464,515-516,518,520-521
+  s_0b6ef20f302a4a::t_b4a9d4e6d1071b 32,120-121,320,500
+  s_4d2332b30e165b::t_fd95bcf2ff4967 194,196,199,201,210,212-219,221,223-225,227
+  s_bbd3266b609220::t_44d5bc41fc5bbd 371,373,375-378,380,471,522
+  s_bbd3266b609220::t_1691a9ac9cb884 92,110,174,176-179,484
+  s_0b6ef20f302a4a::t_99af40e0355cba 1,3,5,7,9-10,12,14-15,17,19,23-26,28-31,33,35,38-42,46-50,52,54,56,58-69,71,73,83-84,87-88,93-97,102-108,112,114-117,119,122-130,132,135-137,141-145,149,152,154,156-162,165,169-170,181,183,231,233-237,242,247,251,253-256,264-265,269,271,273,275-277,279-280,282,284,286,288,290-292,297,299,301-305,307-308,310-311,314,316,318,321-322,324,326,328,330-333,335,337,339,341-344,347,349,351,353-356,358-361,363,365-367,369,382,384,387-388,391,393-396,398,400,402,404,406-413,415,417-418,421,423-427,429-431,438,440-455,457,459-463,467-470,472-473,475-476,479-480,494,496,498-499,502-509
+  s_4d2332b30e165b::t_d9807da4e5835c 167,184-188,190
+  s_bbd3266b609220::t_cb642c4d7419ba 171,266-268,295,414,416
+  s_0b6ef20f302a4a::t_02190f2fef101e 278,501
+  s_bbd3266b609220::t_80975625125d9a 512
+  s_4d2332b30e165b::t_2f076b35f32f1e 514
+  s_bbd3266b609220::t_18c5c4b1c85685 517
+  s_0b6ef20f302a4a::t_f315f61b0b4062 118,306
+  s_bbd3266b609220::t_20e77185544e06 75,77,79,109
+agentforge-service/agentforge-service-ui/mcp/index.html
+  s_bbd3266b609220::t_2016bc717ed74c 7
+  s_d8814696f3f334::t_83fb7f6eda28be 1-6,8-13
+agentforge-service/agentforge-service-ui/src/pages/mcp/api.js
+  s_d8814696f3f334::t_a2b88852aafdb4 1-84
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/domain/vo/McpPluginVo.java
+  s_d8814696f3f334::t_1e667c59baf341 1-95
+  s_d8814696f3f334::t_d84946c78f8e0b 96
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/req/AgentConfigUpsertReq.java
+  s_bbd3266b609220::t_c0d44cc57b990f 20,100-108
+  s_d8814696f3f334::t_f16d893b1373fa 3-6,18
+  s_0b6ef20f302a4a::t_460621cd42fe8c 19,85,94-99
+  s_d8814696f3f334::t_18030ea9c36daf 86-93
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/common/GlobalExceptionHandler.java
+  s_bbd3266b609220::t_11b5db7cf86725 3-4,22-28
+agentforge-service/agentforge-service-ui/src/pages/published/PublishedAgentChatPage.vue
+  s_bbd3266b609220::t_abb72a6a57634a 192-195,220-248,277,287,292-293,423,425
+  s_0b6ef20f302a4a::t_668888a20d909e 78,198-200
+agentforge-service/sql/increment/1.0.x/20261027010000_v1.0.x.sql
+  s_d8814696f3f334::t_68d45322e73294 20,40
+  s_d8814696f3f334::t_f5a7dc5d4181f7 1-2,4-10,21-27,41
+  s_d8814696f3f334::t_ec5122ab2e5c1d 3,11-19,28-39
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/MCP协议/AgentForge MCP 方案设计与实现说明.md"
+  s_d8814696f3f334::t_f3a1a7e2f7cdbe 10
+  s_1dca2c6383cb84::t_63c1ffd1822303 5-9,11-13
+  s_1dca2c6383cb84::t_3f1a33328a4b87 14,16,20,24,49,82,109,114,127,131,141,148-150,162,181,194,207,218,227,233,249,251,253-254,256,264-265,267-268,270,274-275,285,287-288,292-293,296-297,312-313,317-318,331-332,340,342-343,350,376,393,395-396,398,400,407,418,441,448,452,455,497,511,520,524,526,529-530,532-533,535-536,538,544-545,547-548,550,556,558,562,565,576,578,592,596,598-599,603-604,607-608,619,621-622,624-625,627-628,630-631,633,638,679,700,704,708,712,727,731,735,739,756,762,769,775-776,779-782,795,913,960,962,964-965,967,969-976,995-997,1000-1003,1005,1010-1011,1013-1014,1016,1019,1021,1023-1025,1027-1030,1038,1040-1043,1045-1048,1053-1054,1058-1059,1063-1071,1074-1076,1081-1083,1092-1112,1115-1118,1120-1123,1125,1127,1129,1131,1133,1135,1137-1143,1145,1147-1149,1151,1153,1167,1169-1171,1179,1181,1185,1187,1189,1192,1194,1196-1205,1207-1214,1222,1226-1236,1238-1263,1265-1266,1268,1272-1273,1275-1295,1302-1310,1312,1319,1368,1372,1384,1399,1407,1425,1455,1475,1490,1536,1559,1572,1587,1589,1595,1597-1598,1600-1601,1603-1604,1606-1607,1609-1610,1612
+  s_1dca2c6383cb84::t_452c0bf615aa0c 823-826,828-830,832,834-837,840,842-843,845-846,852,855-856,859-866,868-873,875-880,882-883,889-891,896,899-906,908-912,918-919,922,940-955
+  s_d8814696f3f334::t_035615be61141e 1341-1367
+  s_d8814696f3f334::t_bd1718cbb3fc81 26
+  s_1dca2c6383cb84::t_976d1d95320825 786
+  s_d8814696f3f334::t_54f30a0c656196 790-791
+  s_d8814696f3f334::t_0750f64723889c 963,966,977-991,998-999,1015,1018
+  s_d8814696f3f334::t_314d1521feb8d3 1445-1446,1448
+  s_1dca2c6383cb84::t_3fa77ed13565ec 1338
+  s_1dca2c6383cb84::t_fc848f81383c9d 2-4
+  s_1dca2c6383cb84::t_0c7ce7d7bdb1be 15
+  s_1dca2c6383cb84::t_118e2c9fc7c181 17-19
+  s_1dca2c6383cb84::t_7e78dcec7ab364 21-23
+  s_1dca2c6383cb84::t_aa3c8a3a183eaf 50-52,79-81
+  s_1dca2c6383cb84::t_7e6bdfca4d748e 83-85,106-108
+  s_1dca2c6383cb84::t_2861e8f3160b37 110-113
+  s_1dca2c6383cb84::t_91514b488b3ab1 115-117,124-126
+  s_1dca2c6383cb84::t_ea363ddec81adf 128-130
+  s_1dca2c6383cb84::t_47c7f5b7249f05 132-134,138-140
+  s_1dca2c6383cb84::t_b3087c469f35ef 142-147
+  s_1dca2c6383cb84::t_f1b80b4caafad9 151-153,159-161
+  s_1dca2c6383cb84::t_0f61a899739e12 163-165,178-180
+  s_1dca2c6383cb84::t_cebc72aa1aec6b 182-184,191-193
+  s_1dca2c6383cb84::t_b81e7e1640ed30 195-197,204-206
+  s_1dca2c6383cb84::t_bc785e2a91de66 208-210,215-217
+  s_1dca2c6383cb84::t_84a92d9456c424 219-221,224-226
+  s_1dca2c6383cb84::t_90af3911bf4d00 228-232
+  s_1dca2c6383cb84::t_7d8e9fdca13b81 234-236,246-248
+  s_1dca2c6383cb84::t_c4087a23a3eab7 250
+  s_1dca2c6383cb84::t_ef3a7bc796c043 252
+  s_1dca2c6383cb84::t_82241f52d5f72c 255
+  s_1dca2c6383cb84::t_3553b30080138d 257-259,261-263
+  s_1dca2c6383cb84::t_6f3314efac02a6 266
+  s_1dca2c6383cb84::t_5426a5c6f4ad3c 269
+  s_1dca2c6383cb84::t_95bd6409069632 271-273
+  s_1dca2c6383cb84::t_c88909314fc261 276-278,282-284
+  s_1dca2c6383cb84::t_9806de10ba1753 286
+  s_1dca2c6383cb84::t_ebb03cbd5fa030 289-291
+  s_1dca2c6383cb84::t_9dbd74e4eab24e 294-295
+  s_1dca2c6383cb84::t_d7d717eecf3e0d 298-300,309-311
+  s_1dca2c6383cb84::t_7b59a6fd16d0b1 314-316
+  s_1dca2c6383cb84::t_49c7260f3900cb 319-321,328-330
+  s_1dca2c6383cb84::t_ca231a9485ec77 333-335,337-339
+  s_1dca2c6383cb84::t_548f538d9409a1 341
+  s_1dca2c6383cb84::t_d0992a5ddc5069 344-349
+  s_1dca2c6383cb84::t_f97fcb28a80f7e 351-353,373-375
+  s_1dca2c6383cb84::t_464c28851d644b 377-379,390-392
+  s_1dca2c6383cb84::t_de61b1d6a09f81 394
+  s_1dca2c6383cb84::t_9e3e52e358928e 397
+  s_1dca2c6383cb84::t_24c8c54a2ab3ec 399
+  s_1dca2c6383cb84::t_0297f3a5abeae0 401-406
+  s_1dca2c6383cb84::t_696079cd967ec7 408-410,415-417
+  s_1dca2c6383cb84::t_eab1d3ffdbf0d4 419-421,438-440
+  s_1dca2c6383cb84::t_9824c03aaa5435 442-447
+  s_1dca2c6383cb84::t_8a3c89b4adec24 449-451
+  s_1dca2c6383cb84::t_eb33e3429c5610 453-454
+  s_1dca2c6383cb84::t_0aa1c285004c37 456-458,494-496
+  s_1dca2c6383cb84::t_09d4d01aa31e49 498-500,508-510
+  s_1dca2c6383cb84::t_5edc48af1d9dfd 512-514,517-519
+  s_1dca2c6383cb84::t_8ed24201be35cc 521-523
+  s_1dca2c6383cb84::t_5cb7fc16a670ed 525
+  s_1dca2c6383cb84::t_5e58eae6b98a25 527-528
+  s_1dca2c6383cb84::t_5b477ecac2a081 531
+  s_1dca2c6383cb84::t_970994c9f751d3 534
+  s_1dca2c6383cb84::t_affeaadea771ee 537
+  s_1dca2c6383cb84::t_d3e34e6f541767 539-543
+  s_1dca2c6383cb84::t_54c7712cfa40ca 546
+  s_1dca2c6383cb84::t_caea1c1fc9e2d3 549
+  s_1dca2c6383cb84::t_eb43f99673180b 551-555
+  s_1dca2c6383cb84::t_6fcdcdd8894c9e 557
+  s_1dca2c6383cb84::t_80b50c5cc94715 559-561
+  s_1dca2c6383cb84::t_9bd803210ef218 563-564
+  s_1dca2c6383cb84::t_eeb1adda4de9b6 566-568,573-575
+  s_1dca2c6383cb84::t_59db5a9c417399 577
+  s_1dca2c6383cb84::t_5783c2c1556752 579-581,589-591
+  s_1dca2c6383cb84::t_dd16ce76b28982 593-595
+  s_1dca2c6383cb84::t_b5e5f80b299b68 597
+  s_1dca2c6383cb84::t_a637363e6c1ff8 600-602
+  s_1dca2c6383cb84::t_f37814f6999809 605-606
+  s_1dca2c6383cb84::t_d3862ba5c75cd4 609-611,616-618
+  s_1dca2c6383cb84::t_f13e44827ec11e 620
+  s_1dca2c6383cb84::t_1e8cc8569df3be 623
+  s_1dca2c6383cb84::t_0e842d895532a6 626
+  s_1dca2c6383cb84::t_4e109f03f84607 629
+  s_1dca2c6383cb84::t_5ace8d37d0e1f3 632
+  s_1dca2c6383cb84::t_d374daa031520e 634-637
+  s_1dca2c6383cb84::t_51f4596a697ff8 639-641,676-678
+  s_1dca2c6383cb84::t_3008fa1e9b56ec 680-682,697-699
+  s_1dca2c6383cb84::t_a354dd4152ec26 701-703
+  s_1dca2c6383cb84::t_fe0678e26ca992 705-707
+  s_1dca2c6383cb84::t_3e70e76c479995 709-711
+  s_1dca2c6383cb84::t_4ba217d0c8860d 713-715,724-726
+  s_1dca2c6383cb84::t_f1e6c12e8fdf2d 728-730
+  s_1dca2c6383cb84::t_c39290ce569244 732-734
+  s_1dca2c6383cb84::t_6ae71bc712d283 736-738
+  s_1dca2c6383cb84::t_87a0cfb83c8389 740-742,753-755
+  s_1dca2c6383cb84::t_aa80b18fa03246 757-761
+  s_1dca2c6383cb84::t_bf40f129eb53a3 763-768
+  s_1dca2c6383cb84::t_f8a76fe7049593 770-774
+  s_1dca2c6383cb84::t_f92b9415056667 777-778
+  s_1dca2c6383cb84::t_72092c93ec1f08 783-785
+  s_1dca2c6383cb84::t_8b46ddaf92a48f 796-798,820-822
+  s_1dca2c6383cb84::t_dd8b1cc9aa8ec2 827
+  s_1dca2c6383cb84::t_c8b2cc24511970 831
+  s_1dca2c6383cb84::t_10606442343d9f 833
+  s_1dca2c6383cb84::t_6f711c8e516789 838-839
+  s_1dca2c6383cb84::t_55ad9f1f430356 841
+  s_1dca2c6383cb84::t_273643b604e472 844
+  s_1dca2c6383cb84::t_f5e23c365b3e8f 847-851
+  s_1dca2c6383cb84::t_3cff3fddece657 853-854
+  s_1dca2c6383cb84::t_ee37c6954452f0 857-858
+  s_1dca2c6383cb84::t_8dbf4a13bffbb3 867
+  s_1dca2c6383cb84::t_31590752eff8d8 874
+  s_1dca2c6383cb84::t_62da13797b49c3 881
+  s_1dca2c6383cb84::t_fc5b952a958b9f 884-888
+  s_1dca2c6383cb84::t_7459429abee2f9 892-895
+  s_1dca2c6383cb84::t_e7653d757a3716 897-898
+  s_1dca2c6383cb84::t_712366593dc569 907
+  s_1dca2c6383cb84::t_b40414c2279b10 914-917
+  s_1dca2c6383cb84::t_47876377aa119f 920-921
+  s_1dca2c6383cb84::t_aa1694d4d006a8 923-925,937-939
+  s_1dca2c6383cb84::t_b0e2ea755ede2a 956-959
+  s_1dca2c6383cb84::t_f203b0251d3c74 961
+  s_1dca2c6383cb84::t_705e0713fef1df 968
+  s_1dca2c6383cb84::t_3eaf3e70006798 1004
+  s_1dca2c6383cb84::t_f7a020c4b6c33b 1006-1009
+  s_1dca2c6383cb84::t_04e11d12fc4b86 1012
+  s_1dca2c6383cb84::t_970db9e83eb0b5 1020
+  s_1dca2c6383cb84::t_6826562c8b0a84 1022
+  s_1dca2c6383cb84::t_8ada097b1dda2e 1026
+  s_1dca2c6383cb84::t_6c2c488cb781a3 1031-1033,1035-1037
+  s_1dca2c6383cb84::t_ca19cd044bfea7 1039
+  s_1dca2c6383cb84::t_b7aa76b1e9a9c0 1044
+  s_1dca2c6383cb84::t_b43d795a6a17f1 1049-1052
+  s_1dca2c6383cb84::t_95c46e7f8cdf6f 1055-1057
+  s_1dca2c6383cb84::t_9e2f7a6c9d5eb4 1060-1062
+  s_1dca2c6383cb84::t_75e0f5be35818f 1072-1073
+  s_1dca2c6383cb84::t_cff1fdce50cce6 1077-1080
+  s_1dca2c6383cb84::t_6f4b4ccf9e449b 1084-1086,1089-1091
+  s_1dca2c6383cb84::t_8691e9bde1aeb2 1113-1114
+  s_1dca2c6383cb84::t_87c653f03d35e7 1119
+  s_1dca2c6383cb84::t_a49f125e277d30 1124
+  s_1dca2c6383cb84::t_651ddfdcb0fa05 1126
+  s_1dca2c6383cb84::t_bcd17f7c69ad9a 1128
+  s_1dca2c6383cb84::t_4ff24c80307545 1130
+  s_1dca2c6383cb84::t_bbeafca2527f7d 1132
+  s_1dca2c6383cb84::t_b72152daa18132 1134
+  s_1dca2c6383cb84::t_4ee648d9c32fd5 1136
+  s_1dca2c6383cb84::t_8e0122890c0109 1144
+  s_1dca2c6383cb84::t_15ac87a87ace50 1146
+  s_1dca2c6383cb84::t_1979c1b9e7a6de 1150
+  s_1dca2c6383cb84::t_09040702e260de 1152
+  s_1dca2c6383cb84::t_2992df237f351b 1154-1156,1164-1166
+  s_1dca2c6383cb84::t_bc4d9151215e6b 1168
+  s_1dca2c6383cb84::t_38257425f0a831 1172-1174,1176-1178
+  s_1dca2c6383cb84::t_07632b08f48ec5 1180
+  s_1dca2c6383cb84::t_2b775b7ceb2ec3 1182-1184
+  s_1dca2c6383cb84::t_68f5277db9e873 1186
+  s_1dca2c6383cb84::t_bf07c0d882cc8e 1188
+  s_1dca2c6383cb84::t_da0e95b987e842 1190-1191
+  s_1dca2c6383cb84::t_6d5cf39f973ef7 1193
+  s_1dca2c6383cb84::t_3d31a3b45e6bde 1195
+  s_1dca2c6383cb84::t_e98e017a41ab01 1206
+  s_1dca2c6383cb84::t_8bcadd18650928 1215-1217,1219-1221
+  s_1dca2c6383cb84::t_82a24427b29f70 1223-1225
+  s_1dca2c6383cb84::t_af1c712c6a9fba 1237
+  s_1dca2c6383cb84::t_a1a55145206703 1264
+  s_1dca2c6383cb84::t_0d58477a3f7fd7 1267
+  s_1dca2c6383cb84::t_5e5a8cf6926f0f 1269-1271
+  s_1dca2c6383cb84::t_40c461f30e31d2 1274
+  s_1dca2c6383cb84::t_0bcc6676585322 1296-1301
+  s_1dca2c6383cb84::t_09a2e4a4c02e53 1311
+  s_1dca2c6383cb84::t_ce1afeac19a796 1313-1318
+  s_1dca2c6383cb84::t_303257e60ba89c 1320-1322,1335-1337
+  s_1dca2c6383cb84::t_ba158f8817f244 1369-1371
+  s_1dca2c6383cb84::t_bd3ec9726d689c 1373-1375,1381-1383
+  s_1dca2c6383cb84::t_b5b3b751c794e6 1385-1387,1396-1398
+  s_1dca2c6383cb84::t_9daa3b304e6957 1400-1402,1404-1406
+  s_1dca2c6383cb84::t_ebd3b528350317 1408-1410,1422-1424
+  s_d8814696f3f334::t_a7ca2effd13cda 1447
+  s_1dca2c6383cb84::t_5d3a02110204b8 1456-1458,1472-1474
+  s_1dca2c6383cb84::t_a01e44ac3a6551 1476-1478,1487-1489
+  s_1dca2c6383cb84::t_8b7322b8f80620 1491-1493,1533-1535
+  s_1dca2c6383cb84::t_af0e9a1cd8611b 1537-1539,1556-1558
+  s_1dca2c6383cb84::t_420e215b09fc70 1560-1562,1569-1571
+  s_1dca2c6383cb84::t_fac4a94be8d692 1573-1575,1584-1586
+  s_1dca2c6383cb84::t_df537f659c9d0c 1588
+  s_1dca2c6383cb84::t_ac61dc0b256173 1590-1594
+  s_1dca2c6383cb84::t_d28b2738e9d107 1596
+  s_1dca2c6383cb84::t_8e059ecc7376e6 1599
+  s_1dca2c6383cb84::t_1ab229acd61fdb 1602
+  s_1dca2c6383cb84::t_1a2749b47665c4 1605
+  s_1dca2c6383cb84::t_a8c034f268b390 1608
+  s_1dca2c6383cb84::t_6896e4b5882e08 1611
+  s_1dca2c6383cb84::t_5b3af7a10675cc 1613-1615
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/AgentRuntimeConfig.java
+  s_0b6ef20f302a4a::t_b1d24ce7317a40 1-27
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/dao/AgentConfigMapper.java
+  s_0b6ef20f302a4a::t_460621cd42fe8c 17-18
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/AgentRuntimeConfigResolver.java
+  s_0b6ef20f302a4a::t_f6e29e195467db 39
+  s_bbd3266b609220::t_8e1eb1215c4a21 41
+  s_bbd3266b609220::t_52221231391c1c 8,34
+  s_0b6ef20f302a4a::t_b5e0e171269f33 1-7,9-33,35-38,40,42-46
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/domain/vo/McpImportResultVo.java
+  s_d8814696f3f334::t_16e0de18a1fb98 1-50
+agentforge-service/sql/increment/1.0.x/20261027000000_v1.0.x.sql
+  s_0b6ef20f302a4a::t_8a45b81b27886a 1-14,16-73
+  s_bbd3266b609220::t_d408fc5d491ed7 15
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/plugins/mcp/mapper/McpPluginServerMapper.xml
+  s_d8814696f3f334::t_321142e2712f25 1-168
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/AgentConfigPublishedPojo.java
+  s_0b6ef20f302a4a::t_460621cd42fe8c 1-125
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/service/impl/McpPluginServiceImpl.java
+  s_d8814696f3f334::t_9c4eedb7cb2c3a 300,306-308
+  s_d8814696f3f334::t_6a2b5c64d06e05 257
+  s_d8814696f3f334::t_aca7255b9e2ac1 454-472
+  s_d8814696f3f334::t_dc684083116fcb 258
+  s_d8814696f3f334::t_6f9d2b0d397004 447-448,451
+  s_d8814696f3f334::t_2629f287ad19a7 1-256,259-299,301-305,309-446,449-450,452-453,473-499
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/domain/transfer/McpPluginTransfer.java
+  s_d8814696f3f334::t_35cb0b931bae03 1-190
+  s_d8814696f3f334::t_55f1dd9009e6dc 191
+agentforge-service/agentforge-service-ui/vite.config.js
+  s_d8814696f3f334::t_6870aae26bd660 55
+  s_d8814696f3f334::t_c38353f7d9a914 12-13
+agentforge-service/agentforge-service-ui/src/components/AppSidebar.vue
+  s_d8814696f3f334::t_ae1f5c0c6d574c 30-31,33
+  s_d8814696f3f334::t_128e7554bb37de 55
+  s_bbd3266b609220::t_2016bc717ed74c 32
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/mcp/domain/McpTool.java
+  s_bbd3266b609220::t_cd04dcdc08ff49 45-58
+agentforge-service/agentforge-service-ui/src/pages/agents/api.js
+  s_bbd3266b609220::t_7e0ba8b7d532fd 57-60
+  s_0b6ef20f302a4a::t_8255fb76a08d4a 49-52,61-64
+  s_0b6ef20f302a4a::t_6857ff158819db 53-56
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/config/StandardAgentConfig.java
+  s_d8814696f3f334::t_b90757d787a295 43-50
+  s_d8814696f3f334::t_16db0ed29019d4 5-6,10,17
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/dao/McpPluginServerMapper.java
+  s_d8814696f3f334::t_42cc5ba68c9944 1-48,50-52
+  s_d8814696f3f334::t_961c2d66f9682b 49
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/config/McpToolConfig.java
+  s_d8814696f3f334::t_c43c6234264988 1-38
+  s_d8814696f3f334::t_d79253b651bd9b 39-41
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/IAgentConfigService.java
+  s_4d2332b30e165b::t_86d4de7f42822d 29-34
+  s_bbd3266b609220::t_0543dff5cfba37 36-42
+  s_0b6ef20f302a4a::t_7f7e52af628bf5 6,21-24
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/exception/AgentUnavailableException.java
+  s_bbd3266b609220::t_95f9e3c746f863 1-2,5-9,14-15,17-18
+  s_bbd3266b609220::t_2441faa2ff8fbf 3-4,10-13,16
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/dao/AgentConfigVersionMapper.java
+  s_bbd3266b609220::t_c0d44cc57b990f 22-27
+  s_0b6ef20f302a4a::t_b1d24ce7317a40 1-21,28
+agentforge-service/agentforge-service-web/src/test/java/cloud/changlu/agentforge/service/modules/plugins/mcp/service/McpPluginServiceImplTest.java
+  s_bbd3266b609220::t_554c3d5bd95477 1-66,68,70-73,76-93,96-109,114-120,123-229
+  s_bbd3266b609220::t_abb21965c1308a 67,69,74-75,94-95,110-113,121-122
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/dao/McpPluginMapper.java
+  s_d8814696f3f334::t_1d22eec5436015 1-45
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/我的资源/AgentForge Service 接入 HTTP 插件设计方案.md"
+  s_258fc580660301::t_97c656a782e2cc 115,196,259,262,320,329,455,469,1014,1016,1023,1027,1617,1688,1813,1816,1829
+  s_258fc580660301::t_6f4275917f1202 275
+  s_258fc580660301::t_17af59e07e6367 288,301,313
+  s_258fc580660301::t_465d0436ebb4aa 84,86,89,99,258,328,331,334,367,370,391,409,412,460,485,488,552,564,576,583,590,602-614,812,1372-1374,1818
+  s_258fc580660301::t_25c1351c66798e 468
+  s_258fc580660301::t_198df461b51ddb 90
+  s_258fc580660301::t_95a53cd59d233d 383
+  s_258fc580660301::t_adbdd151607b46 506
+  s_258fc580660301::t_bca3507e844083 426
+  s_258fc580660301::t_5ad2d3f036d403 219-220
+  s_258fc580660301::t_32517b17dfa936 517-530
+  s_258fc580660301::t_631f89841869e9 348
+  s_258fc580660301::t_9b30f35f0c0e0c 1-83,85,87-88,91-98,100-114,116-195,197-218,221-257,260-261,263-273,311,321-327,330,332-333,335-347,349-366,368-369,371-382,384-390,392-408,410-411,413-425,427-454,456-459,461-467,470-484,486-487,489-505,507-516,531-551,553-563,565-575,577-582,584-589,591-601,615-811,813-896,898-909,913-914,916-1013,1015,1017-1022,1024-1026,1028-1371,1375-1616,1618-1687,1689-1812,1814-1815,1817,1819-1828,1830-1835
+  s_258fc580660301::t_4bf1c6c52ca1cc 274,276-287,289-300,302-310,312,314-319
+  s_258fc580660301::t_f08b620a0c76d9 897,910-912,915
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/vo/PublishedAgentBasicVo.java
+  s_0b6ef20f302a4a::t_460621cd42fe8c 3-4,12-13,46-61
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/agent/mapper/AgentConfigPublishedMapper.xml
+  s_0b6ef20f302a4a::t_b1d24ce7317a40 1-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0ae3cc6163d682ddeda15cde4f0e33aaad3b8185",
+  "prompts": {},
+  "sessions": {
+    "s_0b6ef20f302a4a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17c86-06b2-7aa3-b938-ca2d471698e6",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_1dca2c6383cb84": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e8357f87bffed20ZWWKSauZk8U",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_258fc580660301": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e83229c1cffeZY4SFTTq8spBBs",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_4d2332b30e165b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e832c9a0cffevcwC54JJam1DMR",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_bbd3266b609220": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e81d8bac7ffetukJfJX04vHthH",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_d8814696f3f334": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e831ed2d6ffe98OAhJHWGolJxO",
+        "model": "deepseek-v4.1-flash-1017"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
