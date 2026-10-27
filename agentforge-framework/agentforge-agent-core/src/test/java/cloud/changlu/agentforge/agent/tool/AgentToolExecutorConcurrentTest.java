@@ -4,7 +4,7 @@ import cloud.changlu.agentforge.agent.component.middleware.AgentMiddlewareManage
 import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
-import cloud.changlu.agentforge.agent.memory.WindowChatMemory;
+import cloud.changlu.agentforge.agent.memory.window.MessageWindowChatMemory;
 import cloud.changlu.agentforge.agent.support.WeatherTools;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionResultMessage;
@@ -29,7 +29,7 @@ public class AgentToolExecutorConcurrentTest {
     private static AgentChatContext context() {
         return AgentChatContext.builder()
                 .request(AgentRequest.builder().memoryId("m-1").question("q").build())
-                .chatMemory(new WindowChatMemory("m-1", 50))
+                .chatMemory(MessageWindowChatMemory.builder().id("m-1").maxMessages(50).build())
                 .build();
     }
 

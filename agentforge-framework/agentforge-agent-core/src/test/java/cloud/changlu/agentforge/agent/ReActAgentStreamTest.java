@@ -5,6 +5,7 @@ import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.exception.AgentException;
 import cloud.changlu.agentforge.agent.exception.CancelException;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.window.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.stream.TokenStream;
 import cloud.changlu.agentforge.agent.support.ScriptedStreamingChatModel;
 import cloud.changlu.agentforge.agent.support.SideEffectTools;
@@ -43,7 +44,7 @@ public class ReActAgentStreamTest {
                 new ScriptedStreamingChatModel()
                         .enqueueToolCall("call_1", "getWeather", "{\"city\":\"Hangzhou\"}")
                         .enqueueText("杭州", "今天22度", "，晴。");
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         ReActAgent agent = agent(streamingModel, memoryProvider, AgentSettings.builder().build());
 
         final List<String> partials = new ArrayList<String>();
@@ -110,7 +111,7 @@ public class ReActAgentStreamTest {
 
         agent(
                         streamingModel,
-                        ChatMemoryProvider.windowChatMemoryProvider(100),
+                        new MessageWindowChatMemoryProvider(100),
                         AgentSettings.builder().build())
                 .runStream(request("AgentForge是什么？"))
                 .onCompleteResponse(consumer(complete))
@@ -125,7 +126,7 @@ public class ReActAgentStreamTest {
         ScriptedStreamingChatModel streamingModel =
                 new ScriptedStreamingChatModel()
                         .enqueueError(new IllegalStateException("stream boom"));
-        ChatMemoryProvider memoryProvider = ChatMemoryProvider.windowChatMemoryProvider(100);
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
         ReActAgent agent = agent(streamingModel, memoryProvider, AgentSettings.builder().build());
         final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
         final AtomicReference<ChatResponse> complete = new AtomicReference<ChatResponse>();
@@ -155,7 +156,7 @@ public class ReActAgentStreamTest {
 
         agent(
                         streamingModel,
-                        ChatMemoryProvider.windowChatMemoryProvider(100),
+                        new MessageWindowChatMemoryProvider(100),
                         AgentSettings.builder().build())
                 .runStream(request("一个问题"))
                 .ignoreErrors()
@@ -172,7 +173,7 @@ public class ReActAgentStreamTest {
         AgentSettings settings = AgentSettings.builder().maxSteps(1).build();
         final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
 
-        agent(streamingModel, ChatMemoryProvider.windowChatMemoryProvider(100), settings)
+        agent(streamingModel, new MessageWindowChatMemoryProvider(100), settings)
                 .runStream(request("杭州天气怎么样？"))
                 .onError(
                         new Consumer<Throwable>() {
@@ -201,7 +202,7 @@ public class ReActAgentStreamTest {
                 ReActAgent.builder()
                         .systemPrompt("You are a test assistant.")
                         .streamingChatModel(streamingModel)
-                        .chatMemoryProvider(ChatMemoryProvider.windowChatMemoryProvider(100))
+                        .chatMemoryProvider(new MessageWindowChatMemoryProvider(100))
                         .toolService(toolService)
                         .agentSettings(AgentSettings.builder().build())
                         .build();
@@ -232,7 +233,7 @@ public class ReActAgentStreamTest {
         TokenStream tokenStream =
                 agent(
                                 streamingModel,
-                                ChatMemoryProvider.windowChatMemoryProvider(100),
+                                new MessageWindowChatMemoryProvider(100),
                                 AgentSettings.builder().build())
                         .runStream(request("一个问题"));
         tokenStream.start();

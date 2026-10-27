@@ -9,13 +9,13 @@ public class AiThinkProcessor implements IStreamSceneProcessor {
 
     @Override
     public String getSceneCode() {
-        return StreamEventEnums.EventTypeEnum.THINK.getCode();
+        return StreamEventEnums.EventEnum.THINK.getCode();
     }
 
     // 思考内容
     public static StreamEventResponse respThink(String content, Boolean isFinish) {
-        return StreamEventResponse.of(StreamEventEnums.EventTypeEnum.THINK.getCode())
-                .type(StreamEventEnums.StepTypeEnum.TEXT.getCode())
+        return StreamEventResponse.of(
+                        StreamEventEnums.EventEnum.THINK, StreamEventEnums.TypeEnum.TEXT)
                 .content(content)
                 .finish(isFinish);
     }

@@ -11,11 +11,15 @@ public class AgentRequest {
 
     private String question;
 
+    /** 业务侧扩展参数，由上层放入，Agent 内部不解释，仅在 ChatContext 中透传。 */
+    private java.util.Map<String, Object> extensions;
+
     public AgentRequest() {}
 
     private AgentRequest(AgentRequestBuilder builder) {
         this.memoryId = builder.memoryId;
         this.question = builder.question;
+        this.extensions = builder.extensions;
     }
 
     public static AgentRequestBuilder builder() {
@@ -38,9 +42,18 @@ public class AgentRequest {
         this.question = question;
     }
 
+    public java.util.Map<String, Object> getExtensions() {
+        return extensions;
+    }
+
+    public void setExtensions(java.util.Map<String, Object> extensions) {
+        this.extensions = extensions;
+    }
+
     public static class AgentRequestBuilder {
         private Object memoryId;
         private String question;
+        private java.util.Map<String, Object> extensions;
 
         public AgentRequestBuilder memoryId(Object memoryId) {
             this.memoryId = memoryId;
@@ -49,6 +62,11 @@ public class AgentRequest {
 
         public AgentRequestBuilder question(String question) {
             this.question = question;
+            return this;
+        }
+
+        public AgentRequestBuilder extensions(java.util.Map<String, Object> extensions) {
+            this.extensions = extensions;
             return this;
         }
 

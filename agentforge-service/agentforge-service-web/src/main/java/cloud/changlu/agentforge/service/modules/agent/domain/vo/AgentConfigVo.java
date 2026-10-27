@@ -1,6 +1,9 @@
 package cloud.changlu.agentforge.service.modules.agent.domain.vo;
 
+import cloud.changlu.agentforge.service.modules.agent.domain.config.McpToolConfig;
+
 import java.util.Date;
+import java.util.List;
 
 /** Agent 配置返回对象。 */
 public class AgentConfigVo {
@@ -12,8 +15,12 @@ public class AgentConfigVo {
     private Long modelId;
     private String modelName;
     private String systemPrompt;
+    private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
+    private List<McpToolConfig> mcpPlugins;
     private Integer publish;
+    private Date lastPublishTime;
+    private Long submittedVersionNo;
     private Integer isPublic;
     private String avatar;
     private String description;
@@ -76,6 +83,14 @@ public class AgentConfigVo {
         this.systemPrompt = systemPrompt;
     }
 
+    public Integer getChatMemoryType() {
+        return chatMemoryType;
+    }
+
+    public void setChatMemoryType(Integer chatMemoryType) {
+        this.chatMemoryType = chatMemoryType;
+    }
+
     public Integer getChatMemoryMaxMessages() {
         return chatMemoryMaxMessages;
     }
@@ -84,12 +99,36 @@ public class AgentConfigVo {
         this.chatMemoryMaxMessages = chatMemoryMaxMessages;
     }
 
+    public List<McpToolConfig> getMcpPlugins() {
+        return mcpPlugins;
+    }
+
+    public void setMcpPlugins(List<McpToolConfig> mcpPlugins) {
+        this.mcpPlugins = mcpPlugins;
+    }
+
     public Integer getPublish() {
         return publish;
     }
 
     public void setPublish(Integer publish) {
         this.publish = publish;
+    }
+
+    public Date getLastPublishTime() {
+        return lastPublishTime;
+    }
+
+    public void setLastPublishTime(Date lastPublishTime) {
+        this.lastPublishTime = lastPublishTime;
+    }
+
+    public Long getSubmittedVersionNo() {
+        return submittedVersionNo;
+    }
+
+    public void setSubmittedVersionNo(Long submittedVersionNo) {
+        this.submittedVersionNo = submittedVersionNo;
     }
 
     public Integer getIsPublic() {

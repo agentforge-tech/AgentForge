@@ -1,5 +1,7 @@
 package cloud.changlu.agentforge.service.common;
 
+import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(AgentForgeException.class)
+    public ResponseEntity<ApiErrorVo> handleBusiness(AgentForgeException e) {
+        log.warn("Business exception[{}]: {}", e.getCode(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiErrorVo(HttpStatus.BAD_REQUEST.value(), e.getCode(), e.getMessage()));
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorVo> handleBadRequest(IllegalArgumentException e) {

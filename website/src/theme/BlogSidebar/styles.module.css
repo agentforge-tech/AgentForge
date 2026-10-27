@@ -1,8 +1,14 @@
-.sidebar {
+.sidebarColumn {
   max-height: calc(100vh - (var(--ifm-navbar-height) + 2rem));
-  overflow-y: auto;
+  min-width: 0;
   position: sticky;
-  top: calc(var(--ifm-navbar-height) + 2rem);
+  top: calc(var(--ifm-navbar-height) + 1rem);
+  width: 100%;
+}
+
+.sidebar {
+  max-height: inherit;
+  overflow-y: auto;
   padding-right: 0.75rem;
 }
 
@@ -75,7 +81,10 @@
   display: block;
   line-height: 1.4;
   margin: 0.12rem 0;
+  overflow: hidden;
   padding: 0.34rem 0.45rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .articleLink:hover {
@@ -119,6 +128,11 @@
 }
 
 @media (max-width: 996px) {
+  .sidebarColumn {
+    max-height: none;
+    position: static;
+  }
+
   .sidebar:not(.mobile) {
     display: none;
   }

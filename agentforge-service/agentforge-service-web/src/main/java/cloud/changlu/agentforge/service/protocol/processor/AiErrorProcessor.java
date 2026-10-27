@@ -8,13 +8,13 @@ public class AiErrorProcessor implements IStreamSceneProcessor {
 
     @Override
     public String getSceneCode() {
-        return StreamEventEnums.EventTypeEnum.ERROR.getCode();
+        return StreamEventEnums.EventEnum.ERROR.getCode();
     }
 
     // 异常信息
     public static StreamEventResponse respError(String content) {
-        return StreamEventResponse.of(StreamEventEnums.EventTypeEnum.ERROR.getCode())
-                .type(StreamEventEnums.StepTypeEnum.TEXT.getCode())
+        return StreamEventResponse.of(
+                        StreamEventEnums.EventEnum.ERROR, StreamEventEnums.TypeEnum.TEXT)
                 .content(content)
                 .finish(true);
     }

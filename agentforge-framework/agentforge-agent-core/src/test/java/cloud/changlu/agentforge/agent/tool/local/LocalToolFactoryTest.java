@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent.tool.local;
 
+import cloud.changlu.agentforge.agent.constant.ToolConstants;
 import cloud.changlu.agentforge.agent.tool.local.support.LocalToolArgumentConverter;
 import cloud.changlu.agentforge.agent.tool.local.support.LocalToolExecutionRequestUtil;
 import cloud.changlu.agentforge.agent.tool.local.support.LoggingToolExecutor;
@@ -58,6 +59,31 @@ public class LocalToolFactoryTest {
                         Collections.singletonList(new FactoryTools()), true);
 
         assertTrue(executorFor(tools, "square") instanceof LoggingToolExecutor);
+    }
+
+    @Test
+    public void shouldAddRequiredThoughtParameterWhenEnabled() {
+        Map<ToolSpecification, ToolExecutor> tools =
+                LocalToolFactory.buildLocalToolsWithThought(
+                        Collections.singletonList(new FactoryTools()), true);
+
+        ToolSpecification greet = find(tools, "greet");
+        assertTrue(
+                greet.parameters().properties().containsKey(ToolConstants.THOUGHT_PARAMETER_NAME));
+        assertTrue(greet.parameters().required().contains(ToolConstants.THOUGHT_PARAMETER_NAME));
+        assertTrue(executorFor(tools, "greet") instanceof LocalToolExecutor);
+    }
+
+    @Test
+    public void shouldNotAddThoughtParameterByDefault() {
+        Map<ToolSpecification, ToolExecutor> tools =
+                LocalToolFactory.buildLocalTools(Collections.singletonList(new FactoryTools()));
+
+        assertTrue(
+                !find(tools, "greet")
+                        .parameters()
+                        .properties()
+                        .containsKey(ToolConstants.THOUGHT_PARAMETER_NAME));
     }
 
     @Test

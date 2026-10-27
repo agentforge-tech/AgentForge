@@ -7,9 +7,9 @@
     "message": "AgentForge Logo",
     "description": "The alt text of navbar logo"
   },
-  "item.label.文档": {
-    "message": "Docs",
-    "description": "Navbar item with label 文档"
+  "item.label.SDK 文档": {
+    "message": "SDK Docs",
+    "description": "Navbar item with label SDK 文档"
   },
   "item.label.博客": {
     "message": "Blog",

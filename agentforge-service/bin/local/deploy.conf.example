@@ -1,0 +1,11 @@
+# ============================================
+# 本机数据库升级配置示例
+# 复制为 deploy.conf 后填写实际数据库连接信息：
+#   cp bin/local/deploy.conf.example bin/local/deploy.conf
+# ============================================
+
+DB_HOST="127.0.0.1"
+DB_PORT="3306"
+DB_USER="root"
+DB_PASSWORD='请填写数据库密码'
+DB_NAME="agentforge"

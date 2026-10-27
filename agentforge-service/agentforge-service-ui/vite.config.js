@@ -4,13 +4,14 @@ import { resolve } from 'node:path'
 
 // 单站点多页面：
 //   /        → 我的模型（管理列表，src/pages/models）
-//   /chat    → 对话门户（src/App.vue）
+//   /agent/published/{aid} → 已发布 Agent 对话页（src/pages/published）
 // 两个页面各自独立入口、共享一套构建产物，统一由本配置开发与打包。
 function rewriteChatPath() {
   const redirect = (req) => {
     const [path, query] = (req.url || '').split('?')
-    if (path === '/chat' || path === '/agents' || path === '/agents/config') {
-      req.url = path === '/agents/config' ? '/agents/' + (query ? '?' + query : '') : path + '/' + (query ? '?' + query : '')
+    if (path === '/chat' || path.startsWith('/chat/') || path.startsWith('/agent/published/') || path === '/agents' || path === '/agents/config' || path === '/mcp') {
+      const target = path === '/agents/config' ? '/agents/' : path === '/agents' ? '/agents/' : path === '/mcp' ? '/mcp/' : '/chat/'
+      req.url = target + (query ? '?' + query : '')
     }
   }
   return {
@@ -39,7 +40,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: true } }
+    // 后端地址可通过 VITE_PROXY_TARGET 覆盖，便于本地换端口联调
+    proxy: {
+      '/api': { target: process.env.VITE_PROXY_TARGET || 'http://localhost:8080', changeOrigin: true }
+    }
   },
   build: {
     outDir: 'dist',
@@ -48,6 +52,7 @@ export default defineConfig({
       input: {
         index: resolve(process.cwd(), 'index.html'),
         'agents/index': resolve(process.cwd(), 'agents/index.html'),
+        'mcp/index': resolve(process.cwd(), 'mcp/index.html'),
         'chat/index': resolve(process.cwd(), 'chat/index.html')
       },
       output: {
