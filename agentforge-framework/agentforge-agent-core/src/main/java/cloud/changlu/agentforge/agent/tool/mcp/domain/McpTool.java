@@ -42,6 +42,20 @@ public final class McpTool {
         return inputSchema;
     }
 
+    // ---- JavaBean 访问器：保证 JSON 序列化（Jackson）能识别出工具名称、描述与入参 Schema ----
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Map<String, Object> getInputSchema() {
+        return inputSchema;
+    }
+
     @Override
     public String toString() {
         return "McpTool{" + "name='" + name + '\'' + ", description='" + description + '\'' + '}';

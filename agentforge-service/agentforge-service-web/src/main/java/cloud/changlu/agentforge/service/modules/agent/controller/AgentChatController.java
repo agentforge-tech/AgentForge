@@ -1,12 +1,13 @@
 package cloud.changlu.agentforge.service.modules.agent.controller;
 
 import cloud.changlu.agentforge.agent.step.ChatResult;
-import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo;
+import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
+import cloud.changlu.agentforge.service.modules.agent.domain.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.IAgentManager;
 import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitContext;
 import cloud.changlu.agentforge.service.modules.agent.runtime.factory.AgentManagerFactory;
+import cloud.changlu.agentforge.service.modules.agent.service.AgentRuntimeConfigResolver;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,12 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 public class AgentChatController {
 
-    private final AgentConfigMapper agentConfigMapper;
+    private final AgentRuntimeConfigResolver runtimeConfigResolver;
     private final AgentManagerFactory agentManagerFactory;
 
     public AgentChatController(
-            AgentConfigMapper agentConfigMapper, AgentManagerFactory agentManagerFactory) {
-        this.agentConfigMapper = agentConfigMapper;
+            AgentRuntimeConfigResolver runtimeConfigResolver,
+            AgentManagerFactory agentManagerFactory) {
+        this.runtimeConfigResolver = runtimeConfigResolver;
         this.agentManagerFactory = agentManagerFactory;
     }
 
@@ -37,13 +39,16 @@ public class AgentChatController {
         if (req.getMessage() == null || req.getMessage().trim().isEmpty()) {
             throw new IllegalArgumentException("对话内容不能为空");
         }
-        AgentConfigPojo config = agentConfigMapper.selectByAid(req.getAid().trim());
-        if (config == null) {
-            throw new IllegalArgumentException("Agent 不存在或已被删除");
-        }
         boolean isDebug = Boolean.TRUE.equals(req.getIsDebug());
+        AgentRuntimeConfig config;
+        try {
+            config = runtimeConfigResolver.resolve(req.getAid(), isDebug);
+        } catch (AgentForgeException e) {
+            // Agent 未发布、已停止发布或已删除：作为一条正常回答返回，避免 500 与异常堆栈
+            return ChatResult.toFinished(req.getMessage().trim(), e.getMessage());
+        }
         IAgentManager<Object, Object> agentManager =
-                agentManagerFactory.getAgentManagerByTypeAndMode(config.getType(), req.getMode());
+                agentManagerFactory.getAgentManagerByType(config.getType());
         Object agent =
                 agentManager.getAgentAndInitAgent(
                         AgentInitContext.builder()

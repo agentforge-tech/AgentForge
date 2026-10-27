@@ -14,6 +14,8 @@ public interface AgentConfigMapper {
 
     AgentConfigPojo selectById(@Param("id") Long id);
 
+    AgentConfigPojo selectByIdForUpdate(@Param("id") Long id);
+
     AgentConfigPojo selectByAid(@Param("aid") String aid);
 
     long selectCount(AgentConfigQueryReq query);
@@ -23,6 +25,11 @@ public interface AgentConfigMapper {
     int insert(AgentConfigPojo pojo);
 
     int update(AgentConfigPojo pojo);
+
+    int updatePublishStatus(
+            @Param("id") Long id,
+            @Param("publish") Integer publish,
+            @Param("modifyTime") java.util.Date modifyTime);
 
     int deleteById(@Param("id") Long id);
 }

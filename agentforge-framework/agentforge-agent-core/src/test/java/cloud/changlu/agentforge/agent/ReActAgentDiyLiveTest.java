@@ -4,7 +4,7 @@ import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.memory.ChatMemory;
-import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
+import cloud.changlu.agentforge.agent.memory.window.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.support.WeatherTools;
 import cloud.changlu.agentforge.model.chat.ChatModel;
@@ -186,7 +186,7 @@ public class ReActAgentDiyLiveTest {
                                 + "Always call a weather tool before answering a weather question.")
                 .chatModel(chatModel)
                 .streamingChatModel(streamingChatModel)
-                .chatMemoryProvider(ChatMemoryProvider.windowChatMemoryProvider(50))
+                .chatMemoryProvider(new MessageWindowChatMemoryProvider(50))
                 .toolService(toolService)
                 .agentSettings(
                         AgentSettings.builder()

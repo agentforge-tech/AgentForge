@@ -13,4 +13,5 @@ public interface LlmConstant {
     String TEMPERATURE = "temperature";
     String TOP_P = "topP";
     String MAX_TOKENS = "maxTokens";
+    String RETURN_THINKING = "returnThinking";
 }

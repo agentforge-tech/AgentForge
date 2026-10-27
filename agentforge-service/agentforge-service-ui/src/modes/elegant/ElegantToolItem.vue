@@ -12,26 +12,25 @@
       </svg>
       <i v-else class="elegant-tool-icon el-icon-loading"></i>
       <span class="elegant-tool-name">{{ part.toolName }}</span>
+      <span v-if="thought" class="elegant-tool-thought" :title="thought">{{ thought }}</span>
       <span v-if="part.isFinish && durationText" class="elegant-tool-dur">（{{ durationText }}）</span>
       <i class="el-icon-arrow-down elegant-tool-arrow" :class="{ open }"></i>
     </div>
     <el-collapse-transition>
       <div v-show="open" class="elegant-tool-body">
-        <div v-if="part.inputParams" class="elegant-tool-section">
-          <div class="elegant-tool-label">入参</div>
-          <pre class="elegant-tool-code">{{ format(part.inputParams) }}</pre>
-        </div>
         <div v-if="part.outputResult" class="elegant-tool-section">
           <div class="elegant-tool-label">结果</div>
           <pre class="elegant-tool-code">{{ format(part.outputResult) }}</pre>
         </div>
-        <div v-if="!part.inputParams && !part.outputResult" class="elegant-tool-empty">暂无详情</div>
+        <div v-else class="elegant-tool-empty">暂无返回结果</div>
       </div>
     </el-collapse-transition>
   </div>
 </template>
 
 <script>
+const THOUGHT_PARAMETER_NAME = '__thought'
+
 export default {
   name: 'ElegantToolItem',
   props: {
@@ -41,6 +40,12 @@ export default {
     return { open: false }
   },
   computed: {
+    thought() {
+      const params = this.parseInputParams(this.part.inputParams)
+      if (!params || typeof params !== 'object' || Array.isArray(params)) return ''
+      const thought = params[THOUGHT_PARAMETER_NAME]
+      return typeof thought === 'string' ? thought.trim() : ''
+    },
     durationText() {
       const duration = Number(this.part.duration)
       if (!Number.isFinite(duration) || duration <= 0) return ''
@@ -49,6 +54,15 @@ export default {
     }
   },
   methods: {
+    parseInputParams(value) {
+      if (value == null || typeof value === 'object') return value
+      if (typeof value !== 'string' || !value.trim()) return null
+      try {
+        return JSON.parse(value)
+      } catch (_error) {
+        return null
+      }
+    },
     format(value) {
       if (value == null) return ''
       try {
@@ -80,8 +94,15 @@ export default {
 .elegant-tool-icon { font-size: 13px; color: #91a0b6; flex: 0 0 auto; }
 .elegant-tool-wrench { width: 15px; height: 15px; }
 .elegant-tool.done .elegant-tool-icon { color: #91a0b6; }
-.elegant-tool-name { font-weight: 400; color: #718096; }
-.elegant-tool-dur { color: #98a2b3; font-size: 11px; padding: 0; }
+.elegant-tool-name { flex: 0 0 auto; font-weight: 400; color: #718096; }
+.elegant-tool-thought {
+  min-width: 0;
+  overflow: hidden;
+  color: #8490a2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.elegant-tool-dur { flex: 0 0 auto; color: #98a2b3; font-size: 11px; padding: 0; }
 .elegant-tool-arrow { color: #b0b8c4; font-size: 11px; transition: transform 0.2s; }
 .elegant-tool-arrow.open { transform: rotate(180deg); }
 .elegant-tool-body { margin-top: 6px; padding: 9px 10px; border-radius: 6px; background: #f7f9fc; }

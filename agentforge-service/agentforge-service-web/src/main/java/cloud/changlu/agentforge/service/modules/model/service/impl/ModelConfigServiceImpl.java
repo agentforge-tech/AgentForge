@@ -130,11 +130,10 @@ public class ModelConfigServiceImpl implements IModelConfigService {
             providers.add(new ModelConfigOptionVo(provider.getCode(), provider.getDesc(), null));
         }
         List<ModelConfigOptionVo> modelTypes = new ArrayList<>();
-        for (LlmModelTypeEnum modelType : LlmModelTypeEnum.values()) {
-            modelTypes.add(
-                    new ModelConfigOptionVo(
-                            modelType.getCode(), modelType.getDesc(), modelType.getName()));
-        }
+        LlmModelTypeEnum modelType = LlmModelTypeEnum.CHAT;
+        modelTypes.add(
+                new ModelConfigOptionVo(
+                        modelType.getCode(), modelType.getDesc(), modelType.getName()));
         return new ModelConfigOptionsVo(providers, modelTypes);
     }
 
@@ -151,8 +150,11 @@ public class ModelConfigServiceImpl implements IModelConfigService {
             }
             ChatModel chatModel =
                     LlmFactory.buildChatModel(ModelConfigTransfer.toBasicConfig(pojo));
-            chatModel.chat("ping");
-            return success(vo, "模型连通性测试成功");
+            String response = chatModel.chat("ping");
+            if (response == null || response.trim().isEmpty()) {
+                return failure(vo, "模型连通性测试失败: 模型未返回有效内容");
+            }
+            return success(vo, "模型连通性测试成功，模型已返回有效响应");
         } catch (Exception e) {
             return failure(vo, "模型连通性测试失败: " + e.getMessage());
         }

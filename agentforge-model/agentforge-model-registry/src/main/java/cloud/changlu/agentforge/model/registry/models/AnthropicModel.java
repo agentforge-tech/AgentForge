@@ -108,5 +108,10 @@ public class AnthropicModel extends BaseModel {
         if (isNotEmpty(maxTokens)) {
             builder.maxTokens(Integer.parseInt(maxTokens));
         }
+
+        String returnThinking = props.getProperty(LlmConstant.RETURN_THINKING);
+        if (isNotEmpty(returnThinking)) {
+            builder.returnThinking(Boolean.parseBoolean(returnThinking));
+        }
     }
 }

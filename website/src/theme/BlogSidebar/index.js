@@ -125,6 +125,7 @@ function ArticleList({items, pathname}) {
         <li key={item.permalink}>
           <Link
             to={item.permalink}
+            title={item.title}
             className={clsx(styles.articleLink, {
               [styles.articleLinkActive]: samePath(item.permalink, pathname),
             })}>
@@ -215,7 +216,7 @@ export default function BlogSidebar({sidebar}) {
   }
 
   return (
-    <aside className="col col--3">
+    <aside className={styles.sidebarColumn}>
       <SidebarTree sidebar={sidebar} />
     </aside>
   );

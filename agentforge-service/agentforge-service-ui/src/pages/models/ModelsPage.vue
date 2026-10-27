@@ -2,90 +2,7 @@
   <div class="af-models" :class="{ 'af-models--nav-open': navOpen }">
     <div v-if="navOpen" class="af-sidebar-backdrop" @click="navOpen = false"></div>
 
-    <!-- ------------------------------ 左侧导航 ------------------------------ -->
-    <aside class="af-sidebar">
-      <div class="af-sidebar__head">
-        <div class="af-brand">
-          <span class="af-brand__logo"><img src="/logo.png" alt="AgentForge" /></span>
-          <div>
-            <div class="af-brand__name">AgentForge</div>
-            <div class="af-brand__sub">AgentForge Service</div>
-          </div>
-        </div>
-      </div>
-
-      <nav class="af-sidebar__scroll">
-        <a class="af-nav-item af-nav-item--link" href="/chat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
-          </svg>
-          <span class="af-nav-item__label">对话</span>
-          <span class="af-nav-item__hint">进入</span>
-        </a>
-
-        <div class="af-nav-group af-nav-group--agent">
-          <button class="af-nav-group__head" @click="agentGroupOpen = !agentGroupOpen" type="button" :aria-expanded="agentGroupOpen">
-            <span>Agent 驾驶舱</span>
-            <svg
-              class="af-nav-group__chevron"
-              :class="{ 'af-nav-group__chevron--collapsed': !agentGroupOpen }"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-
-          <transition name="af-fade">
-            <div v-show="agentGroupOpen" class="af-nav-group__body">
-              <a class="af-nav-item af-nav-item--link" href="/agents">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="8" r="3" />
-                  <path d="M5 20a7 7 0 0 1 14 0M4 5l2 1M20 5l-2 1M12 2v2" />
-                </svg>
-                <span class="af-nav-item__label">我的 Agent</span>
-              </a>
-            </div>
-          </transition>
-        </div>
-
-        <div class="af-nav-group af-nav-group--resources">
-          <button class="af-nav-group__head" @click="groupOpen = !groupOpen" type="button" :aria-expanded="groupOpen">
-            <span>我的资源库</span>
-            <svg
-              class="af-nav-group__chevron"
-              :class="{ 'af-nav-group__chevron--collapsed': !groupOpen }"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-
-          <transition name="af-fade">
-            <div v-show="groupOpen" class="af-nav-group__body">
-              <button class="af-nav-item af-nav-item--active" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" />
-                  <path d="M12 11L4 6.5M12 11l8-4.5M12 11v9" />
-                </svg>
-                <span class="af-nav-item__label">模型列表</span>
-              </button>
-            </div>
-          </transition>
-        </div>
-      </nav>
-
-      <div class="af-sidebar__footer">
-        <div class="af-user">
-          <span class="af-user__avatar">A</span>
-          <div class="af-user__meta">
-            <div class="af-user__name">Agent 开发者</div>
-            <div class="af-user__plan">专业版 · Pro</div>
-          </div>
-        </div>
-      </div>
-    </aside>
+    <AppSidebar active="models" />
 
     <!-- ------------------------------ 主工作区 ------------------------------ -->
     <main class="af-workspace">
@@ -118,12 +35,6 @@
 
       <section class="af-content">
         <div class="af-content__inner">
-          <div class="af-page-head">
-            <div class="af-page-head__text">
-              <h1 class="af-page-head__title">模型列表</h1>
-            </div>
-          </div>
-
           <!-- 工具栏 -->
           <div class="af-toolbar">
             <div class="af-search">
@@ -168,8 +79,13 @@
           <div v-else-if="models.length" class="af-grid">
             <article v-for="m in models" :key="m.id" class="af-model-card">
               <div class="af-model-card__head">
-                <span class="af-model-card__avatar" :style="{ '--provider': providerColor(m.provider) }">
-                  {{ initial(m.name) }}
+                <span
+                  class="af-model-card__avatar"
+                  :class="{ 'af-model-card__avatar--logo': modelLogo(m) }"
+                  :style="{ '--provider': providerColor(m.provider) }"
+                >
+                  <img v-if="modelLogo(m)" :src="modelLogo(m)" :alt="modelBrand(m) + ' logo'" />
+                  <template v-else>{{ initial(m.name) }}</template>
                 </span>
                 <div class="af-model-card__heading">
                   <div class="af-model-card__title">
@@ -223,24 +139,36 @@
             <button v-else class="af-btn af-btn--primary af-btn--sm" type="button" @click="openCreate">新建模型</button>
           </div>
 
-          <nav v-if="!loading && totalPage > 1" class="af-pagination" aria-label="模型列表分页">
-            <button class="af-page-btn" type="button" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
-              上一页
-            </button>
-            <button
-              v-for="page in pageNumbers"
-              :key="page"
-              class="af-page-btn af-page-btn--number"
-              :class="{ 'af-page-btn--active': page === currentPage }"
-              type="button"
-              :aria-current="page === currentPage ? 'page' : null"
-              @click="changePage(page)"
-            >
-              {{ page }}
-            </button>
-            <button class="af-page-btn" type="button" :disabled="currentPage === totalPage" @click="changePage(currentPage + 1)">
-              下一页
-            </button>
+          <nav v-if="!loading && totalCount > 0" class="af-pagination" aria-label="模型列表分页">
+            <div class="af-pagination__summary">共 {{ totalCount }} 个模型，第 {{ currentPage }} / {{ totalPage }} 页</div>
+            <label class="af-pagination__size">
+              <span>每页</span>
+              <select v-model.number="pageSize" aria-label="每页显示数量" @change="changePageSize">
+                <option :value="12">12</option>
+                <option :value="24">24</option>
+                <option :value="48">48</option>
+              </select>
+              <span>条</span>
+            </label>
+            <div class="af-pagination__buttons">
+              <button class="af-page-btn" type="button" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+                上一页
+              </button>
+              <button
+                v-for="page in pageNumbers"
+                :key="page"
+                class="af-page-btn af-page-btn--number"
+                :class="{ 'af-page-btn--active': page === currentPage }"
+                type="button"
+                :aria-current="page === currentPage ? 'page' : null"
+                @click="changePage(page)"
+              >
+                {{ page }}
+              </button>
+              <button class="af-page-btn" type="button" :disabled="currentPage === totalPage" @click="changePage(currentPage + 1)">
+                下一页
+              </button>
+            </div>
           </nav>
         </div>
       </section>
@@ -305,45 +233,27 @@
               </div>
             </div>
 
-            <transition name="af-fade">
-              <div
-                v-if="formTestResult"
-                class="af-test-result"
-                :class="formTestResult.success ? 'af-test-result--success' : 'af-test-result--error'"
-                role="status"
-              >
-                <span class="af-test-result__icon">
-                  <svg v-if="formTestResult.success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </span>
-                <div class="af-test-result__content">
-                  <div class="af-test-result__title">
-                    {{ formTestResult.success ? 'Function Call 测试通过' : 'Function Call 测试未通过' }}
-                  </div>
-                  <div class="af-test-result__message">{{ formTestResult.message }}</div>
-                </div>
-                <button class="af-test-result__close" type="button" aria-label="关闭测试结果" @click="formTestResult = null">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </transition>
           </div>
 
           <div class="af-modal__footer">
-            <button
-              class="af-btn af-btn--sm"
-              type="button"
-              :disabled="saving || testingForm"
-              @click="onTestFormFunctionCall"
-            >
-              {{ testingForm ? '测试中...' : '测试 Function Call' }}
-            </button>
+            <div class="af-modal__footer-tests">
+              <button
+                class="af-btn af-btn--sm"
+                type="button"
+                :disabled="saving || testingForm"
+                @click="onTestFormConnectivity"
+              >
+                {{ testingForm === 'connectivity' ? '测试中...' : '测试连通性' }}
+              </button>
+              <button
+                class="af-btn af-btn--sm"
+                type="button"
+                :disabled="saving || testingForm"
+                @click="onTestFormFunctionCall"
+              >
+                {{ testingForm === 'functionCall' ? '测试中...' : '测试 Function Call' }}
+              </button>
+            </div>
             <div class="af-modal__footer-actions">
               <button class="af-btn af-btn--sm" type="button" @click="closeDialog">取消</button>
               <button class="af-btn af-btn--primary af-btn--sm" type="button" :disabled="saving || testingForm" @click="submitForm">
@@ -362,6 +272,7 @@
 </template>
 
 <script>
+import AppSidebar from '../../components/AppSidebar.vue'
 import {
   fetchOptions,
   fetchModels,
@@ -379,10 +290,9 @@ const PROVIDER_COLORS = {
 
 export default {
   name: 'ModelsPage',
+  components: { AppSidebar },
   data() {
     return {
-      agentGroupOpen: true,
-      groupOpen: true,
       navOpen: false,
       keyword: '',
       filter: 'all',
@@ -394,8 +304,7 @@ export default {
       saving: false,
       testing: null,
       editingId: null,
-      testingForm: false,
-      formTestResult: null,
+      testingForm: null,
       options: { providers: [], modelTypes: [] },
       models: [],
       currentPage: 1,
@@ -480,7 +389,6 @@ export default {
     },
     openCreate() {
       this.form = this.emptyForm()
-      this.formTestResult = null
       if (this.options.providers.length) this.form.provider = this.options.providers[0].value
       if (this.options.modelTypes.length) this.form.modelType = this.options.modelTypes[0].value
       this.dialogVisible = true
@@ -490,7 +398,6 @@ export default {
       this.editingId = model.id
       try {
         const detail = await getModel(model.id)
-        this.formTestResult = null
         this.form = {
           id: detail.id,
           name: detail.name,
@@ -566,32 +473,50 @@ export default {
         this.testing = null
       }
     },
-    async onTestFormFunctionCall() {
+    formTestPayload() {
+      const payload = {
+        modelId: this.form.id,
+        provider: this.form.provider,
+        modelType: this.form.modelType,
+        testType: this.form.modelType,
+        modelname: this.form.modelname,
+        url: this.form.url
+      }
+      if (this.form.apiKey) payload.apiKey = this.form.apiKey
+      return payload
+    },
+    async onTestFormConnectivity() {
       if (!this.form.url || !this.form.modelname) {
-        this.formTestResult = { success: false, message: '请先填写连接地址和模型名称后再进行测试。' }
+        this.toast('请先填写连接地址和模型名称后再进行测试', true)
         return
       }
-      this.testingForm = true
-      this.formTestResult = null
+      this.testingForm = 'connectivity'
       try {
-        const payload = {
-          modelId: this.form.id,
-          provider: this.form.provider,
-          modelType: this.form.modelType,
-          testType: this.form.modelType,
-          modelname: this.form.modelname,
-          url: this.form.url
-        }
-        if (this.form.apiKey) payload.apiKey = this.form.apiKey
-        const result = await testFunctionCall(payload)
-        this.formTestResult = {
-          success: Boolean(result && result.success),
-          message: (result && result.message) || '测试已完成，但服务端未返回详细信息。'
-        }
+        const result = await testConnectivity(this.formTestPayload())
+        const success = Boolean(result && result.success)
+        const message = (result && result.message) || '测试已完成，但服务端未返回详细信息'
+        this.toast((success ? '连通性测试通过：' : '连通性测试未通过：') + message, !success)
       } catch (e) {
-        this.formTestResult = { success: false, message: e.message || '请求失败，请检查模型配置后重试。' }
+        this.toast('连通性测试未通过：' + (e.message || '请求失败，请检查模型配置后重试'), true)
       } finally {
-        this.testingForm = false
+        this.testingForm = null
+      }
+    },
+    async onTestFormFunctionCall() {
+      if (!this.form.url || !this.form.modelname) {
+        this.toast('请先填写连接地址和模型名称后再进行测试', true)
+        return
+      }
+      this.testingForm = 'functionCall'
+      try {
+        const result = await testFunctionCall(this.formTestPayload())
+        const success = Boolean(result && result.success)
+        const message = (result && result.message) || '测试已完成，但服务端未返回详细信息'
+        this.toast((success ? 'Function Call 测试通过：' : 'Function Call 测试未通过：') + message, !success)
+      } catch (e) {
+        this.toast('Function Call 测试未通过：' + (e.message || '请求失败，请检查模型配置后重试'), true)
+      } finally {
+        this.testingForm = null
       }
     },
     clearKeyword() {
@@ -608,6 +533,10 @@ export default {
       this.currentPage = page
       this.loadModels()
     },
+    changePageSize() {
+      this.currentPage = 1
+      this.loadModels()
+    },
     resetFilters() {
       this.keyword = ''
       this.filter = 'all'
@@ -616,6 +545,22 @@ export default {
     },
     initial(name) {
       return (name || '?').trim().charAt(0).toUpperCase()
+    },
+    modelBrand(model) {
+      const identity = [model && model.name, model && model.modelname]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      if (identity.includes('deepseek')) return 'DeepSeek'
+      if (/\bgpt(?:[-_. ]|\d|$)/.test(identity)) return 'OpenAI'
+      return ''
+    },
+    modelLogo(model) {
+      const logos = {
+        DeepSeek: '/model-logos/deepseek.svg',
+        OpenAI: '/model-logos/openai.svg'
+      }
+      return logos[this.modelBrand(model)] || ''
     },
     providerColor(provider) {
       return PROVIDER_COLORS[provider] || '#4b8ef7'

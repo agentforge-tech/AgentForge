@@ -10,10 +10,10 @@ const config = {
   themeConfig: {
     colorMode: {defaultMode: 'dark', disableSwitch: false, respectPrefersColorScheme: true},
     navbar: {title: 'AgentForge', logo: {alt: 'AgentForge logo', src: 'img/agentforge-logo.webp'}, items: [
-      {to: '/', label: 'Home', position: 'left'}, {type: 'docSidebar', sidebarId: 'docs', label: 'Document', position: 'left'}, {to: '/blog', label: 'Blog', position: 'left'}, {to: '/community', label: 'Community', position: 'left'},
+      {to: '/', label: 'Home', position: 'left'}, {type: 'doc', docId: 'about/introduction', label: 'SDK 文档', position: 'left'}, {to: '/blog', label: 'Blog', position: 'left'}, {to: '/community', label: 'Community', position: 'left'},
       {type: 'docsVersionDropdown', position: 'right'}, {type: 'localeDropdown', position: 'right'}, {href: 'https://github.com/agentforge-tech/AgentForge', position: 'right', className: 'header-github-link', 'aria-label': 'GitHub repository'}]},
     footer: {style: 'dark', links: [
-      {title: 'Document', items: [{label: 'AgentForge 介绍', to: '/docs/about/introduction'}, {label: '快速开始', to: '/docs/quickstart/getting-started'}, {label: '贡献指南', to: '/docs/quickstart/contributing'}]},
+      {title: 'SDK 文档', items: [{label: '2026 RoadMap', to: '/docs/roadmap/roadmap'}, {label: 'AgentForge 介绍', to: '/docs/about/introduction'}, {label: '快速开始', to: '/docs/quickstart/getting-started'}, {label: '贡献指南', to: '/docs/quickstart/contributing'}]},
       {title: 'Community', items: [{label: 'GitHub', href: 'https://github.com/agentforge-tech/AgentForge'}, {label: 'Discussions', href: 'https://github.com/agentforge-tech/AgentForge/discussions'}, {label: 'Issues', href: 'https://github.com/agentforge-tech/AgentForge/issues'}]}], copyright: `Copyright © ${new Date().getFullYear()} AgentForge. Built with Docusaurus.`},
     prism: {theme: prismThemes.github, darkTheme: prismThemes.dracula, additionalLanguages: ['bash', 'java', 'json']},
   },

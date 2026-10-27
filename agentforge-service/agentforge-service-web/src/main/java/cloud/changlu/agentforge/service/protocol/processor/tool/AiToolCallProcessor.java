@@ -10,14 +10,14 @@ public class AiToolCallProcessor implements IStreamSceneProcessor {
 
     @Override
     public String getSceneCode() {
-        return StreamEventEnums.EventTypeEnum.TOOL_CALL.getCode();
+        return StreamEventEnums.EventEnum.TOOL_CALL.getCode();
     }
 
     // 工具调用卡片
     public static StreamEventResponse toolCallCard(
             ToolCallResult toolCallResult, Boolean isFinish) {
-        return StreamEventResponse.of(StreamEventEnums.EventTypeEnum.TOOL_CALL.getCode())
-                .type(StreamEventEnums.StepTypeEnum.TOOL_CARD.getCode())
+        return StreamEventResponse.of(
+                        StreamEventEnums.EventEnum.TOOL_CALL, StreamEventEnums.TypeEnum.TOOL_CARD)
                 .content(toolCallResult)
                 .finish(isFinish);
     }

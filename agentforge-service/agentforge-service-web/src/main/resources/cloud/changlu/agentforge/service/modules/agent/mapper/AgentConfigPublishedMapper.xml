@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigPublishedMapper">
+
+    <resultMap id="AgentConfigPublishedResult" type="cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPublishedPojo">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="agentConfig" column="agent_config"/>
+        <result property="experConfig" column="exper_config"/>
+        <result property="lastPublishTime" column="last_publish_time"/>
+        <result property="aid" column="aid"/>
+        <result property="avatar" column="avatar"/>
+        <result property="description" column="description"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, name, type, agent_config, exper_config, last_publish_time, aid, avatar, description,
+        is_deleted, create_user_id, create_time, modify_time
+    </sql>
+
+    <select id="selectByAid" resultMap="AgentConfigPublishedResult">
+        select <include refid="columns"/> from ai_agent_config_published
+        where aid = #{aid} and is_deleted = 0
+        limit 1
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into ai_agent_config_published
+            (name, type, agent_config, exper_config, last_publish_time, aid, avatar, description,
+             is_deleted, create_user_id, create_time, modify_time)
+        values
+            (#{name}, #{type}, #{agentConfig}, #{experConfig}, #{lastPublishTime}, #{aid},
+             #{avatar}, #{description}, #{isDeleted}, #{createUserId}, #{createTime}, #{modifyTime})
+    </insert>
+
+    <delete id="deleteByAid">
+        delete from ai_agent_config_published where aid = #{aid}
+    </delete>
+</mapper>

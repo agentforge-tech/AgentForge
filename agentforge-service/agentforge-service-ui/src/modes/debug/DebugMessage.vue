@@ -22,7 +22,11 @@
 
     <!-- 最终回答 -->
     <div v-if="message.content" class="answer">
-      <MarkdownView :content="message.content" />
+      <MarkdownView
+        :content="message.content"
+        :streaming="message.status === 'running'"
+        mode="typewriter-blur"
+      />
     </div>
 
     <!-- 运行中占位 -->
@@ -40,6 +44,7 @@
 
 <script>
 import MarkdownView from '../../components/MarkdownView.vue'
+import { formatElapsedDuration } from '../../utils/formatDuration'
 import ThinkBlock from './ThinkBlock.vue'
 import ToolCard from './ToolCard.vue'
 
@@ -68,9 +73,7 @@ export default {
       return this.message.status === 'running' ? '执行中...' : '执行过程'
     },
     elapsed() {
-      const ms = this.message.elapsedMs
-      if (!ms) return ''
-      return `${(ms / 1000).toFixed(1)}s`
+      return formatElapsedDuration(this.message.elapsedMs)
     }
   },
   watch: {
@@ -85,9 +88,9 @@ export default {
 <style scoped>
 .process {
   max-width: 680px;
-  border: 1px solid #edf0f5;
-  border-radius: 10px;
-  background: #fcfdff;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   margin-bottom: 10px;
   overflow: hidden;
 }
@@ -95,20 +98,20 @@ export default {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 8px 0;
   cursor: pointer;
   user-select: none;
   font-size: 12.5px;
   color: #5a6472;
 }
-.process-head:hover { background: #f6f8fc; }
+.process-head:hover { background: transparent; }
 .process-title { font-weight: 600; color: #3b6fb6; }
 .process-meta { color: #98a2b3; font-size: 11.5px; margin-left: auto; }
-.process-body { padding: 4px 12px 10px; }
+.process-body { padding: 4px 0 10px; }
 
-.answer { margin: 2px 0 8px; }
+.answer { margin: 2px 0 8px; padding-left: 0; }
 
-.typing { display: flex; gap: 5px; padding: 6px 2px; }
+.typing { display: flex; min-height: 32px; align-items: center; gap: 5px; padding: 0; }
 .typing span {
   width: 7px; height: 7px; border-radius: 50%; background: #c4cdd9;
   animation: blink 1.2s infinite ease-in-out;
