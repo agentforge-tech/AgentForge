@@ -2,16 +2,19 @@ package cloud.changlu.agentforge.service.modules.agent.domain.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.List;
+
 /**
  * 通用单 Agent 配置。
  *
- * <p>初版仅保留 ReActAgent 初始化必需的系统提示词、对话模型与记忆配置。
+ * <p>保留 ReActAgent 初始化必需的系统提示词、对话模型与记忆配置，以及可选的 MCP 插件绑定。
  */
 public class StandardAgentConfig {
 
     private String systemPrompt;
     private AgentModelConfig chatModel;
     private ChatMemoryConfig chatMemoryConfig;
+    private List<McpToolConfig> mcpPlugins;
 
     public String getSystemPrompt() {
         return systemPrompt;
@@ -35,6 +38,14 @@ public class StandardAgentConfig {
 
     public void setChatMemoryConfig(ChatMemoryConfig chatMemoryConfig) {
         this.chatMemoryConfig = chatMemoryConfig;
+    }
+
+    public List<McpToolConfig> getMcpPlugins() {
+        return mcpPlugins;
+    }
+
+    public void setMcpPlugins(List<McpToolConfig> mcpPlugins) {
+        this.mcpPlugins = mcpPlugins;
     }
 
     public static String toJson(StandardAgentConfig config, ObjectMapper objectMapper) {

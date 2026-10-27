@@ -3,12 +3,18 @@ package cloud.changlu.agentforge.service.modules.agent.service.impl;
 import cloud.changlu.agentforge.service.common.pager.PageResult;
 import cloud.changlu.agentforge.service.common.util.AidGeneratorUtil;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
+import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigPublishedMapper;
+import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigVersionMapper;
 import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPublishedPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigVersionPojo;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentModelConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.ChatMemoryConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.config.McpToolConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigQueryReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigUpsertReq;
+import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentConfigVersionVo;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentConfigVo;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.PublishedAgentBasicVo;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.IAgentManager;
@@ -19,29 +25,39 @@ import cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** Agent 配置服务实现。 */
+/** Agent 配置、历史版本与发布快照服务实现。 */
 @Service
 public class AgentConfigServiceImpl implements IAgentConfigService {
 
     private static final int STANDARD_AGENT_TYPE = 1;
     private static final long DEFAULT_USER_ID = 1L;
+    private static final int VERSION_REMARK_MAX_LENGTH = 1024;
 
     private final AgentConfigMapper agentConfigMapper;
+    private final AgentConfigVersionMapper agentConfigVersionMapper;
+    private final AgentConfigPublishedMapper agentConfigPublishedMapper;
     private final ModelConfigMapper modelConfigMapper;
     private final ObjectMapper objectMapper;
     private final AgentManagerFactory agentManagerFactory;
 
     public AgentConfigServiceImpl(
             AgentConfigMapper agentConfigMapper,
+            AgentConfigVersionMapper agentConfigVersionMapper,
+            AgentConfigPublishedMapper agentConfigPublishedMapper,
             ModelConfigMapper modelConfigMapper,
             ObjectMapper objectMapper,
             AgentManagerFactory agentManagerFactory) {
         this.agentConfigMapper = agentConfigMapper;
+        this.agentConfigVersionMapper = agentConfigVersionMapper;
+        this.agentConfigPublishedMapper = agentConfigPublishedMapper;
         this.modelConfigMapper = modelConfigMapper;
         this.objectMapper = objectMapper;
         this.agentManagerFactory = agentManagerFactory;
@@ -67,17 +83,13 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
 
     @Override
     public AgentConfigVo getById(Long id) {
-        AgentConfigPojo pojo = requireAgent(id);
-        return toVo(pojo);
+        return toVo(requireAgent(id));
     }
 
     @Override
     public PublishedAgentBasicVo getPublishedBasicByAid(String aid) {
-        if (aid == null || aid.trim().isEmpty()) {
-            throw new IllegalArgumentException("aid 不能为空");
-        }
-        AgentConfigPojo pojo = agentConfigMapper.selectByAid(aid.trim());
-        if (pojo == null || !Integer.valueOf(1).equals(pojo.getPublish())) {
+        AgentConfigPublishedPojo pojo = agentConfigPublishedMapper.selectByAid(requireAid(aid));
+        if (pojo == null) {
             throw new IllegalArgumentException("Agent 不存在、已删除或尚未发布");
         }
         PublishedAgentBasicVo vo = new PublishedAgentBasicVo();
@@ -85,11 +97,92 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         vo.setName(pojo.getName());
         vo.setAvatar(pojo.getAvatar());
         vo.setDescription(pojo.getDescription());
+        vo.setExperConfig(pojo.getExperConfig());
+        vo.setLastPublishTime(pojo.getLastPublishTime());
         return vo;
     }
 
     @Override
+    public List<AgentConfigVersionVo> listVersions(Long id) {
+        AgentConfigPojo pojo = requireAgent(id);
+        return agentConfigVersionMapper.selectByAid(pojo.getAid()).stream()
+                .map(this::toVersionVo)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public AgentConfigVersionVo getVersion(Long id, Long versionNo) {
+        AgentConfigPojo pojo = requireAgent(id);
+        return toVersionVo(requireVersion(pojo.getAid(), versionNo));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public AgentConfigVo upsert(AgentConfigUpsertReq req) {
+        validateUpsertRequest(req);
+        Date now = new Date();
+        AgentConfigPojo pojo;
+        if (req.getId() == null) {
+            pojo = buildNewAgent(req, now);
+            agentConfigMapper.insert(pojo);
+        } else {
+            pojo = requireAgentForUpdate(req.getId());
+            applyUpsertRequest(pojo, req, now);
+            agentConfigMapper.update(pojo);
+        }
+        AgentConfigPojo saved = requireAgent(pojo.getId());
+        AgentConfigVersionPojo submittedVersion = null;
+        if (Boolean.TRUE.equals(req.getSubmitVersion())) {
+            submittedVersion = createVersionSnapshot(saved, now, req.getVersionRemark());
+        }
+        evictAfterCommit(saved, true);
+        AgentConfigVo result = toVo(saved);
+        if (submittedVersion != null) {
+            result.setSubmittedVersionNo(submittedVersion.getVersionNo());
+        }
+        return result;
+    }
+
+    @Override
+    public AgentConfigVersionVo switchVersion(Long id, Long versionNo) {
+        AgentConfigPojo current = requireAgent(id);
+        return toVersionVo(requireVersion(current.getAid(), versionNo));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AgentConfigVersionVo updateVersionRemark(Long id, Long versionNo, String versionRemark) {
+        AgentConfigPojo agent = requireAgent(id);
+        AgentConfigVersionPojo version = requireVersion(agent.getAid(), versionNo);
+        agentConfigVersionMapper.updateRemark(
+                version.getId(), normalizeVersionRemark(versionRemark), new Date());
+        return toVersionVo(requireVersion(agent.getAid(), versionNo));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long id) {
+        AgentConfigPojo pojo = requireAgentForUpdate(id);
+        agentConfigPublishedMapper.deleteByAid(pojo.getAid());
+        agentConfigMapper.deleteById(id);
+        evictAllAfterCommit(pojo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AgentConfigVo updatePublishStatus(Long id, boolean published) {
+        AgentConfigPojo pojo = requireAgentForUpdate(id);
+        Date now = new Date();
+        agentConfigMapper.updatePublishStatus(id, published ? 1 : 0, now);
+        agentConfigPublishedMapper.deleteByAid(pojo.getAid());
+        if (published) {
+            agentConfigPublishedMapper.insert(toPublishedSnapshot(pojo, now));
+        }
+        evictAfterCommit(pojo, false);
+        return toVo(requireAgent(id));
+    }
+
+    private void validateUpsertRequest(AgentConfigUpsertReq req) {
         if (req == null || req.getName() == null || req.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Agent 名称不能为空");
         }
@@ -100,86 +193,99 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         if (model == null) {
             throw new IllegalArgumentException("所选模型不存在或已被删除");
         }
-
-        Date now = new Date();
-        AgentConfigPojo pojo;
-        if (req.getId() == null) {
-            int agentType = req.getType() == null ? STANDARD_AGENT_TYPE : req.getType();
-            if (agentType != STANDARD_AGENT_TYPE) {
-                throw new IllegalArgumentException("不支持的 Agent 类别: " + agentType);
-            }
-            pojo = new AgentConfigPojo();
-            pojo.setType(agentType);
-            pojo.setAid(AidGeneratorUtil.getInstance().nextId());
-            pojo.setPublish(0);
-            pojo.setIsPublic(0);
-            pojo.setAvatar("");
-            pojo.setDescription(normalizeDescription(req.getDescription()));
-            pojo.setIsDeleted(0);
-            pojo.setCreateUserId(DEFAULT_USER_ID);
-            pojo.setCreateTime(now);
-            pojo.setModifyTime(now);
-            pojo.setName(req.getName().trim());
-            pojo.setAgentConfig(
-                    buildAgentConfig(
-                            req.getModelId(),
-                            req.getSystemPrompt(),
-                            req.getChatMemoryType(),
-                            req.getChatMemoryMaxMessages()));
-            agentConfigMapper.insert(pojo);
-        } else {
-            pojo = requireAgent(req.getId());
-            pojo.setName(req.getName().trim());
-            pojo.setDescription(normalizeDescription(req.getDescription()));
-            StandardAgentConfig oldConfig = parseAgentConfig(pojo.getAgentConfig());
-            String prompt =
-                    req.getSystemPrompt() == null
-                            ? oldConfig.getSystemPrompt()
-                            : req.getSystemPrompt();
-            ChatMemoryConfig oldMemoryConfig = oldConfig.getChatMemoryConfig();
-            Integer memoryType =
-                    req.getChatMemoryType() == null
-                            ? resolveMemoryType(oldMemoryConfig)
-                            : req.getChatMemoryType();
-            Integer maxMessages =
-                    req.getChatMemoryMaxMessages() == null
-                            ? resolveMaxMessages(oldMemoryConfig)
-                            : req.getChatMemoryMaxMessages();
-            pojo.setAgentConfig(
-                    buildAgentConfig(req.getModelId(), prompt, memoryType, maxMessages));
-            pojo.setModifyTime(now);
-            agentConfigMapper.update(pojo);
-        }
-        AgentConfigPojo saved = agentConfigMapper.selectById(pojo.getId());
-        IAgentManager<Object, Object> agentManager =
-                agentManagerFactory.getAgentManagerByType(saved.getType());
-        // The configuration has changed. Evict both published and debug instances for every
-        // channel, and let the next request lazily rebuild them from the latest configuration.
-        agentManager.removeAgent(saved.getAid());
-        return toVo(saved);
     }
 
-    @Override
-    public void delete(Long id) {
-        AgentConfigPojo pojo = requireAgent(id);
-        agentConfigMapper.deleteById(id);
-        IAgentManager<Object, Object> agentManager =
-                agentManagerFactory.getAgentManagerByType(pojo.getType());
-        agentManager.removeAgent(pojo.getAid());
+    private AgentConfigPojo buildNewAgent(AgentConfigUpsertReq req, Date now) {
+        int agentType = req.getType() == null ? STANDARD_AGENT_TYPE : req.getType();
+        if (agentType != STANDARD_AGENT_TYPE) {
+            throw new IllegalArgumentException("不支持的 Agent 类别: " + agentType);
+        }
+        AgentConfigPojo pojo = new AgentConfigPojo();
+        pojo.setType(agentType);
+        pojo.setAid(AidGeneratorUtil.getInstance().nextId());
+        pojo.setPublish(0);
+        pojo.setIsPublic(0);
+        pojo.setAvatar("");
+        pojo.setDescription(normalizeDescription(req.getDescription()));
+        pojo.setIsDeleted(0);
+        pojo.setCreateUserId(DEFAULT_USER_ID);
+        pojo.setCreateTime(now);
+        pojo.setModifyTime(now);
+        pojo.setName(req.getName().trim());
+        pojo.setAgentConfig(
+                buildAgentConfig(
+                        req.getModelId(),
+                        req.getSystemPrompt(),
+                        req.getChatMemoryType(),
+                        req.getChatMemoryMaxMessages(),
+                        req.getMcpPlugins()));
+        return pojo;
     }
 
-    @Override
-    public AgentConfigVo updatePublishStatus(Long id, boolean published) {
-        AgentConfigPojo pojo = requireAgent(id);
-        agentConfigMapper.updatePublishStatus(id, published ? 1 : 0, new Date());
-        IAgentManager<Object, Object> agentManager =
-                agentManagerFactory.getAgentManagerByType(pojo.getType());
-        if (published) {
-            agentManager.createAndStoreAgent(pojo.getAid(), pojo.getAgentConfig(), false);
-        } else {
-            agentManager.removeAgent(pojo.getAid(), false);
-        }
-        return toVo(requireAgent(id));
+    private void applyUpsertRequest(
+            AgentConfigPojo pojo, AgentConfigUpsertReq req, Date modifyTime) {
+        pojo.setName(req.getName().trim());
+        pojo.setDescription(normalizeDescription(req.getDescription()));
+        StandardAgentConfig oldConfig = parseAgentConfig(pojo.getAgentConfig());
+        String prompt =
+                req.getSystemPrompt() == null ? oldConfig.getSystemPrompt() : req.getSystemPrompt();
+        ChatMemoryConfig oldMemoryConfig = oldConfig.getChatMemoryConfig();
+        Integer memoryType =
+                req.getChatMemoryType() == null
+                        ? resolveMemoryType(oldMemoryConfig)
+                        : req.getChatMemoryType();
+        Integer maxMessages =
+                req.getChatMemoryMaxMessages() == null
+                        ? resolveMaxMessages(oldMemoryConfig)
+                        : req.getChatMemoryMaxMessages();
+        pojo.setAgentConfig(
+                buildAgentConfig(
+                        req.getModelId(),
+                        prompt,
+                        memoryType,
+                        maxMessages,
+                        req.getMcpPlugins() == null
+                                ? oldConfig.getMcpPlugins()
+                                : req.getMcpPlugins()));
+        pojo.setModifyTime(modifyTime);
+    }
+
+    private AgentConfigVersionPojo createVersionSnapshot(
+            AgentConfigPojo config, Date now, String versionRemark) {
+        Long maxVersionNo = agentConfigVersionMapper.selectMaxVersionNo(config.getAid());
+        AgentConfigVersionPojo version = new AgentConfigVersionPojo();
+        version.setVersionNo(maxVersionNo == null ? 1L : maxVersionNo + 1L);
+        version.setName(config.getName());
+        version.setType(config.getType());
+        version.setAgentConfig(config.getAgentConfig());
+        version.setExperConfig(config.getExperConfig());
+        version.setAid(config.getAid());
+        version.setAvatar(config.getAvatar());
+        version.setDescription(config.getDescription());
+        version.setVersionRemark(normalizeVersionRemark(versionRemark));
+        version.setIsDeleted(0);
+        version.setCreateUserId(DEFAULT_USER_ID);
+        version.setCreateTime(now);
+        version.setModifyTime(now);
+        agentConfigVersionMapper.insert(version);
+        return version;
+    }
+
+    private AgentConfigPublishedPojo toPublishedSnapshot(AgentConfigPojo config, Date now) {
+        AgentConfigPublishedPojo published = new AgentConfigPublishedPojo();
+        published.setName(config.getName());
+        published.setType(config.getType());
+        published.setAgentConfig(config.getAgentConfig());
+        published.setExperConfig(config.getExperConfig());
+        published.setLastPublishTime(now);
+        published.setAid(config.getAid());
+        published.setAvatar(config.getAvatar());
+        published.setDescription(config.getDescription());
+        published.setIsDeleted(0);
+        published.setCreateUserId(config.getCreateUserId());
+        published.setCreateTime(now);
+        published.setModifyTime(now);
+        return published;
     }
 
     private AgentConfigPojo requireAgent(Long id) {
@@ -193,12 +299,89 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         return pojo;
     }
 
+    private AgentConfigPojo requireAgentForUpdate(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("id must not be null");
+        }
+        AgentConfigPojo pojo = agentConfigMapper.selectByIdForUpdate(id);
+        if (pojo == null) {
+            throw new IllegalArgumentException("Agent 不存在或已被删除, id: " + id);
+        }
+        return pojo;
+    }
+
+    private AgentConfigVersionPojo requireVersion(String aid, Long versionNo) {
+        if (versionNo == null || versionNo < 1) {
+            throw new IllegalArgumentException("versionNo 必须大于 0");
+        }
+        AgentConfigVersionPojo version =
+                agentConfigVersionMapper.selectByAidAndVersionNo(aid, versionNo);
+        if (version == null) {
+            throw new IllegalArgumentException("Agent 历史版本不存在: V" + versionNo);
+        }
+        return version;
+    }
+
+    private String requireAid(String aid) {
+        if (aid == null || aid.trim().isEmpty()) {
+            throw new IllegalArgumentException("aid 不能为空");
+        }
+        return aid.trim();
+    }
+
+    private void evictAfterCommit(AgentConfigPojo pojo, boolean debug) {
+        afterCommit(
+                () -> {
+                    IAgentManager<Object, Object> agentManager =
+                            agentManagerFactory.getAgentManagerByType(pojo.getType());
+                    agentManager.removeAgent(pojo.getAid(), debug);
+                });
+    }
+
+    private void evictAllAfterCommit(AgentConfigPojo pojo) {
+        afterCommit(
+                () -> {
+                    IAgentManager<Object, Object> agentManager =
+                            agentManagerFactory.getAgentManagerByType(pojo.getType());
+                    agentManager.removeAgent(pojo.getAid());
+                });
+    }
+
+    private void afterCommit(Runnable callback) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            callback.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        callback.run();
+                    }
+                });
+    }
+
+    private String normalizeVersionRemark(String versionRemark) {
+        if (versionRemark == null) {
+            return "";
+        }
+        String trimmed = versionRemark.trim();
+        if (trimmed.length() > VERSION_REMARK_MAX_LENGTH) {
+            throw new IllegalArgumentException("版本备注不能超过 " + VERSION_REMARK_MAX_LENGTH + " 个字符");
+        }
+        return trimmed;
+    }
+
     private String normalizeDescription(String description) {
         return description == null ? "" : description.trim();
     }
 
     private String buildAgentConfig(
-            Long modelId, String prompt, Integer memoryType, Integer maxMessages) {
+            Long modelId,
+            String prompt,
+            Integer memoryType,
+            Integer maxMessages,
+            List<McpToolConfig> mcpPlugins) {
         AgentModelConfig chatModel = new AgentModelConfig();
         chatModel.setLlmModelId(modelId);
         StandardAgentConfig config = new StandardAgentConfig();
@@ -215,6 +398,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
             memoryConfig.setMemoryConfig("{\"maxMessage\":" + maxMessages + "}");
         }
         config.setChatMemoryConfig(memoryConfig);
+        config.setMcpPlugins(mcpPlugins == null || mcpPlugins.isEmpty() ? null : mcpPlugins);
         return StandardAgentConfig.toJson(config, objectMapper);
     }
 
@@ -229,6 +413,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         vo.setName(pojo.getName());
         vo.setType(pojo.getType());
         vo.setPublish(pojo.getPublish());
+        vo.setLastPublishTime(pojo.getLastPublishTime());
         vo.setIsPublic(pojo.getIsPublic());
         vo.setAvatar(pojo.getAvatar());
         vo.setDescription(pojo.getDescription());
@@ -238,12 +423,31 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         vo.setSystemPrompt(config.getSystemPrompt());
         vo.setChatMemoryType(resolveMemoryType(config.getChatMemoryConfig()));
         vo.setChatMemoryMaxMessages(resolveMaxMessages(config.getChatMemoryConfig()));
+        vo.setMcpPlugins(config.getMcpPlugins());
         Long modelId = readModelId(pojo.getAgentConfig());
         vo.setModelId(modelId);
         if (modelId != null) {
             ModelConfigPojo model = modelConfigMapper.selectById(modelId);
             vo.setModelName(model == null ? "模型已删除" : model.getName());
         }
+        return vo;
+    }
+
+    private AgentConfigVersionVo toVersionVo(AgentConfigVersionPojo pojo) {
+        AgentConfigVersionVo vo = new AgentConfigVersionVo();
+        vo.setId(pojo.getId());
+        vo.setVersionNo(pojo.getVersionNo());
+        vo.setAid(pojo.getAid());
+        vo.setName(pojo.getName());
+        vo.setType(pojo.getType());
+        vo.setAgentConfig(pojo.getAgentConfig());
+        vo.setExperConfig(pojo.getExperConfig());
+        vo.setAvatar(pojo.getAvatar());
+        vo.setDescription(pojo.getDescription());
+        vo.setVersionRemark(pojo.getVersionRemark());
+        vo.setCreateUserId(pojo.getCreateUserId());
+        vo.setCreateTime(pojo.getCreateTime());
+        vo.setModifyTime(pojo.getModifyTime());
         return vo;
     }
 

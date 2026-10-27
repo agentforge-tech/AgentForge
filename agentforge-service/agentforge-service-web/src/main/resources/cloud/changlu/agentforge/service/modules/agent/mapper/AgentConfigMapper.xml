@@ -41,6 +41,12 @@
         where id = #{id} and is_deleted = 0
     </select>
 
+    <select id="selectByIdForUpdate" resultMap="AgentConfigResult">
+        select <include refid="columns"/> from ai_agent_config
+        where id = #{id} and is_deleted = 0
+        for update
+    </select>
+
     <select id="selectByAid" resultMap="AgentConfigResult">
         select <include refid="columns"/> from ai_agent_config
         where aid = #{aid} and is_deleted = 0
@@ -69,7 +75,10 @@
 
     <update id="update">
         update ai_agent_config
-        set name = #{name}, agent_config = #{agentConfig}, modify_time = #{modifyTime}
+        set name = #{name},
+            agent_config = #{agentConfig},
+            description = #{description},
+            modify_time = #{modifyTime}
         where id = #{id} and is_deleted = 0
     </update>
 

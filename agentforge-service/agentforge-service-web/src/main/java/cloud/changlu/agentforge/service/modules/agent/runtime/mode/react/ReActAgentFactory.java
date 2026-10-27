@@ -6,7 +6,9 @@ import cloud.changlu.agentforge.agent.tool.local.LocalToolFactory;
 import cloud.changlu.agentforge.model.registry.LlmFactory;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
 import cloud.changlu.agentforge.model.registry.constant.ChatModelProperties;
+import cloud.changlu.agentforge.model.tool.ToolExecutor;
 import cloud.changlu.agentforge.model.tool.execution.ToolService;
+import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentModelConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
@@ -15,11 +17,13 @@ import cloud.changlu.agentforge.service.modules.agent.runtime.mode.react.memory.
 import cloud.changlu.agentforge.service.modules.model.dao.ModelConfigMapper;
 import cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo;
 import cloud.changlu.agentforge.service.modules.model.domain.transfer.ModelConfigTransfer;
+import cloud.changlu.agentforge.service.modules.plugins.mcp.component.agent.McpAgentToolLoader;
 import cloud.changlu.agentforge.service.plugins.openreach.OpenReachTools;
 
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Map;
 
 /** Standard ReAct Agent 工厂，负责装配模型、记忆、工具及默认中间件。 */
 @Component
@@ -30,18 +34,21 @@ public class ReActAgentFactory {
     private final ServiceStreamingMiddleware streamingMiddleware;
     private final SessionLifecycleMiddleware sessionLifecycleMiddleware;
     private final ChatMemoryProviderFactory chatMemoryProviderFactory;
+    private final McpAgentToolLoader mcpAgentToolLoader;
 
     public ReActAgentFactory(
             ModelConfigMapper modelConfigMapper,
             OpenReachTools openReachTools,
             ServiceStreamingMiddleware streamingMiddleware,
             SessionLifecycleMiddleware sessionLifecycleMiddleware,
-            ChatMemoryProviderFactory chatMemoryProviderFactory) {
+            ChatMemoryProviderFactory chatMemoryProviderFactory,
+            McpAgentToolLoader mcpAgentToolLoader) {
         this.modelConfigMapper = modelConfigMapper;
         this.openReachTools = openReachTools;
         this.streamingMiddleware = streamingMiddleware;
         this.sessionLifecycleMiddleware = sessionLifecycleMiddleware;
         this.chatMemoryProviderFactory = chatMemoryProviderFactory;
+        this.mcpAgentToolLoader = mcpAgentToolLoader;
     }
 
     public ReActAgent createReActAgent(StandardAgentConfig standardAgentConfig) {
@@ -74,15 +81,21 @@ public class ReActAgentFactory {
                         .middleware(new LoggingIAgentMiddleware())
                         .middleware(sessionLifecycleMiddleware)
                         .middleware(streamingMiddleware)
-                        .toolService(buildToolService());
+                        .toolService(buildToolService(standardAgentConfig));
         return builder.build();
     }
 
-    private ToolService buildToolService() {
+    private ToolService buildToolService(StandardAgentConfig standardAgentConfig) {
         ToolService toolService = new ToolService();
         toolService.tools(
                 LocalToolFactory.buildLocalToolsWithThought(
                         Collections.<Object>singletonList(openReachTools), true));
+        // MCP 工具按 Server 粒度降级，单个 Server 失败不阻断 Agent 构建。
+        Map<ToolSpecification, ToolExecutor> mcpTools =
+                mcpAgentToolLoader.load(standardAgentConfig.getMcpPlugins());
+        if (!mcpTools.isEmpty()) {
+            toolService.tools(mcpTools);
+        }
         return toolService;
     }
 }

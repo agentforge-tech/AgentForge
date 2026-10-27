@@ -9,12 +9,21 @@ package cloud.changlu.agentforge.service.common;
 public class ApiErrorVo {
 
     private int status;
+
+    /** 业务错误码，仅业务异常携带 */
+    private String code;
+
     private String message;
 
     public ApiErrorVo() {}
 
     public ApiErrorVo(int status, String message) {
+        this(status, null, message);
+    }
+
+    public ApiErrorVo(int status, String code, String message) {
         this.status = status;
+        this.code = code;
         this.message = message;
     }
 
@@ -24,6 +33,14 @@ public class ApiErrorVo {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public String getMessage() {

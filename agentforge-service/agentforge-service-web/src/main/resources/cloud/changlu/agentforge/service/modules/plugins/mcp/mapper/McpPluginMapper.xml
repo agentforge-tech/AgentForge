@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.plugins.mcp.dao.McpPluginMapper">
+
+    <resultMap id="McpPluginResult"
+               type="cloud.changlu.agentforge.service.modules.plugins.mcp.domain.pojo.McpPluginPojo">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="icon" column="icon"/>
+        <result property="status" column="status"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="selectMcpPluginVo">
+        select id, name, description, icon, status, create_user_id, is_deleted,
+               create_time, modify_time
+        from ai_plugin_mcp
+    </sql>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="McpPluginResult">
+        <include refid="selectMcpPluginVo"/>
+        where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectList" resultMap="McpPluginResult">
+        <include refid="selectMcpPluginVo"/>
+        <where>
+            is_deleted = 0
+            <if test="createUserId != null">and create_user_id = #{createUserId}</if>
+            <if test="onlyEnabled">and status = 1</if>
+            <if test="keyword != null and keyword != ''">
+                and (name like concat('%', #{keyword}, '%')
+                    or description like concat('%', #{keyword}, '%'))
+            </if>
+        </where>
+        order by modify_time desc, id desc
+    </select>
+
+    <select id="countByName" resultType="long">
+        select count(1)
+        from ai_plugin_mcp
+        where is_deleted = 0
+          and create_user_id = #{createUserId}
+          and name = #{name}
+        <if test="excludeId != null">and id != #{excludeId}</if>
+    </select>
+
+    <insert id="insert"
+            parameterType="cloud.changlu.agentforge.service.modules.plugins.mcp.domain.pojo.McpPluginPojo"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into ai_plugin_mcp
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="description != null">description,</if>
+            <if test="icon != null">icon,</if>
+            <if test="status != null">status,</if>
+            <if test="createUserId != null">create_user_id,</if>
+            <if test="isDeleted != null">is_deleted,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="modifyTime != null">modify_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="description != null">#{description},</if>
+            <if test="icon != null">#{icon},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createUserId != null">#{createUserId},</if>
+            <if test="isDeleted != null">#{isDeleted},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="modifyTime != null">#{modifyTime},</if>
+        </trim>
+    </insert>
+
+    <update id="update"
+            parameterType="cloud.changlu.agentforge.service.modules.plugins.mcp.domain.pojo.McpPluginPojo">
+        update ai_plugin_mcp
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="icon != null">icon = #{icon},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="modifyTime != null">modify_time = #{modifyTime},</if>
+        </trim>
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="updateStatus">
+        update ai_plugin_mcp
+        set status = #{status}, modify_time = current_timestamp
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="updateOwnerStatus">
+        update ai_plugin_mcp
+        set status = #{status}, modify_time = current_timestamp
+        where id = #{id} and create_user_id = #{createUserId} and is_deleted = 0
+    </update>
+
+    <update id="deleteById">
+        update ai_plugin_mcp
+        set is_deleted = 1, modify_time = current_timestamp
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="deleteByOwner">
+        update ai_plugin_mcp
+        set is_deleted = 1, modify_time = current_timestamp
+        where id = #{id} and create_user_id = #{createUserId} and is_deleted = 0
+    </update>
+
+</mapper>

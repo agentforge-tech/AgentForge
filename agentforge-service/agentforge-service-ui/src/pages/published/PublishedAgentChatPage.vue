@@ -75,6 +75,7 @@
         <div class="header-left">
           <div class="chat-title">{{ title }}</div>
         </div>
+        <div v-if="agentBasic && agentBasic.lastPublishTime" class="published-time">最新发布时间：{{ formatPublishedTime(agentBasic.lastPublishTime) }}</div>
       </div>
 
       <div class="message-input-wrapper" :class="{ 'input-at-bottom': messages.length > 0 }">
@@ -188,8 +189,15 @@ export default {
   },
   created() {
     this.loadAgentBasic().then(() => this.loadSessions())
+    window.addEventListener('popstate', this.handlePopState)
+  },
+  beforeDestroy() {
+    window.removeEventListener('popstate', this.handlePopState)
   },
   methods: {
+    formatPublishedTime(value) {
+      return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : ''
+    },
     async loadAgentBasic() {
       if (!this.aid) return
       this.agentLoading = true; this.agentError = ''
@@ -209,6 +217,35 @@ export default {
       this.draft = ''
       this.sessionTitle = ''
       this.activeSessionId = null
+      this.syncSessionToUrl('', { replace: false })
+    },
+    /** 把当前会话 ID 同步到地址栏：?sessionId=xxx，便于刷新、分享和前进后退 */
+    syncSessionToUrl(sessionId, { replace = true } = {}) {
+      const url = new URL(window.location.href)
+      if (sessionId) url.searchParams.set('sessionId', sessionId)
+      else url.searchParams.delete('sessionId')
+      const next = url.pathname + url.search
+      if (next === window.location.pathname + window.location.search) return
+      if (replace) window.history.replaceState({ sessionId: sessionId || '' }, '', next)
+      else window.history.pushState({ sessionId: sessionId || '' }, '', next)
+    },
+    /** 浏览器前进/后退时按地址栏 sessionId 切换会话 */
+    async handlePopState() {
+      if (this.running) return
+      const wanted = resolveSessionId()
+      if (!wanted) {
+        this.messages = []
+        this.sessionId = ''
+        this.sessionTitle = ''
+        this.activeSessionId = null
+        return
+      }
+      this.pendingSessionId = wanted
+      const item = [...this.topSessions, ...this.normalSessions].find(
+        (session) => session.sessionId === wanted
+      )
+      if (item) this.openSession(item, { syncUrl: false })
+      else await this.loadSessions()
     },
     /** 会话时间展示：优先最后消息时间，其次修改/创建时间，格式 yyyy-MM-dd HH:mm */
     formatSessionTime(item) {
@@ -237,6 +274,7 @@ export default {
             this.sessionTitle = current.title
             this.sessionId = current.sessionId
             this.pendingSessionId = ''
+            this.syncSessionToUrl(current.sessionId)
             await this.loadMessages(current.id)
           }
         }
@@ -246,11 +284,13 @@ export default {
         this.sessionLoading = false
       }
     },
-    async openSession(item) {
+    async openSession(item, { syncUrl = true } = {}) {
       if (!item || this.running) return
       this.activeSessionId = item.id
       this.sessionId = item.sessionId
       this.sessionTitle = item.title
+      this.pendingSessionId = ''
+      if (syncUrl) this.syncSessionToUrl(item.sessionId, { replace: false })
       await this.loadMessages(item.id)
     },
     async loadMessages(sessionRefId) {
@@ -380,7 +420,9 @@ export default {
         case 'session':
           if (event.content) {
             this.sessionId = event.content
+            this.pendingSessionId = ''
             if (!this.sessionTitle) this.sessionTitle = resolveSessionTitle(questionText)
+            this.syncSessionToUrl(this.sessionId)
           }
           break
         case 'think':

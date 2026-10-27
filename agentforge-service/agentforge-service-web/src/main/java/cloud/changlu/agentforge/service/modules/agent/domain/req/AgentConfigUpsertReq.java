@@ -1,5 +1,9 @@
 package cloud.changlu.agentforge.service.modules.agent.domain.req;
 
+import cloud.changlu.agentforge.service.modules.agent.domain.config.McpToolConfig;
+
+import java.util.List;
+
 /** Agent 新增/修改请求。 */
 public class AgentConfigUpsertReq {
 
@@ -11,6 +15,9 @@ public class AgentConfigUpsertReq {
     private String systemPrompt;
     private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
+    private List<McpToolConfig> mcpPlugins;
+    private Boolean submitVersion;
+    private String versionRemark;
 
     public Long getId() {
         return id;
@@ -74,5 +81,29 @@ public class AgentConfigUpsertReq {
 
     public void setChatMemoryMaxMessages(Integer chatMemoryMaxMessages) {
         this.chatMemoryMaxMessages = chatMemoryMaxMessages;
+    }
+
+    public List<McpToolConfig> getMcpPlugins() {
+        return mcpPlugins;
+    }
+
+    public void setMcpPlugins(List<McpToolConfig> mcpPlugins) {
+        this.mcpPlugins = mcpPlugins;
+    }
+
+    public Boolean getSubmitVersion() {
+        return submitVersion;
+    }
+
+    public void setSubmitVersion(Boolean submitVersion) {
+        this.submitVersion = submitVersion;
+    }
+
+    public String getVersionRemark() {
+        return versionRemark;
+    }
+
+    public void setVersionRemark(String versionRemark) {
+        this.versionRemark = versionRemark;
     }
 }

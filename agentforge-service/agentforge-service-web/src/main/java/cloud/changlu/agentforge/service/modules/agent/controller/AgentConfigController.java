@@ -3,6 +3,8 @@ package cloud.changlu.agentforge.service.modules.agent.controller;
 import cloud.changlu.agentforge.service.common.pager.PageResult;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigQueryReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigUpsertReq;
+import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigVersionRemarkReq;
+import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentConfigVersionVo;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentConfigVo;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.PublishedAgentBasicVo;
 import cloud.changlu.agentforge.service.modules.agent.service.IAgentConfigService;
@@ -48,6 +50,32 @@ public class AgentConfigController {
     @PostMapping("/upsert")
     public AgentConfigVo upsert(@RequestBody AgentConfigUpsertReq req) {
         return agentConfigService.upsert(req);
+    }
+
+    @GetMapping("/{id}/versions")
+    public List<AgentConfigVersionVo> listVersions(@PathVariable("id") Long id) {
+        return agentConfigService.listVersions(id);
+    }
+
+    @GetMapping("/{id}/versions/{versionNo}")
+    public AgentConfigVersionVo getVersion(
+            @PathVariable("id") Long id, @PathVariable("versionNo") Long versionNo) {
+        return agentConfigService.getVersion(id, versionNo);
+    }
+
+    @PostMapping("/{id}/versions/{versionNo}/switch")
+    public AgentConfigVersionVo switchVersion(
+            @PathVariable("id") Long id, @PathVariable("versionNo") Long versionNo) {
+        return agentConfigService.switchVersion(id, versionNo);
+    }
+
+    @PostMapping("/{id}/versions/{versionNo}/remark")
+    public AgentConfigVersionVo updateVersionRemark(
+            @PathVariable("id") Long id,
+            @PathVariable("versionNo") Long versionNo,
+            @RequestBody AgentConfigVersionRemarkReq req) {
+        return agentConfigService.updateVersionRemark(
+                id, versionNo, req == null ? null : req.getVersionRemark());
     }
 
     @PostMapping("/{id}/publish")

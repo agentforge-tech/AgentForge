@@ -1,15 +1,17 @@
 package cloud.changlu.agentforge.service.web;
 
+import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
 import cloud.changlu.agentforge.service.domain.req.ChatStreamRequest;
-import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.IAgentManager;
 import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitContext;
 import cloud.changlu.agentforge.service.modules.agent.runtime.factory.AgentManagerFactory;
+import cloud.changlu.agentforge.service.modules.agent.service.AgentRuntimeConfigResolver;
 import cloud.changlu.agentforge.service.modules.session.service.IAgentSessionService;
+import cloud.changlu.agentforge.service.protocol.processor.AiResponseProcessor;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -30,7 +33,7 @@ import java.util.concurrent.Executors;
 @CrossOrigin
 public class ChatController {
 
-    private final AgentConfigMapper agentConfigMapper;
+    private final AgentRuntimeConfigResolver runtimeConfigResolver;
     private final AgentManagerFactory agentManagerFactory;
     private final ServiceStreamingMiddleware streamingMiddleware;
     private final SessionLifecycleMiddleware sessionLifecycleMiddleware;
@@ -39,12 +42,12 @@ public class ChatController {
     private final Map<String, Runnable> activeStops = new ConcurrentHashMap<String, Runnable>();
 
     public ChatController(
-            AgentConfigMapper agentConfigMapper,
+            AgentRuntimeConfigResolver runtimeConfigResolver,
             AgentManagerFactory agentManagerFactory,
             ServiceStreamingMiddleware streamingMiddleware,
             SessionLifecycleMiddleware sessionLifecycleMiddleware,
             IAgentSessionService agentSessionService) {
-        this.agentConfigMapper = agentConfigMapper;
+        this.runtimeConfigResolver = runtimeConfigResolver;
         this.agentManagerFactory = agentManagerFactory;
         this.streamingMiddleware = streamingMiddleware;
         this.sessionLifecycleMiddleware = sessionLifecycleMiddleware;
@@ -59,13 +62,13 @@ public class ChatController {
         if (body.getMessage() == null || body.getMessage().trim().isEmpty()) {
             throw new IllegalArgumentException("对话内容不能为空");
         }
-        AgentConfigPojo config = agentConfigMapper.selectByAid(body.getAid().trim());
-        if (config == null) {
-            throw new IllegalArgumentException("Agent 不存在或已被删除");
-        }
         final boolean isDebug = Boolean.TRUE.equals(body.getIsDebug());
-        if (!isDebug && !Integer.valueOf(1).equals(config.getPublish())) {
-            throw new IllegalArgumentException("Agent 尚未发布");
+        final AgentRuntimeConfig config;
+        try {
+            config = runtimeConfigResolver.resolve(body.getAid(), isDebug);
+        } catch (AgentForgeException e) {
+            // Agent 未发布、已停止发布或已删除：不抛 500，直接以正常 AI 回答的形式提示用户
+            return notice(e.getMessage());
         }
         // 请求初始化：会话 + USER 消息 + AI 占位消息（唯一一次建记录）
         final IAgentSessionService.SessionInitResult initResult =
@@ -111,6 +114,23 @@ public class ChatController {
                         streamingMiddleware.onError(sessionId, e);
                     }
                 });
+        return emitter;
+    }
+
+    /**
+     * 构造一个只推一条 AI 回答的 SSE，用于 Agent 不可用等无需建立会话的场景。
+     *
+     * <p>事件格式与正常对话保持一致（{@code resp} + {@code resp_end}），前端会把它渲染为一条普通 AI 回答。
+     */
+    private SseEmitter notice(String message) {
+        SseEmitter emitter = new SseEmitter(0L);
+        try {
+            emitter.send(SseEmitter.event().data(AiResponseProcessor.respText(message, false)));
+            emitter.send(SseEmitter.event().data(AiResponseProcessor.respEnd(true)));
+        } catch (IOException | IllegalStateException ignored) {
+            // 客户端已断开，直接结束
+        }
+        emitter.complete();
         return emitter;
     }
 

@@ -9,8 +9,8 @@ import { resolve } from 'node:path'
 function rewriteChatPath() {
   const redirect = (req) => {
     const [path, query] = (req.url || '').split('?')
-    if (path === '/chat' || path.startsWith('/chat/') || path.startsWith('/agent/published/') || path === '/agents' || path === '/agents/config') {
-      const target = path === '/agents/config' ? '/agents/' : path === '/agents' ? '/agents/' : '/chat/'
+    if (path === '/chat' || path.startsWith('/chat/') || path.startsWith('/agent/published/') || path === '/agents' || path === '/agents/config' || path === '/mcp') {
+      const target = path === '/agents/config' ? '/agents/' : path === '/agents' ? '/agents/' : path === '/mcp' ? '/mcp/' : '/chat/'
       req.url = target + (query ? '?' + query : '')
     }
   }
@@ -52,6 +52,7 @@ export default defineConfig({
       input: {
         index: resolve(process.cwd(), 'index.html'),
         'agents/index': resolve(process.cwd(), 'agents/index.html'),
+        'mcp/index': resolve(process.cwd(), 'mcp/index.html'),
         'chat/index': resolve(process.cwd(), 'chat/index.html')
       },
       output: {

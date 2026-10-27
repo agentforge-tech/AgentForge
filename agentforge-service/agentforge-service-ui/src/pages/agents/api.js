@@ -46,6 +46,22 @@ export function upsertAgent(payload) {
   return request(AGENT_BASE, '/upsert', { method: 'POST', body: JSON.stringify(payload) })
 }
 
+export function fetchAgentVersions(id) {
+  return request(AGENT_BASE, '/' + id + '/versions')
+}
+
+export function getAgentVersion(id, versionNo) {
+  return request(AGENT_BASE, '/' + id + '/versions/' + versionNo)
+}
+
+export function updateAgentVersionRemark(id, versionNo, versionRemark) {
+  return request(AGENT_BASE, '/' + id + '/versions/' + versionNo + '/remark', { method: 'POST', body: JSON.stringify({ versionRemark }) })
+}
+
+export function switchAgentVersion(id, versionNo) {
+  return request(AGENT_BASE, '/' + id + '/versions/' + versionNo + '/switch', { method: 'POST' })
+}
+
 export function updateAgentPublish(id, published) {
   return request(AGENT_BASE, '/' + id + (published ? '/publish' : '/unpublish'), { method: 'POST' })
 }

@@ -27,6 +27,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11L4 6.5M12 11l8-4.5M12 11v9"/></svg>
             <span class="af-nav-item__label">模型列表</span>
           </a>
+          <a class="af-nav-item af-nav-item--link" :class="{ 'af-nav-item--active': active === 'mcp' }" href="/mcp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h4M11 16.5h4"/></svg>
+            <span class="af-nav-item__label">MCP 插件</span>
+          </a>
         </div></transition>
       </div>
     </nav>
@@ -48,7 +52,7 @@ const NavChevron = {
 export default {
   name: 'AppSidebar',
   components: { AppUserPanel, NavChevron },
-  props: { active: { type: String, required: true, validator: (value) => ['agents', 'models'].includes(value) } },
+  props: { active: { type: String, required: true, validator: (value) => ['agents', 'models', 'mcp'].includes(value) } },
   data: () => ({ agentOpen: true, resourcesOpen: true })
 }
 </script>
