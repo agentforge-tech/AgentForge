@@ -1,0 +1,29 @@
+agentforge-service/agentforge-service-ui/src/pages/agents/main.js
+  s_4befa66d306eaa::t_bf23b52467a7a4 6
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentDebugPanel.vue
+  s_4befa66d306eaa::t_1b07c2a63414de 43,49-54
+agentforge-service/agentforge-service-ui/src/main.js
+  s_4befa66d306eaa::t_bf23b52467a7a4 5
+agentforge-service/agentforge-service-ui/src/styles/chat-scroll-button.css
+  s_4befa66d306eaa::t_bf87684e54d9a9 74-79
+  s_4befa66d306eaa::t_fb8a2d83a6d4b3 1-5,13-20,22-55,58-65,67,71-73,80-111,114-118,121,124,130,133,135,137-166,175,177-186
+  s_4befa66d306eaa::t_adc7c3d7f3ae86 6-12,21,56-57,66,68-70,112-113,119-120,122-123,125-129,131-132,134,136,167-174,176,187-188
+agentforge-service/agentforge-service-ui/src/pages/published/PublishedAgentChatPage.vue
+  s_4befa66d306eaa::t_1b07c2a63414de 116,122-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c244d3e233fb093a9aecd7bdad279df78c50d1ea",
+  "prompts": {},
+  "sessions": {
+    "s_4befa66d306eaa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7cb9ba7cffe7o2JToXVMzjdpX",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
