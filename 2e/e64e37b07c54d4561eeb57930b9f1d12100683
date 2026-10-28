@@ -1,0 +1,294 @@
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/dao/HttpPluginMethodMapper.java
+  s_af1b2477dd7577::t_617c7c95496be8 1-3,8-12,17,33
+  s_af1b2477dd7577::t_4101dd6b820987 4-7,13-16,18-32
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/support/HttpPluginValidator.java
+  s_af1b2477dd7577::t_4101dd6b820987 7,23-29,32-35,37-47,51-56,59-60,65-68,70-75,77-97,102-111
+  s_af1b2477dd7577::t_8b8980c5487e48 1-6,8-22,30-31,36,48-50,57-58,61-64,69,76,98-101,112-113
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/req/HttpPluginCurlReq.java
+  s_af1b2477dd7577::t_4101dd6b820987 4,6,8-16,19-20,23-32,35-36,39
+  s_af1b2477dd7577::t_2e308b3055264f 1-3,40
+  s_af1b2477dd7577::t_87d549d3f60ae5 5,7,17-18,21-22,33-34,37-38
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/config/StandardAgentConfig.java
+  s_af1b2477dd7577::t_cef72cd6c231fa 15,41-42,45-46
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/req/HttpPluginTestRunReq.java
+  s_af1b2477dd7577::t_2e308b3055264f 1-6,15
+  s_af1b2477dd7577::t_4101dd6b820987 7-14
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/mcp/McpToolExecutor.java
+  s_4befa66d306eaa::t_1a0689b7664dc2 3,11
+  s_4befa66d306eaa::t_886e412311b403 41,48
+  s_4befa66d306eaa::t_2b09ad0d63bfd1 60-70
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/component/agent/HttpAgentToolLoader.java
+  s_af1b2477dd7577::t_4101dd6b820987 16-27,30-47,60-65,67-85,88-97,100-102,104-133
+  s_af1b2477dd7577::t_5112ddb28898b7 1-15,28-29,134
+  s_4befa66d306eaa::t_fa9b1539742df1 48-59,66
+  s_4befa66d306eaa::t_2c95642d8a781e 86-87
+  s_4befa66d306eaa::t_caf05ef0df662e 99
+  s_af1b2477dd7577::t_c8d7cc6e1d613c 98,103
+README.zh-CN.md
+  s_6f14746a74bdf1::t_b7d2eb63872f62 52
+  s_6f14746a74bdf1::t_db1ac9d0453129 156-160
+  s_6f14746a74bdf1::t_abc0b0291a69b4 211-220,225,228-229,236
+  s_6f14746a74bdf1::t_6a8a2ce3195893 107-141
+  s_6f14746a74bdf1::t_a8fccb25e7e3d7 28-32
+  s_6f14746a74bdf1::t_8ae63cd9d2ccc0 89
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/plugins/http/mapper/HttpPluginMapper.xml
+  s_af1b2477dd7577::t_7e621bad3c218a 1-23
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/ReActAgentFactory.java
+  s_4befa66d306eaa::t_e2673835e0e6b6 107
+  s_4befa66d306eaa::t_99804ce4352c1d 94-97
+  s_4befa66d306eaa::t_51496971da590c 101,108
+  s_af1b2477dd7577::t_744f5e6a42de10 20,38,46-47,54,99,102-104
+  s_4befa66d306eaa::t_780980ad643051 100
+  s_4befa66d306eaa::t_04e6073cea0237 12,93,98
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/req/HttpPluginMethodSaveReq.java
+  s_af1b2477dd7577::t_4101dd6b820987 6-95
+  s_af1b2477dd7577::t_2e308b3055264f 1-5,96
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/pojo/HttpPluginMethodPojo.java
+  s_af1b2477dd7577::t_9c0cd8f7856dac 1-5,114
+  s_af1b2477dd7577::t_4101dd6b820987 6-113
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/controller/HttpPluginController.java
+  s_af1b2477dd7577::t_4ab59781d2a51e 45
+  s_af1b2477dd7577::t_aa874879c56f04 91-95
+  s_af1b2477dd7577::t_21f9ac7488a8ae 86-90
+  s_af1b2477dd7577::t_4101dd6b820987 7,15,19-21,24-40,54-85
+  s_af1b2477dd7577::t_94d39a4f352f02 8-13,16,41-44,46-53
+  s_af1b2477dd7577::t_5f069f1fdb8745 1-6,14,17-18,22-23,96
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/req/AgentConfigUpsertReq.java
+  s_af1b2477dd7577::t_4935ceecea2a48 3,16,84-85,88-89
+agentforge-service/agentforge-service-ui/vite.config.js
+  s_af1b2477dd7577::t_2f96c4e53c1353 12-13,56
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/req/HttpPluginSaveReq.java
+  s_af1b2477dd7577::t_2e308b3055264f 1-5,78
+  s_af1b2477dd7577::t_4101dd6b820987 6-77
+agentforge-service/agentforge-service-ui/src/pages/http/HttpPluginPage.vue
+  s_af1b2477dd7577::t_8a347622d01431 74
+  s_af1b2477dd7577::t_f23b0a4a3dff64 11,13-15,29,75
+  s_af1b2477dd7577::t_ccb504810e268b 8
+  s_af1b2477dd7577::t_459913cd096539 24,57
+  s_af1b2477dd7577::t_94d39a4f352f02 79
+  s_af1b2477dd7577::t_d531739092707a 49,85
+  s_af1b2477dd7577::t_978eb390aae047 50
+  s_af1b2477dd7577::t_4bc652f97c6e9f 1-6,9-10,16-23,25-28,30-44,46,52-56,58-61,66,68-73,76-77,80-84,86
+  s_af1b2477dd7577::t_c8c7d8829fc4fc 47-48
+  s_af1b2477dd7577::t_7a5ca25fd56c7a 51
+  s_af1b2477dd7577::t_9722000357bdf0 7,63-65,67
+  s_af1b2477dd7577::t_ebc939668b8356 12
+  s_af1b2477dd7577::t_e6afa6a47a65c3 45,62,78
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent基础设施/agent链路追踪/Agent链路追踪设计实现（火焰图 & 流程图）.md"
+  s_426e20dff61b5e::t_9db29dd50a09a8 1-974
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/support/ToolSpecificationThoughts.java
+  s_4befa66d306eaa::t_39ead7ef0fa5b2 1-73
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/vo/HttpPluginTestRunVo.java
+  s_af1b2477dd7577::t_4101dd6b820987 4-48
+  s_af1b2477dd7577::t_2e308b3055264f 1-3,49
+agentforge-service/agentforge-service-ui/src/components/AppSidebar.vue
+  s_af1b2477dd7577::t_2f96c4e53c1353 33-36,59,64
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/config/PluginConfig.java
+  s_af1b2477dd7577::t_a2f3b8a463b8e0 8,11-12,15-16
+  s_4befa66d306eaa::t_a795783d99abc5 10
+  s_af1b2477dd7577::t_cef72cd6c231fa 1-4,6-7,9,13-14,17-26
+  s_4befa66d306eaa::t_51496971da590c 5
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/req/HttpPluginStatusReq.java
+  s_af1b2477dd7577::t_4101dd6b820987 5-12
+  s_af1b2477dd7577::t_2e308b3055264f 1-4,13
+agentforge-service/agentforge-service-ui/src/utils/chatAutoScroll.js
+  s_4befa66d306eaa::t_ad92c0993e9361 4-5,11,14,18-23,39,42
+  s_4befa66d306eaa::t_6e94f2f5facd50 1-3,6-10,12-13,15-17,24-38,40-41,43-49
+README.md
+  s_6f14746a74bdf1::t_b3c29223d4a781 154-158
+  s_6f14746a74bdf1::t_a1ac64e351777f 221,224-225,232
+  s_6f14746a74bdf1::t_08be2364ec6392 87
+  s_6f14746a74bdf1::t_3b699f757502b9 26-30
+  s_6f14746a74bdf1::t_f76236bf183f59 50
+  s_6f14746a74bdf1::t_233ec79b16a035 105-139
+  s_6f14746a74bdf1::t_0434907eb723d2 207-216
+agentforge-service/agentforge-service-web/src/main/resources/http-plugin/HTTP插件文件快速制作SOP.md
+  s_af1b2477dd7577::t_94d39a4f352f02 1-108
+  s_af1b2477dd7577::t_34898f3f0478cd 109-470
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/http/HttpToolExecutor.java
+  s_af1b2477dd7577::t_d9d8ebedfe3396 23,25,40-48,142,431,440-447,473-496
+  s_af1b2477dd7577::t_4101dd6b820987 17,20,389-392
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/dao/HttpPluginMapper.java
+  s_af1b2477dd7577::t_4101dd6b820987 4-7,13-26,28-35
+  s_af1b2477dd7577::t_617c7c95496be8 1-3,8-12,27,36
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/controller/HttpPluginMethodController.java
+  s_af1b2477dd7577::t_5f069f1fdb8745 1-5,7,9-10,13-14,53
+  s_af1b2477dd7577::t_4101dd6b820987 6,8,11-12,15-52
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/pojo/HttpPluginPojo.java
+  s_af1b2477dd7577::t_9c0cd8f7856dac 1-5,123
+  s_af1b2477dd7577::t_4101dd6b820987 6-122
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/我的资源/http插件/OpenReach Web Search CURL 一键导入示例.md"
+  s_af1b2477dd7577::t_17b82b0ed85f6b 31,33,36
+  s_af1b2477dd7577::t_20c2f0b4b72f0a 1-30,32,34-35,37-67
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/mcp/McpToolFactory.java
+  s_4befa66d306eaa::t_a3e5e521248927 73-86
+  s_4befa66d306eaa::t_770ca6ba4c79ce 69-72,87-102
+  s_4befa66d306eaa::t_b1722e59088b82 125-127
+  s_4befa66d306eaa::t_25efabd3d410dc 5
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/dao/HttpPluginParameterMapper.java
+  s_af1b2477dd7577::t_617c7c95496be8 1-3,8-12,14,20-21
+  s_af1b2477dd7577::t_4101dd6b820987 4-7,13,15-19
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/pojo/HttpPluginParameterPojo.java
+  s_af1b2477dd7577::t_9c0cd8f7856dac 1-5,123
+  s_af1b2477dd7577::t_4101dd6b820987 6-122
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/support/HttpPluginConverter.java
+  s_af1b2477dd7577::t_8b8980c5487e48 1-8,10-12,19-22,100
+  s_af1b2477dd7577::t_4101dd6b820987 9,13-18,23-99
+agentforge-service/sql/increment/1.0.x/20261028000000_v1.0.x.sql
+  s_af1b2477dd7577::t_7b55c06477285a 1-51
+agentforge-service/agentforge-service-ui/src/pages/http/api.js
+  s_af1b2477dd7577::t_978eb390aae047 28
+  s_af1b2477dd7577::t_459913cd096539 29
+  s_af1b2477dd7577::t_06f978de37cd30 1-27,30
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/service/HttpPluginAgentCacheService.java
+  s_af1b2477dd7577::t_c8d7cc6e1d613c 1-39
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/service/IHttpPluginService.java
+  s_af1b2477dd7577::t_5a1e60a5495407 1-5,7-9,42
+  s_af1b2477dd7577::t_4101dd6b820987 6,10-36,41
+  s_af1b2477dd7577::t_aa874879c56f04 39-40
+  s_af1b2477dd7577::t_21f9ac7488a8ae 37-38
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/vo/AgentConfigVo.java
+  s_af1b2477dd7577::t_4935ceecea2a48 3,19,101-102,105-106
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/impl/AgentConfigServiceImpl.java
+  s_af1b2477dd7577::t_8d3a35b6841193 13,401,426
+  s_4befa66d306eaa::t_d6ea1da7c3adec 221,384
+  s_4befa66d306eaa::t_51496971da590c 247-249
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentDebugPanel.vue
+  s_4befa66d306eaa::t_a104919d7a39be 17,39-50,67,74,100,116
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/vo/HttpPluginMethodVo.java
+  s_af1b2477dd7577::t_2e308b3055264f 1-3,5-8,126
+  s_af1b2477dd7577::t_4101dd6b820987 4,9-125
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/service/impl/HttpPluginServiceImpl.java
+  s_af1b2477dd7577::t_023c3aab1f2077 278-281,283,285-286,295-298,303,319-320,323,330,336,341
+  s_af1b2477dd7577::t_87d549d3f60ae5 238,254,257,363-364,366-367,379-381,391-393
+  s_af1b2477dd7577::t_1fa1d6dcd9ccac 17,46,55,62,115,125,132,175,184,193
+  s_af1b2477dd7577::t_f0eee9333b736b 268-277,282,284,287-294,299-302,304-311
+  s_af1b2477dd7577::t_4101dd6b820987 21,23-25,30-45,47-54,56-61,63-114,116-124,126-131,133-174,176-183,185-192,194-237,239-253,255-256,258-267,351-362,365,368-378,382-390,394-564,581-598
+  s_af1b2477dd7577::t_5a1e60a5495407 1-16,18-20,22,26-29,599
+  s_af1b2477dd7577::t_ae9af80a001a93 327-328,331-332
+  s_af1b2477dd7577::t_aa874879c56f04 312-318,321-322,324-326,329,333-335,337-340,342-350
+  s_af1b2477dd7577::t_6dff659db37924 565-580
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/tool/http/HttpToolFactoryTest.java
+  s_4befa66d306eaa::t_b5f17d2c7a6400 3
+  s_4befa66d306eaa::t_05e99163a6b917 50-72
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/tool/mcp/McpToolFactoryTest.java
+  s_4befa66d306eaa::t_5abc7d913a6822 3
+  s_4befa66d306eaa::t_e9173d16a96c04 110-122
+  s_4befa66d306eaa::t_4e787a69443b09 109
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/http/HttpToolFactory.java
+  s_4befa66d306eaa::t_1455b92678aa85 47-59,69
+  s_4befa66d306eaa::t_e7e29eb2463dfc 95-101,114-119
+  s_4befa66d306eaa::t_286825d606a9e3 7
+  s_4befa66d306eaa::t_599c3e5f6e88e8 136-138
+  s_4befa66d306eaa::t_504d08d6c66a07 102-113
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/plugins/http/mapper/HttpPluginParameterMapper.xml
+  s_af1b2477dd7577::t_7e621bad3c218a 1-17
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/plugins/http/mapper/HttpPluginMethodMapper.xml
+  s_af1b2477dd7577::t_7e621bad3c218a 1-21
+docs/roadmap/2026年AgentForge的RoadMap.md
+  s_af1b2477dd7577::t_c8aebb2e75d178 170-171,173-174,176-178
+  s_4befa66d306eaa::t_d932eef38ff704 190-192
+  s_af1b2477dd7577::t_3b3f8d4e7c7947 167-169
+  s_af1b2477dd7577::t_9c36a5a8c6a8c9 172
+  s_af1b2477dd7577::t_1695b089993458 175
+  s_4befa66d306eaa::t_69b29f357ef5fe 193-195
+agentforge-service/agentforge-service-ui/src/pages/published/PublishedAgentChatPage.vue
+  s_4befa66d306eaa::t_1c5fe4b2e72f85 81,112-124,155,185,310,406
+agentforge-framework/agentforge-agent-core/src/test/java/cloud/changlu/agentforge/agent/tool/mcp/McpToolExecutorTest.java
+  s_4befa66d306eaa::t_f135c5bf4ec76d 52-70
+  s_4befa66d306eaa::t_5334791eb952c4 3
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/req/HttpPluginJsonImportReq.java
+  s_af1b2477dd7577::t_8a347622d01431 6
+  s_af1b2477dd7577::t_21f9ac7488a8ae 1-3,5,7-37,40,42,44-45,109-112,114-117,119,180,184-185
+  s_af1b2477dd7577::t_e334df4468e450 46-51,60-61,64-65,68-77,79-81,83-91,100-108,120-126,131-132,137-166,175-179,181-183
+  s_af1b2477dd7577::t_023c3aab1f2077 4,38-39,41,43,52-59,62-63,66-67,78,82,92-99,113,118,127-130,133-136,167-174
+agentforge-service/agentforge-service-ui/src/pages/http/main.js
+  s_af1b2477dd7577::t_2f96c4e53c1353 1-7
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentConfigPage.vue
+  s_af1b2477dd7577::t_ab7c6614e4ae6d 171
+  s_af1b2477dd7577::t_a2f3b8a463b8e0 647
+  s_af1b2477dd7577::t_a51a83c0ddc288 323-328,331,333,335,338-341,343-344,348,353-357,540-543,572-587,654-656,660-666,669-671
+  s_af1b2477dd7577::t_855c3d65eecd86 159-170,172-181,322,329-330,332,334,336-337,342,345-347,349-352,358-360,506,536-539,561-562,618,621-622,627,651-653,657-658,673,675
+  s_4befa66d306eaa::t_175cad632a3a08 1083
+  s_af1b2477dd7577::t_f46d57243fd7b7 646,659,667,672,674
+  s_af1b2477dd7577::t_795ffec39d3650 668
+  s_4befa66d306eaa::t_51496971da590c 761-762
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/mcp/component/agent/McpAgentToolLoader.java
+  s_4befa66d306eaa::t_31de3eea2817da 100
+  s_4befa66d306eaa::t_eff8f88ac8f917 109-110
+  s_4befa66d306eaa::t_61ac0801edda4a 67-78
+  s_4befa66d306eaa::t_08d1774d42b5cf 127
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/tool/local/LocalToolFactory.java
+  s_4befa66d306eaa::t_a967907ca534f4 4
+  s_4befa66d306eaa::t_99804ce4352c1d 82-83
+agentforge-service/agentforge-service-ui/http-plugins/index.html
+  s_af1b2477dd7577::t_2f96c4e53c1353 1-13
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/base/IAgentManager.java
+  s_af1b2477dd7577::t_c8d7cc6e1d613c 29-30
+agentforge-service/agentforge-service-ui/src/styles.css
+  s_4befa66d306eaa::t_175cad632a3a08 118,218-239,244-245
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/vo/HttpPluginVo.java
+  s_af1b2477dd7577::t_2e308b3055264f 1-7,125
+  s_af1b2477dd7577::t_4101dd6b820987 8-124
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/base/AbstractAgentManager.java
+  s_af1b2477dd7577::t_c8d7cc6e1d613c 76-81
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/我的资源/http插件/AgentForge Service 接入 HTTP 插件设计方案.md"
+  s_af1b2477dd7577::t_1607437c30f5e2 1680-1688,1738
+  s_af1b2477dd7577::t_b51157816e53c7 917,921-928,942,944
+  s_af1b2477dd7577::t_5a124f8fb3b1f0 586,599,601-607,616-619,623-625
+  s_af1b2477dd7577::t_f0944ce03326fc 72
+  s_af1b2477dd7577::t_4f8b20c3d2625a 196,217,719,746,1299,1542,1558,1741,1754-1755
+  s_af1b2477dd7577::t_c3ddb3b458550c 636,638-639,641,643,650,653,660,675-676
+  s_af1b2477dd7577::t_a2f3b8a463b8e0 246,261,447,600,615,642
+  s_af1b2477dd7577::t_5fc5188efc270f 445
+  s_af1b2477dd7577::t_7f250b90f7db77 115,249,258,318-319
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/config/HttpToolConfig.java
+  s_af1b2477dd7577::t_cef72cd6c231fa 9,19-20,23-24,31-33
+  s_af1b2477dd7577::t_4101dd6b820987 11-13,15-18,21-22,25-26,29-30
+  s_af1b2477dd7577::t_9c0cd8f7856dac 1-8,10,14,27-28,34-35
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/我的资源/http插件/插件模板/OpenReach-HTTP插件.json
+  s_af1b2477dd7577::t_41ba3d314a2ab6 1-213
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/plugins/http/domain/req/HttpPluginParameterReq.java
+  s_af1b2477dd7577::t_2e308b3055264f 1-3,85
+  s_af1b2477dd7577::t_4101dd6b820987 4-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2ee64e37b07c54d4561eeb57930b9f1d12100683",
+  "prompts": {},
+  "sessions": {
+    "s_426e20dff61b5e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18222-7a3f-78d0-85c3-a31658110cc0",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_4befa66d306eaa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7cb9ba7cffe7o2JToXVMzjdpX",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_6f14746a74bdf1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7c7bc607ffeGn1GNXZxJF1akg",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_af1b2477dd7577": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18203-2165-7091-b43c-ee7cfeaa6e07",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
