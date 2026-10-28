@@ -1,0 +1,144 @@
+agentforge-service/agentforge-service-ui/src/plugins/element.js
+  s_6d19f0aad483cc::t_b5347ae76073ff 1-13
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentDebugPanel.vue
+  s_af1b2477dd7577::t_dfe9928c3c1c49 40-46,66,75-82
+agentforge-service/agentforge-service-ui/src/modes/debug/DebugMessage.vue
+  s_af1b2477dd7577::t_52ff11504e2a60 29
+agentforge-service/agentforge-service-ui/src/pages/models/styles/_element.scss
+  s_6d19f0aad483cc::t_6587a9759ff201 8
+  s_6d19f0aad483cc::t_3f0d90e15c591a 38,42
+  s_6d19f0aad483cc::t_b86913555067a8 219-242
+  s_6d19f0aad483cc::t_e133ea6217e62d 26,29-31,33-35,37
+  s_6d19f0aad483cc::t_0550db96fd21eb 1-7,9-25,43-75,83-218,243-304
+  s_6d19f0aad483cc::t_90dc6e75a56c42 76-82
+  s_6d19f0aad483cc::t_2396851b685424 27-28,32,36,39-41
+agentforge-service/agentforge-service-ui/src/pages/models/ModelsPage.vue
+  s_6d19f0aad483cc::t_18ed64fe581a31 11,17-18,25-30,32-33,128-135,137-139,141-156,158-160,162-164,166-175,177-178,180,191-195,362-367,369-378,455-456,502,507-518
+  s_6d19f0aad483cc::t_999973f1a40168 31,45,109-110,112-122,136,181-190,446
+  s_6d19f0aad483cc::t_71408056fd824a 242
+  s_6d19f0aad483cc::t_df0036124d2a51 34-36
+agentforge-service/agentforge-service-ui/src/pages/agents/main.js
+  s_6d19f0aad483cc::t_d6c201b587d665 2
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/markdown渲染器设计实现/AI正文Markdown流式渲染方案调研与优化设计.md
+  s_af1b2477dd7577::t_f9c82261bc2038 563-627
+agentforge-service/agentforge-service-ui/agents/index.html
+  s_af1b2477dd7577::t_53b404b69b24ab 7
+  s_6d19f0aad483cc::t_cdb154ab527ed9 8-15
+agentforge-service/agentforge-service-ui/src/pages/models/styles/models.scss
+  s_6d19f0aad483cc::t_2b965d573045b5 11,19
+agentforge-service/agentforge-service-ui/src/pages/mcp/main.js
+  s_6d19f0aad483cc::t_ccc90d8ab39aac 2
+agentforge-service/agentforge-service-ui/src/pages/models/main.js
+  s_6d19f0aad483cc::t_16533196428e65 2
+agentforge-service/agentforge-service-ui/src/components/AppSidebar.vue
+  s_6d19f0aad483cc::t_9a31cd2ae126d8 6-9,12,14-41,43-45,47,55,59,61-71
+  s_af1b2477dd7577::t_53b404b69b24ab 42
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentConfigPage.vue
+  s_4662cf25283fb8::t_5d49dfa56b4fc7 333-342,345,350,363,476,565,577-584
+  s_6d19f0aad483cc::t_bd70c0c48f0e07 109-111
+  s_4662cf25283fb8::t_2da0829615e3eb 352-360,630-633
+  s_6d19f0aad483cc::t_2dfce2cc9f93f2 454
+  s_6d19f0aad483cc::t_fe45675d9fd98f 869
+  s_6d19f0aad483cc::t_06c4d3d063bdb1 924
+  s_6d19f0aad483cc::t_c5941d03255b49 868
+  s_4662cf25283fb8::t_08d359e29aa4d9 917-918
+  s_6d19f0aad483cc::t_220b02106d6d4d 867
+  s_6d19f0aad483cc::t_bf284c0d965655 7-8,10-14,875,981-982
+  s_6d19f0aad483cc::t_3ce6b94068456a 865-866,870-874,876
+  s_4662cf25283fb8::t_4f2596bf5c95fe 163,170-173,177-183
+  s_af1b2477dd7577::t_53b404b69b24ab 5,108
+  s_6d19f0aad483cc::t_39a1a89950b423 130-133,138-156
+  s_4662cf25283fb8::t_280d1c71092a90 164-169,174-176,481
+  s_6d19f0aad483cc::t_806f5277de109e 29-54
+  s_4662cf25283fb8::t_fc571a8f886c34 134-137,300,324-332,347,621-629
+  s_4662cf25283fb8::t_07cdfbd87e5dc2 915-916
+  s_6d19f0aad483cc::t_8c5421e377c30a 107
+  s_af1b2477dd7577::t_0b20a7e5bde230 74
+  s_6d19f0aad483cc::t_727f57caf2bb8b 101-102
+  s_6d19f0aad483cc::t_753b720f8a5d32 67-73,75
+  s_4662cf25283fb8::t_f7a28ddc1ff317 914,919
+  s_6d19f0aad483cc::t_ee32754e6c584b 4,6,16,28,55-60,62-64,66
+  s_4662cf25283fb8::t_3302ef211d6d8a 938
+  s_6d19f0aad483cc::t_3291896834b917 541
+  s_6d19f0aad483cc::t_af1a36afd1d206 26
+  s_6d19f0aad483cc::t_da7afe6eaf13fc 79,84-87,95-100,186,191,196-198,200-201,529-534,536-537,877-908
+  s_4662cf25283fb8::t_829fb2fb512bb2 940-942
+  s_6d19f0aad483cc::t_ae668ff117cd12 15,61,65,81-83,91-93,106,112-129,157-162,184-185,203-249,251-273,275-277,279-290,294-295,297-299,301-310,312-316,323,343-344,346,348-349,351,361-362,367-437,449-453,455-475,478-480,482-494,500-504,506-515,524-528,535,538-540,542,545-559,567-573,585-588,590-591,596-600,603-607,618-620,634-656,658-662,664-678,683-686,697-852,855-857,912-913,920-922,925,944-949,952,959,962
+  s_4662cf25283fb8::t_5cea6b25279274 317-322,926,931-937,939,943
+  s_6d19f0aad483cc::t_2e85ad6ffdaa7e 477
+  s_6d19f0aad483cc::t_cf6bf12cceb54c 18-25,27
+  s_6d19f0aad483cc::t_647d4229edc085 608-617,927-930
+  s_6d19f0aad483cc::t_4a11ab48b02751 961
+  s_6d19f0aad483cc::t_81e2ca5eb58529 984-985
+  s_6d19f0aad483cc::t_3a8a9c0d320a23 17
+  s_6d19f0aad483cc::t_6b8e57017a21a5 202
+agentforge-service/agentforge-service-ui/src/components/MarkdownView.vue
+  s_af1b2477dd7577::t_52ff11504e2a60 146-149
+agentforge-service/agentforge-service-ui/src/pages/models/styles/_tokens.scss
+  s_af1b2477dd7577::t_31313ea342c1bb 72
+agentforge-service/agentforge-service-ui/src/pages/published/PublishedAgentChatPage.vue
+  s_af1b2477dd7577::t_ced265a36d577a 130
+agentforge-service/agentforge-service-ui/src/components/AgentMessageContent.vue
+  s_af1b2477dd7577::t_52ff11504e2a60 3-4,22-24,26-35,38-40
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentsPage.vue
+  s_6d19f0aad483cc::t_9299a3bff89a0c 333-365
+  s_6d19f0aad483cc::t_2b8d778c2a2bad 166
+  s_af1b2477dd7577::t_53b404b69b24ab 12
+  s_6d19f0aad483cc::t_b4f29a466d05db 9-11,14-16,19-21,23-28,30-31,33,54,77,99-124,131-140,153-165,170-171,174-184,187-189,193-225,232,257-329
+  s_6d19f0aad483cc::t_9daca9d794aedd 22,29,34-42,45,48-53,55-68,75-76,78-81,84-97,125-130
+  s_6d19f0aad483cc::t_79d2601266aef3 43-44,46-47,69-74,147,167-169,185-186,190,226-231,233-256
+  s_af1b2477dd7577::t_7a7a3ecd7433f1 13
+agentforge-service/agentforge-service-ui/src/main.js
+  s_6d19f0aad483cc::t_8b6119ffbc03b6 2
+agentforge-service/agentforge-service-ui/src/pages/mcp/McpPage.vue
+  s_6d19f0aad483cc::t_bffdfe09da7a67 10,22-24,27-30,37,39-47,100,102-103,105-110,112-114,116,123-185,187,200,206-314,316-320,322-341,376,393,467-473,476-478,481-484,516-524,569-572,574-582,603-605,608-611,613-618,645-653,667-676,694-696,702-704,707-710,712-717,772-776,779,785,787,888-1036
+  s_6d19f0aad483cc::t_267d93f53635f6 48
+  s_6d19f0aad483cc::t_8d8bd5c1a1686b 186,188-199
+  s_b03a0815c34eea::t_10727df91004df 866,868-870
+  s_6d19f0aad483cc::t_3b5fa90dada9ca 789-854,856-857,881-887
+  s_b03a0815c34eea::t_df544499d95b7d 55-61
+  s_6d19f0aad483cc::t_ee9d318d3b509a 788
+  s_b03a0815c34eea::t_0671383fb7d949 855,858-865,867,871-880
+agentforge-service/agentforge-service-ui/src/modes/elegant/ElegantMessage.vue
+  s_af1b2477dd7577::t_52ff11504e2a60 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed3340a4b835f0c889993f5bd4320b92c29358b8",
+  "prompts": {},
+  "sessions": {
+    "s_4662cf25283fb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a180f0-9745-7622-b6fc-70c6611af319",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_6d19f0aad483cc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e8169f6e7ffemvbZASbUR01LH3",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_af1b2477dd7577": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18203-2165-7091-b43c-ee7cfeaa6e07",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_b03a0815c34eea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7f382765ffeRdxGujlLlhs30r",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
