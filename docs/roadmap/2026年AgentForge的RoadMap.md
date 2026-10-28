@@ -1,8 +1,6 @@
-[toc]
 
 
-
-# Agent框架：AgentForge
+# Agent框架：AgentForge-core
 
 ## 核心工程结构
 
@@ -85,6 +83,12 @@ AgentForge
 
 
 
+**优化设计：**
+
+- [ ] 插件工具统一function call标准注入思考字段
+
+
+
 #### 外部中断工具调用场景
 
 - [ ] 中断事件，外部构造返回的tool工具调用结果（例如：askUser tool）
@@ -122,6 +126,70 @@ AgentForge
 
 - [ ] Agent审核权限设计
 - [ ] 中断审核确认，Agent层提供标准的一套human in the loop审核确认（例如：权限审批工具拦截，外部注入配置对应的工具权限规则设定）
+
+
+
+# Agent服务：AgentForge Service
+
+## 资源组件设计
+
+### 模型配置
+
+- [ ] 核心模型统一协议层设计方案文档
+- [ ] 模型配置教程
+
+
+
+### HTTP插件工具
+
+- [ ] 核心HTTP插件设计方案文档
+- [ ] 标准HTTP插件工具配置教程
+
+
+
+### MCP插件服务
+
+- [ ] 核心MCP插件设计方案文档
+- [ ] 标准MCP插件服务配置教程
+
+
+
+## Agent设计
+
+### 通用Agent配置设计实现
+
+- [ ] 核心通用Agent配置设计 & 扩展实现
+- [ ] 通用Agent详细配置过程指南（包含配置模型、对接http、mcp插件工具）
+
+
+
+## Agent基础设施
+
+核心对接Agent基础设施场景，如定时任务、三方渠道、Agent数据监控
+
+### Agent Data Monitor 监控
+
+> 包含Agent的执行记录、执行耗时、消耗token情况等
+
+- [ ] 核心通用Agent Data Monitor 监控设计实现
+- [ ] 通用Agent的Data Monitor监控使用
+
+
+
+### Agent Loop Trace监控
+
+> 包含Agent的核心执行链路追踪场景
+
+- [ ] 核心通用Agent Loop Trace监测设计实现
+- [ ] 通用Agent的Loop Trace监控使用
+
+
+
+### Agent 定时任务设计
+
+> 包含Agent的定时任务对接方式
+
+- [ ] 标准Agent定时任务对接扩展
 
 
 

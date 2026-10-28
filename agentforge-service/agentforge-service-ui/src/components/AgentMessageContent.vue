@@ -1,7 +1,7 @@
 <template>
   <div class="agent-message-content">
-    <component :is="modeComponent" :message="message" />
-    <div v-if="message.status !== 'running'" class="msg-actions agent-debug-message-actions">
+    <component :is="modeComponent" :message="message" @render-complete="onRenderComplete" />
+    <div v-if="showActions" class="msg-actions agent-debug-message-actions">
       <button class="mini-btn agent-debug-mini-btn" type="button" title="复制回答" :disabled="!message.content" @click="copy">
         <i class="el-icon-document-copy"></i>
       </button>
@@ -19,10 +19,25 @@ export default {
     message: { type: Object, required: true },
     mode: { type: String, required: true }
   },
+  data() {
+    return { renderedContent: null }
+  },
   computed: {
-    modeComponent() { return getRenderMode(this.mode).component }
+    modeComponent() { return getRenderMode(this.mode).component },
+    showActions() {
+      if (this.message.status === 'running') return false
+      return !this.message.content || this.renderedContent === this.message.content
+    }
+  },
+  watch: {
+    'message.status'(value) {
+      if (value === 'running') this.renderedContent = null
+    }
   },
   methods: {
+    onRenderComplete(event) {
+      if (event && event.content === this.message.content) this.renderedContent = event.content
+    },
     async copy() {
       if (!this.message.content) return
       try {

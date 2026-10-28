@@ -14,7 +14,7 @@
         </button>
       </div>
     </div>
-    <div ref="feed" class="agent-debug-feed">
+    <div ref="feed" class="agent-debug-feed" @scroll.passive="onFeedScroll">
       <div v-if="!messages.length" class="agent-debug-empty"><span>✦</span><b>开始一次调试对话</b><p>支持调试事件时间线与发布后交互展示两种模式。</p></div>
       <template v-for="(message, index) in messages">
         <div v-if="message.role === 'user'" :key="index" class="agent-debug-message-row agent-debug-message-row--user">
@@ -36,8 +36,32 @@
         </div>
       </template>
     </div>
+    <transition name="chat-scroll-btn">
+      <button
+        v-if="isUserScrolledUp && messages.length"
+        class="chat-scroll-btn agent-debug-scroll-btn"
+        :class="{ 'is-streaming': running }"
+        type="button"
+        title="回到底部"
+        aria-label="回到底部"
+        @click="scrollToBottom"
+      >
+        <span class="chat-scroll-btn__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </span>
+        <span class="chat-scroll-btn__label">回到底部</span>
+      </button>
+    </transition>
     <div class="agent-debug-input">
-      <textarea v-model="draft" placeholder="输入调试问题..." @keydown.enter.exact.prevent="send"></textarea>
+      <textarea
+        v-model="draft"
+        placeholder="输入调试问题..."
+        @compositionstart="composing = true"
+        @compositionend="composing = false"
+        @keydown.enter="onEnter"
+      ></textarea>
       <button class="af-btn af-btn--primary" :disabled="running || !draft.trim()" @click="send">{{ running ? '运行中' : '发送' }}</button>
     </div>
   </aside>
@@ -46,18 +70,20 @@
 <script>
 import { RENDER_MODES, DEFAULT_RENDER_MODE } from '../../modes'
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
+import chatAutoScroll from '../../utils/chatAutoScroll'
 import { postSse } from '../../utils/sse'
 
 const MODE_KEY = 'agentforge.render.mode'
 export default {
   name: 'AgentDebugPanel',
   components: { AgentMessageContent },
+  mixins: [chatAutoScroll],
   props: {
     aid: { type: String, required: true },
     agentName: { type: String, default: '' },
     agentAvatar: { type: String, default: '/logo.png' }
   },
-  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [] } },
+  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', composing: false, running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [] } },
   computed: {
     renderModes() { return RENDER_MODES },
     displayAgentName() { return this.agentName || 'AgentForge' }
@@ -66,10 +92,18 @@ export default {
   created() { localStorage.setItem(MODE_KEY, this.mode) },
   beforeDestroy() { if (this.controller) this.controller.abort() },
   methods: {
+    onEnter(event) {
+      // 中文等输入法正在组词时，Enter 只用于确认候选词，不发送消息。
+      if (this.composing || event.isComposing || event.keyCode === 229) return
+      // Shift + Enter 保留 textarea 的默认换行行为。
+      if (event.shiftKey) return
+      event.preventDefault()
+      this.send()
+    },
     async send() {
       const text = this.draft.trim(); if (!text || this.running) return
       const requestVersion = ++this.requestVersion
-      this.draft = ''; this.messages.push({ role: 'user', text }); const answer = { role: 'assistant', status: 'running', parts: [], content: '', error: '', startedAt: Date.now(), finishedAt: null, elapsedMs: null }; this.messages.push(answer); this.running = true; this.controller = new AbortController(); const controller = this.controller; this.scroll()
+      this.draft = ''; this.messages.push({ role: 'user', text }); const answer = { role: 'assistant', status: 'running', parts: [], content: '', error: '', startedAt: Date.now(), finishedAt: null, elapsedMs: null }; this.messages.push(answer); this.running = true; this.controller = new AbortController(); const controller = this.controller; this.resetScrollFollow(); this.scroll()
       try {
         await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: true }, { signal: controller.signal, onEvent: (event) => this.handleEvent(answer, event) })
       } catch (e) {
@@ -85,7 +119,7 @@ export default {
       ++this.requestVersion
       if (this.controller) this.controller.abort()
       if (this.running && oldSessionId) fetch(`/api/chat/stop?sessionId=${encodeURIComponent(oldSessionId)}`, { method: 'POST' }).catch(() => {})
-      this.controller = null; this.running = false; this.messages = []; this.draft = ''; this.sessionId = this.createSessionId()
+      this.controller = null; this.running = false; this.messages = []; this.draft = ''; this.sessionId = this.createSessionId(); this.resetScrollFollow()
       this.$message.success('已新建会话')
     },
     handleEvent(answer, event) {
@@ -148,7 +182,6 @@ export default {
         this.$message.warning('复制失败，请手动选择文本')
       }
     },
-    scroll() { this.$nextTick(() => { if (this.$refs.feed) this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight }) }
   }
 }
 </script>

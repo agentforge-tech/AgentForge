@@ -1,0 +1,213 @@
+{
+  "version": "1.0",
+  "source": "agentforge-openreach-local-plugin",
+  "plugin": {
+    "name": "OpenReach",
+    "alias": "openreach",
+    "icon": "",
+    "baseUrl": "http://openreach.changlu.cloud",
+    "staticHeaders": {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "User-Agent": "agentforge-service/1.0.0"
+    },
+    "description": "OpenReach 联网能力插件，提供网页搜索、图片搜索、公开网页正文读取和公开机器可读资源读取能力。",
+    "status": 1,
+    "methods": [
+      {
+        "methodName": "webSearch",
+        "displayName": "网页搜索",
+        "methodDescription": "搜索公开互联网上的最新信息、外部事实、官方文档、新闻或文章，返回包含标题、URL 和摘要的 JSON 候选结果。建议先使用本工具发现信息源，再使用 webRead 读取有价值的页面。",
+        "httpMethodType": 2,
+        "uri": "/api/web/search",
+        "status": 1,
+        "sortOrder": 1,
+        "parameters": [
+          {
+            "methodParamName": "query",
+            "methodParamDescription": "搜索关键词或完整问题，应包含足够的主题与上下文。",
+            "mappedName": "query",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": null,
+            "required": 1,
+            "sortOrder": 1
+          },
+          {
+            "methodParamName": "limit",
+            "methodParamDescription": "最大返回结果数，默认 5。",
+            "mappedName": "limit",
+            "useTypeValue": 2,
+            "dataTypeValue": 2,
+            "defaultValue": "5",
+            "required": 0,
+            "sortOrder": 2
+          },
+          {
+            "methodParamName": "region",
+            "methodParamDescription": "区域路由提示，可选 auto、CN、US、JP、SG、GLOBAL，默认 auto。",
+            "mappedName": "region",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": "auto",
+            "required": 0,
+            "sortOrder": 3
+          },
+          {
+            "methodParamName": "provider",
+            "methodParamDescription": "搜索服务提供方，默认 auto，由 OpenReach 自动路由。",
+            "mappedName": "provider",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": "auto",
+            "required": 0,
+            "sortOrder": 4
+          },
+          {
+            "methodParamName": "timeRange",
+            "methodParamDescription": "时效范围，可选 any、day、week、month、year，默认 any。",
+            "mappedName": "timeRange",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": "any",
+            "required": 0,
+            "sortOrder": 5
+          }
+        ]
+      },
+      {
+        "methodName": "webImageSearch",
+        "displayName": "图片搜索",
+        "methodDescription": "搜索公开互联网图片，返回经过验证且可下载的图片 URL 等 JSON 信息。适用于寻找插图、壁纸或图片素材来源。",
+        "httpMethodType": 2,
+        "uri": "/api/web/image-search",
+        "status": 1,
+        "sortOrder": 2,
+        "parameters": [
+          {
+            "methodParamName": "query",
+            "methodParamDescription": "图片搜索关键词，建议包含主体、场景、风格等关键信息。",
+            "mappedName": "query",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": null,
+            "required": 1,
+            "sortOrder": 1
+          },
+          {
+            "methodParamName": "limit",
+            "methodParamDescription": "最大返回图片数，默认 8。",
+            "mappedName": "limit",
+            "useTypeValue": 2,
+            "dataTypeValue": 2,
+            "defaultValue": "8",
+            "required": 0,
+            "sortOrder": 2
+          },
+          {
+            "methodParamName": "region",
+            "methodParamDescription": "区域路由提示，可选 auto、CN、US、JP、SG、GLOBAL，默认 auto。",
+            "mappedName": "region",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": "auto",
+            "required": 0,
+            "sortOrder": 3
+          },
+          {
+            "methodParamName": "provider",
+            "methodParamDescription": "图片搜索服务提供方，默认 auto，由 OpenReach 自动路由。",
+            "mappedName": "provider",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": "auto",
+            "required": 0,
+            "sortOrder": 4
+          }
+        ]
+      },
+      {
+        "methodName": "webRead",
+        "displayName": "读取网页正文",
+        "methodDescription": "读取公开网页的主要文本内容并返回 JSON。仅允许读取公网 HTTP/HTTPS 80/443 端口的 HTML、XHTML 或纯文本页面；不得传入私网、localhost、非 80/443 端口、二进制或图片 URL。",
+        "httpMethodType": 2,
+        "uri": "/api/web/read",
+        "status": 1,
+        "sortOrder": 3,
+        "parameters": [
+          {
+            "methodParamName": "url",
+            "methodParamDescription": "需要读取的公开网页完整 URL，必须使用 HTTP 或 HTTPS。",
+            "mappedName": "url",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": null,
+            "required": 1,
+            "sortOrder": 1
+          },
+          {
+            "methodParamName": "maxChars",
+            "methodParamDescription": "最大返回字符数，默认 20000。",
+            "mappedName": "maxChars",
+            "useTypeValue": 2,
+            "dataTypeValue": 2,
+            "defaultValue": "20000",
+            "required": 0,
+            "sortOrder": 2
+          }
+        ]
+      },
+      {
+        "methodName": "webCurl",
+        "displayName": "读取公开数据资源",
+        "methodDescription": "使用安全的只读 GET 或 HEAD 请求读取公开机器可读文本资源，例如 GitHub REST API、原始源码、公开 JSON 或文本 API，返回状态码、响应头和文本的 JSON。仅允许公网 HTTP/HTTPS 80/443 端口。",
+        "httpMethodType": 2,
+        "uri": "/api/web/curl",
+        "status": 1,
+        "sortOrder": 4,
+        "parameters": [
+          {
+            "methodParamName": "url",
+            "methodParamDescription": "需要读取的公开机器可读资源完整 URL，必须使用 HTTP 或 HTTPS。",
+            "mappedName": "url",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": null,
+            "required": 1,
+            "sortOrder": 1
+          },
+          {
+            "methodParamName": "method",
+            "methodParamDescription": "发送到目标资源的只读 HTTP 方法，仅允许 GET 或 HEAD，默认 GET。",
+            "mappedName": "method",
+            "useTypeValue": 2,
+            "dataTypeValue": 1,
+            "defaultValue": "GET",
+            "required": 0,
+            "sortOrder": 2
+          },
+          {
+            "methodParamName": "headers",
+            "methodParamDescription": "发送到目标资源的可选请求头 JSON 对象，例如 {\"Accept\":\"application/json\"}。不要传入 Cookie、Authorization 等敏感信息。",
+            "mappedName": "headers",
+            "useTypeValue": 2,
+            "dataTypeValue": 6,
+            "defaultValue": null,
+            "required": 0,
+            "sortOrder": 3
+          },
+          {
+            "methodParamName": "maxChars",
+            "methodParamDescription": "最大返回字符数，默认 100000。",
+            "mappedName": "maxChars",
+            "useTypeValue": 2,
+            "dataTypeValue": 2,
+            "defaultValue": "100000",
+            "required": 0,
+            "sortOrder": 4
+          }
+        ]
+      }
+    ]
+  }
+}

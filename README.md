@@ -23,10 +23,11 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 
 **Highlights**
 
-- Provider-neutral model abstraction with [OI]-compatible and Anthropic implementations
-- ReAct agent runtime with streaming, memory, tool calling, middleware, retry, and cancellation
-- Harness runtime with permissions, tool approval, sandboxing, tracing, and resumable execution
-- Out-of-the-box Spring Boot + Vue service with a unified SSE streaming protocol
+- Provider-neutral model abstraction with OpenAI-compatible and Anthropic implementations
+- ReAct agent runtime with streaming, ChatMemory, local / HTTP / MCP tools, middleware, retry and cancellation
+- Out-of-the-box AgentForge Service: model config, Agent build / debug / version / publish, session history and plugin management
+- Unified SSE event protocol with MySQL-backed ChatMemory, replayable session events and dual debug / elegant rendering
+- Harness runtime and advanced observability are on the roadmap
 
 ## Documentation
 
@@ -46,6 +47,7 @@ The documentation site is the best place to start. It is available in both 简�
 
 - [Documentation](#documentation)
 - [Architecture](#architecture)
+- [AgentForge Service](#agentforge-service)
 - [Quick Start](#quick-start)
 - [Questions](#questions)
 - [Contribution](#contribution)
@@ -82,7 +84,7 @@ AgentForge
 │   └── agentforge-model-registry # Out-of-the-box ChatModel factory
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent runtime
-│   └── agentforge-harness-agent  # Harness runtime (permission / approval / sandbox / resumable execution)
+│   └── agentforge-harness-agent  # Harness runtime (design phase)
 ├── agentforge-service            # Out-of-the-box service (Vue frontend + Spring Boot backend)
 │   ├── agentforge-service-ui     # Vue 2 + Vite frontend
 │   └── agentforge-service-web    # Spring Boot backend
@@ -100,9 +102,41 @@ AgentForge
 | `agentforge-model-openai` | OpenAI Chat Completions sync / streaming, Function Calling, OpenAI-compatible endpoints |
 | `agentforge-model-anthropic` | Anthropic Messages API sync / streaming, Tool Use |
 | `agentforge-model-registry` | `LlmFactory` builds ChatModel / StreamingChatModel per provider |
-| `agentforge-agent-core` | ReAct main loop (sync / streaming), window memory, tool-calling rounds, Middleware chain, retry & cancellation |
-| `agentforge-harness-agent` | Harness runtime on top of the core Agent: permission, tool approval, human-in-the-loop, sandbox, trace, resumable execution |
-| `agentforge-service` | Out-of-the-box service over the unified SSE protocol (Vue frontend + Spring Boot backend) |
+| `agentforge-agent-core` | ReAct main loop (sync / streaming), pluggable `ChatMemory` / `ChatMemoryStore`, window memory, local / HTTP / MCP tools, tool-calling rounds, Middleware chain, retry & cancellation |
+| `agentforge-harness-agent` | Harness runtime on top of the core Agent (design phase): permission, tool approval, human-in-the-loop, sandbox, trace, resumable execution |
+| `agentforge-service` | Runnable Agent workbench: model config, Agent config / debug / version / publish, sessions & replay, MySQL ChatMemory, HTTP / MCP plugins, unified SSE (Vue frontend + Spring Boot backend) |
+
+### AgentForge Service
+
+`agentforge-service` is a runnable single-user Agent workbench, not a demo shell. It closes the loop from model configuration to a published Agent:
+
+```text
+Model config → Agent config → Debug → Version → Publish → Chat & session history
+```
+
+| Capability | What is implemented |
+| --- | --- |
+| Model management | OpenAI / Anthropic / OpenAI-compatible endpoints, API key, base URL and model name; resolved by `LlmFactory` at runtime |
+| Agent configuration | Prompt, chat model, window memory and plugin references persisted in `ai_agent_config` |
+| Debug & preview | Debug runs use the working config; the same event stream renders in high-density `debug` mode or user-facing `elegant` mode |
+| Version history | `ai_agent_config_version` snapshots, editable version remarks, version switching and side-by-side diff |
+| Publish snapshots | `ai_agent_config_published` isolates the live configuration from ongoing edits; publish / unpublish invalidates runtime caches |
+| Sessions & replay | `ai_agent_session` / `ai_agent_session_message` persist titles, pinning, messages and the SSE event snapshots used for history replay |
+| ChatMemory | `ai_agent_memrory` persists the model context through a pluggable `ChatMemoryStore` (in-memory by default, MySQL in the service) |
+| HTTP plugins | HTTP plugin / method / parameter model, curl and JSON import, online test-run, namespaced tools (`{alias}__{method}`) |
+| MCP plugins | MCP plugin / server management, one-click `mcpServers` import / export, tool discovery, multi-server aggregation with per-server failure isolation |
+| Streaming UX | Unified SSE events (`session` / `think` / `resp` / `tool_call` / `resp_end` / `error`), streaming Markdown and `__thought` tool intent |
+
+The backend is organized by business module:
+
+```text
+agentforge-service-web
+└── modules
+    ├── model      # Model configuration
+    ├── agent      # Agent config, version, publish and runtime assembly
+    ├── session    # Sessions, messages and SSE replay
+    └── plugins    # HTTP and MCP plugins
+```
 
 ### Design Principles
 
@@ -117,9 +151,11 @@ AgentForge
 | Phase | Status | Content |
 | --- | --- | --- |
 | Phase 1 — LLM Foundation | ✅ Done | Model contracts and OpenAI / Anthropic providers; stable Message / Request / Response |
-| Phase 2 — LLM Capability | 🚧 In progress | Streaming and Tool Calling shipped; Structured Output / Multimodal / Embedding / More Providers planned |
-| Phase 3 — Agent Foundation | 🚧 Current | `model-registry`, `agent-core`; ReAct loop, window memory, tool-calling rounds, Middleware |
-| Phase 4 — Production Agent Runtime | ⏳ Planned | SubAgent / Multi-Agent / Sandbox / Human-in-the-loop / Tracing / Persistence |
+| Phase 2 — LLM Capability | 🚧 In progress | Streaming and Tool Calling shipped; Structured Output / Multimodal / Embedding / more providers planned |
+| Phase 3 — Agent Foundation | ✅ Done | `model-registry`, `agent-core`; ReAct loop, window memory, tool calling, Middleware, retry |
+| Phase 4 — Service Foundation | 🚧 Current | Model config, Agent config / debug / version / publish, sessions and replay, MySQL ChatMemory, HTTP / MCP plugins, unified SSE, dual rendering modes |
+| Phase 5 — Production Runtime | ⏳ Planned | Harness (permission / approval / sandbox / resumable execution), Agent Trace, Data Monitor, scheduled tasks |
+| Phase 6 — Multi-form | ⏳ Planned | Platform, CLI and Desktop distributions |
 
 ---
 
@@ -131,24 +167,6 @@ AgentForge
 
 - Day-to-day development and CI default to **JDK 17**; public modules compile to **Java 8 bytecode** and can be depended on and run directly under JDK 8.
 - The root package name and `groupId` are both `cloud.changlu.agentforge`.
-
-### Build & Dependency
-
-```bash
-git clone https://github.com/agentforge-tech/AgentForge.git
-cd AgentForge
-mvn clean install -DskipTests
-```
-
-Then add the modules you need. Until the first Maven Central release is published, use the locally installed `1.0.0-SNAPSHOT` artifacts:
-
-```xml
-<dependency>
-    <groupId>cloud.changlu.agentforge</groupId>
-    <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-</dependency>
-```
 
 ### Call a Model
 
@@ -186,20 +204,32 @@ ChatResult result = agent.run(AgentRequest.builder()
 
 For streaming, `agent.runStream(request)` returns a `TokenStream` that lets you subscribe to text / thinking deltas, tool executions, and completion events; `agent.cancel(memoryId)` cancels a task. Models, memory, tools, and middleware are all injected through the builder — see the documentation site for details.
 
+### Build & Dependency
+
+```bash
+git clone https://github.com/agentforge-tech/AgentForge.git
+cd AgentForge
+mvn clean install -DskipTests
+```
+
+This installs `1.0.0-SNAPSHOT` artifacts into your local Maven repository. Add only the modules you need, for example `agentforge-agent-core`, `agentforge-model-openai`, or the full `agentforge-service`.
+
 ### Run AgentForge Service
 
 ```bash
 # Backend (Spring Boot, default 8080)
+cp agentforge-service/conf/application.yml.example agentforge-service/conf/application.yml
 export AGENTFORGE_MODEL_API_KEY=your-api-key
 mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
-java -jar agentforge-service/agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
+cd agentforge-service
+java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 
 # Frontend (Vue 2 + Vite, default 5173, proxies /api to 8080)
 cd agentforge-service/agentforge-service-ui
 npm install && npm run dev
 ```
 
-See [agentforge-service/README.md](agentforge-service/README.md) for details.
+The UI ships pages for model management (`/`), Agents (`/agents`), HTTP plugins (`/http-plugins`), MCP plugins (`/mcp`) and the published chat page (`/agent/published/{aid}`). See [agentforge-service/README.md](agentforge-service/README.md) for details.
 
 ### Testing
 

@@ -64,6 +64,18 @@ public class McpAgentToolLoader {
      * @return 工具表，可直接注册到 {@code ToolService}
      */
     public Map<ToolSpecification, ToolExecutor> load(List<McpToolConfig> configs) {
+        return loadWithThought(configs, false);
+    }
+
+    /**
+     * 加载 Agent 绑定的全部 MCP 工具，可选择向工具 Schema 注入思考参数。
+     *
+     * @param configs Agent 配置中的 MCP 选择关系
+     * @param withThought 是否追加必填的思考参数
+     * @return 工具表，可直接注册到 {@code ToolService}
+     */
+    public Map<ToolSpecification, ToolExecutor> loadWithThought(
+            List<McpToolConfig> configs, boolean withThought) {
         if (configs == null || configs.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -85,7 +97,7 @@ public class McpAgentToolLoader {
             }
             List<McpPluginServerPojo> servers = loadServers(config.getPluginId(), serverIds);
             for (McpPluginServerPojo server : servers) {
-                loadServer(tools, plugin, server);
+                loadServer(tools, plugin, server, withThought);
             }
         }
         return tools;
@@ -94,7 +106,8 @@ public class McpAgentToolLoader {
     private void loadServer(
             Map<ToolSpecification, ToolExecutor> tools,
             McpPluginPojo plugin,
-            McpPluginServerPojo server) {
+            McpPluginServerPojo server,
+            boolean withThought) {
         String alias = buildAlias(plugin.getId(), server.getServerName());
         McpClient client = null;
         boolean loaded = false;
@@ -111,7 +124,7 @@ public class McpAgentToolLoader {
                                             .build())
                             .build();
             Map<ToolSpecification, ToolExecutor> serverTools =
-                    McpToolFactory.buildTools(client, alias, null, null);
+                    McpToolFactory.buildToolsWithThought(client, alias, withThought);
             tools.putAll(serverTools);
             loaded = true;
             LOGGER.info(

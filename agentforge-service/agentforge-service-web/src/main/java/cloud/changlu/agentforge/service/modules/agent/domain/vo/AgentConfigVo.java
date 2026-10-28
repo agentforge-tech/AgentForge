@@ -1,9 +1,8 @@
 package cloud.changlu.agentforge.service.modules.agent.domain.vo;
 
-import cloud.changlu.agentforge.service.modules.agent.domain.config.McpToolConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.config.PluginConfig;
 
 import java.util.Date;
-import java.util.List;
 
 /** Agent 配置返回对象。 */
 public class AgentConfigVo {
@@ -17,7 +16,7 @@ public class AgentConfigVo {
     private String systemPrompt;
     private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
-    private List<McpToolConfig> mcpPlugins;
+    private PluginConfig pluginConfig;
     private Integer publish;
     private Date lastPublishTime;
     private Long submittedVersionNo;
@@ -99,12 +98,12 @@ public class AgentConfigVo {
         this.chatMemoryMaxMessages = chatMemoryMaxMessages;
     }
 
-    public List<McpToolConfig> getMcpPlugins() {
-        return mcpPlugins;
+    public PluginConfig getPluginConfig() {
+        return pluginConfig;
     }
 
-    public void setMcpPlugins(List<McpToolConfig> mcpPlugins) {
-        this.mcpPlugins = mcpPlugins;
+    public void setPluginConfig(PluginConfig pluginConfig) {
+        this.pluginConfig = pluginConfig;
     }
 
     public Integer getPublish() {
