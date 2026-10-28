@@ -215,32 +215,8 @@ button, textarea { font: inherit; }
   pointer-events: none;
 }
 
-/* ------------------------------ 回到底部按钮 ------------------------------ */
-/* 用户上滑后不再强制跟随流式回复，右下角提供“回到底部”入口 */
-.chat-scroll-btn {
-  position: absolute;
-  right: max(24px, calc((100% - 860px) / 2 + 24px));
-  bottom: 104px;
-  z-index: 20;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; padding: 0;
-  border: 1px solid #e2e7ef; border-radius: 50%;
-  background: #fff; color: #4b8ef7; font-size: 16px; line-height: 1; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(23, 43, 77, 0.14);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-}
-.chat-scroll-btn:hover { background: #f3f8ff; box-shadow: 0 6px 18px rgba(23, 43, 77, 0.2); transform: translateY(-2px); }
-.chat-scroll-btn:active { transform: translateY(0); }
-.chat-scroll-btn-enter-active, .chat-scroll-btn-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
-.chat-scroll-btn-enter, .chat-scroll-btn-leave-to { opacity: 0; transform: translateY(8px); }
-
-/* 调试面板：按钮悬浮在调试输入框上方 */
-.agent-debug-scroll-btn { right: 40px; bottom: 88px; width: 32px; height: 32px; font-size: 14px; }
-
 @media (max-width: 760px) {
   .sidebar { display: none; }
   .chat-inner, .composer-inner { padding-left: 16px; padding-right: 16px; }
   .user-block { max-width: 88%; }
-  .chat-scroll-btn { right: 16px; bottom: 116px; }
-  .agent-debug-scroll-btn { right: 24px; bottom: 84px; }
 }

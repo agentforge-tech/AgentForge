@@ -113,12 +113,18 @@
         <button
           v-if="isUserScrolledUp && messages.length"
           class="chat-scroll-btn"
+          :class="{ 'is-streaming': running }"
           type="button"
           title="回到底部"
           aria-label="回到底部"
           @click="scrollToBottom"
         >
-          <i class="el-icon-arrow-down"></i>
+          <span class="chat-scroll-btn__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </span>
+          <span class="chat-scroll-btn__label">回到底部</span>
         </button>
       </transition>
 

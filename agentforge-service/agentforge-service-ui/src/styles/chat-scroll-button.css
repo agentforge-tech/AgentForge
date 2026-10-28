@@ -1,0 +1,188 @@
+/* ------------------------------ 回到底部 ------------------------------ */
+/*
+ * 设计取向：默认收成 38px 的磨砂圆钮，仅保留箭头；
+ * 悬停/聚焦时向右展开为轻量胶囊并显示文案，避免与 ai-chat 的常驻蓝色按钮雷同。
+ */
+.chat-scroll-btn {
+  position: absolute;
+  right: max(24px, calc((100% - 860px) / 2 + 24px));
+  bottom: 104px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(199, 215, 236, 0.9);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #3f7fe0;
+  cursor: pointer;
+  box-shadow:
+    0 6px 20px rgba(37, 74, 132, 0.14),
+    0 1px 2px rgba(37, 74, 132, 0.06);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition:
+    width 0.24s cubic-bezier(0.22, 0.61, 0.36, 1),
+    gap 0.24s ease,
+    padding 0.24s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* 流式生成中：右上角呼吸圆点提示仍有新内容 */
+.chat-scroll-btn::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7cb0ff, #4b8ef7);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.chat-scroll-btn.is-streaming::after {
+  opacity: 1;
+  transform: scale(1);
+  animation: chat-scroll-pulse 1.8s ease-in-out infinite;
+}
+
+.chat-scroll-btn:hover,
+.chat-scroll-btn:focus-visible {
+  width: 108px;
+  gap: 6px;
+  padding: 0 14px;
+  border-color: rgba(150, 187, 240, 0.95);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(37, 74, 132, 0.2);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.chat-scroll-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* 展开为胶囊后，呼吸圆点让位于文案 */
+.chat-scroll-btn:hover::after,
+.chat-scroll-btn:focus-visible::after {
+  opacity: 0;
+}
+
+.chat-scroll-btn__icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-scroll-btn__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chat-scroll-btn.is-streaming .chat-scroll-btn__icon {
+  animation: chat-scroll-bob 1.8s ease-in-out infinite;
+}
+
+.chat-scroll-btn__label {
+  max-width: 0;
+  overflow: hidden;
+  color: #3f6fb6;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    max-width 0.24s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.chat-scroll-btn:hover .chat-scroll-btn__label,
+.chat-scroll-btn:focus-visible .chat-scroll-btn__label {
+  max-width: 64px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* 进出场：轻量上浮，不使用位移过大的动效 */
+.chat-scroll-btn-enter-active,
+.chat-scroll-btn-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.chat-scroll-btn-enter,
+.chat-scroll-btn-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.92);
+}
+
+/* 调试面板：略小一号，浮在调试输入框右上方 */
+.agent-debug-scroll-btn {
+  right: 28px;
+  bottom: 88px;
+  width: 34px;
+  height: 34px;
+  border-radius: 17px;
+}
+
+.agent-debug-scroll-btn:hover,
+.agent-debug-scroll-btn:focus-visible {
+  width: 104px;
+}
+
+@keyframes chat-scroll-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(75, 142, 247, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(75, 142, 247, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(75, 142, 247, 0);
+  }
+}
+
+@keyframes chat-scroll-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+@media (max-width: 760px) {
+  .chat-scroll-btn {
+    right: 16px;
+    bottom: 116px;
+  }
+  .agent-debug-scroll-btn {
+    right: 20px;
+    bottom: 84px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-scroll-btn,
+  .chat-scroll-btn::after,
+  .chat-scroll-btn__icon,
+  .chat-scroll-btn__label {
+    animation: none !important;
+    transition: none !important;
+  }
+}
