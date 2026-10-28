@@ -75,7 +75,6 @@
         <div class="header-left">
           <div class="chat-title">{{ title }}</div>
         </div>
-        <div v-if="agentBasic && agentBasic.lastPublishTime" class="published-time">最新发布时间：{{ formatPublishedTime(agentBasic.lastPublishTime) }}</div>
       </div>
 
       <div class="message-input-wrapper" :class="{ 'input-at-bottom': messages.length > 0 }">
@@ -84,7 +83,6 @@
           <div v-if="!messages.length" class="welcome">
             <h2>{{ agentLoading ? '正在加载 Agent...' : (canChat ? '今天想解决什么问题？' : '请从已发布的 Agent 进入') }}</h2>
             <p v-if="!canChat">{{ agentError || '当前地址缺少有效的 Agent 标识，暂时无法发起正式对话。' }}</p>
-            <p v-else-if="agentBasic && agentBasic.description">{{ agentBasic.description }}</p>
           </div>
 
           <template v-for="(message, index) in messages">
@@ -129,7 +127,7 @@
               <span v-else class="stop-square"></span>
             </button>
           </div>
-          <div class="composer-tip">Enter / ⌘ + Enter 发送 · Shift + Enter 换行 · AI 生成内容可能不准确，请核对重要信息</div>
+          <div class="composer-tip">AI 生成内容可能不准确，请核对重要信息</div>
         </div>
       </div>
       </div>
@@ -195,9 +193,6 @@ export default {
     window.removeEventListener('popstate', this.handlePopState)
   },
   methods: {
-    formatPublishedTime(value) {
-      return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : ''
-    },
     async loadAgentBasic() {
       if (!this.aid) return
       this.agentLoading = true; this.agentError = ''

@@ -8,65 +8,32 @@
     <main class="af-workspace">
       <header class="af-topbar">
         <div class="af-crumb">
-          <button class="af-mobile-menu" type="button" aria-label="打开导航菜单" @click="navOpen = true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          <el-button class="af-mobile-menu" type="text" icon="el-icon-s-fold" aria-label="打开导航菜单" @click="navOpen = true" />
           <span>我的资源库</span>
           <span class="af-crumb__sep">/</span>
           <span class="af-crumb__current">模型列表</span>
         </div>
         <div class="af-topbar__actions">
-          <button class="af-btn af-btn--icon af-btn--ghost" title="刷新" :disabled="loading" @click="loadModels">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-              <path d="M21 3v6h-6" />
-            </svg>
-          </button>
-          <button class="af-btn af-btn--primary af-btn--sm" @click="openCreate">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            新建模型
-          </button>
+          <el-button icon="el-icon-refresh" :disabled="loading" @click="loadModels">刷新</el-button>
+          <el-button type="primary" icon="el-icon-plus" @click="openCreate">新建模型</el-button>
         </div>
       </header>
 
       <section class="af-content">
         <div class="af-content__inner">
           <!-- 工具栏 -->
-          <div class="af-toolbar">
-            <div class="af-search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="7" />
-                <path d="M21 21l-4.3-4.3" />
-              </svg>
-              <input
-                v-model="keyword"
-                type="search"
-                aria-label="搜索模型"
-                placeholder="搜索模型名称、协议或模型名..."
-              />
-              <button v-if="keyword" class="af-search__clear" type="button" aria-label="清除搜索" @click="clearKeyword">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div class="af-chips" role="group" aria-label="模型筛选">
-              <button
-                v-for="f in filters"
-                :key="f.key"
-                type="button"
-                class="af-chip"
-                :class="{ 'af-chip--active': filter === f.key }"
-                :aria-pressed="filter === f.key"
-                @click="changeFilter(f.key)"
-              >
-                {{ f.label }}
-              </button>
-            </div>
+          <div class="af-list-toolbar">
+            <el-input
+              v-model="keyword"
+              class="af-list-toolbar__search"
+              clearable
+              prefix-icon="el-icon-search"
+              aria-label="搜索模型"
+              placeholder="搜索模型名称、协议或模型名..."
+            />
+            <el-select v-model="filter" aria-label="模型类型筛选" @change="changeFilter">
+              <el-option v-for="f in filters" :key="f.key" :label="f.label" :value="f.key" />
+            </el-select>
           </div>
 
           <!-- 加载中 -->
@@ -75,7 +42,7 @@
             正在加载模型列表...
           </div>
 
-          <!-- 模型网格 -->
+          <!-- 模型卡片网格 -->
           <div v-else-if="models.length" class="af-grid">
             <article v-for="m in models" :key="m.id" class="af-model-card">
               <div class="af-model-card__head">
@@ -139,135 +106,93 @@
             <button v-else class="af-btn af-btn--primary af-btn--sm" type="button" @click="openCreate">新建模型</button>
           </div>
 
-          <nav v-if="!loading && totalCount > 0" class="af-pagination" aria-label="模型列表分页">
+          <!-- 分页 -->
+          <div v-if="!loading && totalCount > 0" class="af-pagination">
             <div class="af-pagination__summary">共 {{ totalCount }} 个模型，第 {{ currentPage }} / {{ totalPage }} 页</div>
-            <label class="af-pagination__size">
-              <span>每页</span>
-              <select v-model.number="pageSize" aria-label="每页显示数量" @change="changePageSize">
-                <option :value="12">12</option>
-                <option :value="24">24</option>
-                <option :value="48">48</option>
-              </select>
-              <span>条</span>
-            </label>
-            <div class="af-pagination__buttons">
-              <button class="af-page-btn" type="button" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
-                上一页
-              </button>
-              <button
-                v-for="page in pageNumbers"
-                :key="page"
-                class="af-page-btn af-page-btn--number"
-                :class="{ 'af-page-btn--active': page === currentPage }"
-                type="button"
-                :aria-current="page === currentPage ? 'page' : null"
-                @click="changePage(page)"
-              >
-                {{ page }}
-              </button>
-              <button class="af-page-btn" type="button" :disabled="currentPage === totalPage" @click="changePage(currentPage + 1)">
-                下一页
-              </button>
-            </div>
-          </nav>
+            <el-pagination
+              background
+              layout="sizes, prev, pager, next, jumper"
+              :page-sizes="[12, 24, 48]"
+              :page-size="pageSize"
+              :current-page="currentPage"
+              :total="totalCount"
+              @size-change="changePageSize"
+              @current-change="changePage"
+            />
+          </div>
         </div>
       </section>
     </main>
 
     <!-- ------------------------------ 新建 / 编辑弹窗 ------------------------------ -->
-    <transition name="af-fade">
-      <div v-if="dialogVisible" class="af-modal">
-        <div class="af-modal__backdrop" @click="closeDialog"></div>
-        <div class="af-modal__panel" role="dialog" aria-modal="true">
-          <div class="af-modal__head">
-            <h2 class="af-modal__title">{{ form.id ? '编辑模型' : '新建模型' }}</h2>
-            <button class="af-modal__close" type="button" aria-label="关闭" @click="closeDialog">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
+    <el-dialog
+      :visible.sync="dialogVisible"
+      :title="form.id ? '编辑模型' : '新建模型'"
+      width="640px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="!saving"
+      :show-close="!saving"
+    >
+      <el-form :model="form" label-width="96px" @submit.native.prevent>
+        <el-form-item label="名称" required>
+          <el-input v-model="form.name" placeholder="例如：我的 GPT-4o" />
+        </el-form-item>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="模型协议" required>
+              <el-select v-model.number="form.provider" placeholder="请选择协议" style="width: 100%">
+                <el-option v-for="p in options.providers" :key="p.value" :label="p.label" :value="p.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="模型类别" required>
+              <el-select v-model.number="form.modelType" placeholder="请选择类别" style="width: 100%">
+                <el-option v-for="t in options.modelTypes" :key="t.value" :label="t.label" :value="t.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="连接地址" required>
+          <el-input v-model="form.url" placeholder="例如：https://api.openai.com/v1" />
+        </el-form-item>
+
+        <el-form-item label="模型名称" required>
+          <el-input v-model="form.modelname" placeholder="例如：gpt-4o / deepseek-chat" />
+        </el-form-item>
+
+        <el-form-item label="API Key">
+          <el-input
+            v-model="form.apiKey"
+            type="password"
+            show-password
+            autocomplete="new-password"
+            :placeholder="form.hasApiKey ? '••••••••••••••••' : 'sk-...'"
+          />
+          <div class="af-form-tip">
+            {{ form.hasApiKey ? '密钥已加密保存且不会回显；留空保留原密钥，输入新值则替换。' : '选填，密钥仅用于后端调用模型。' }}
           </div>
+        </el-form-item>
+      </el-form>
 
-          <div class="af-modal__body">
-            <div class="af-field">
-              <label class="af-field__label">名称 <i>*</i></label>
-              <input v-model="form.name" class="af-input" type="text" placeholder="例如：我的 GPT-4o" />
-            </div>
-
-            <div class="af-field-row">
-              <div class="af-field">
-                <label class="af-field__label">模型协议 <i>*</i></label>
-                <select v-model.number="form.provider" class="af-select">
-                  <option v-for="p in options.providers" :key="p.value" :value="p.value">{{ p.label }}</option>
-                </select>
-              </div>
-              <div class="af-field">
-                <label class="af-field__label">模型类别 <i>*</i></label>
-                <select v-model.number="form.modelType" class="af-select">
-                  <option v-for="t in options.modelTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="af-field">
-              <label class="af-field__label">连接地址 <i>*</i></label>
-              <input v-model="form.url" class="af-input" type="text" placeholder="例如：https://api.openai.com/v1" />
-            </div>
-
-            <div class="af-field">
-              <label class="af-field__label">模型名称 <i>*</i></label>
-              <input v-model="form.modelname" class="af-input" type="text" placeholder="例如：gpt-4o / deepseek-chat" />
-            </div>
-
-            <div class="af-field">
-              <label class="af-field__label">API Key</label>
-              <input
-                v-model="form.apiKey"
-                class="af-input"
-                type="password"
-                autocomplete="new-password"
-                :placeholder="form.hasApiKey ? '••••••••••••••••' : 'sk-...'"
-              />
-              <div class="af-hint">
-                {{ form.hasApiKey ? '密钥已加密保存且不会回显；留空保留原密钥，输入新值则替换。' : '选填，密钥仅用于后端调用模型。' }}
-              </div>
-            </div>
-
-          </div>
-
-          <div class="af-modal__footer">
-            <div class="af-modal__footer-tests">
-              <button
-                class="af-btn af-btn--sm"
-                type="button"
-                :disabled="saving || testingForm"
-                @click="onTestFormConnectivity"
-              >
-                {{ testingForm === 'connectivity' ? '测试中...' : '测试连通性' }}
-              </button>
-              <button
-                class="af-btn af-btn--sm"
-                type="button"
-                :disabled="saving || testingForm"
-                @click="onTestFormFunctionCall"
-              >
-                {{ testingForm === 'functionCall' ? '测试中...' : '测试 Function Call' }}
-              </button>
-            </div>
-            <div class="af-modal__footer-actions">
-              <button class="af-btn af-btn--sm" type="button" @click="closeDialog">取消</button>
-              <button class="af-btn af-btn--primary af-btn--sm" type="button" :disabled="saving || testingForm" @click="submitForm">
-                {{ saving ? '保存中...' : '保存' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <transition name="af-fade">
-      <div v-if="tip" class="af-toast af-toast--show" :class="{ 'af-toast--error': tipError }">{{ tip }}</div>
-    </transition>
+      <span slot="footer" class="af-dialog-footer">
+        <el-button
+          :disabled="saving || Boolean(testingForm)"
+          :loading="testingForm === 'connectivity'"
+          @click="onTestFormConnectivity"
+        >测试连通性</el-button>
+        <el-button
+          :disabled="saving || Boolean(testingForm)"
+          :loading="testingForm === 'functionCall'"
+          @click="onTestFormFunctionCall"
+        >测试 Function Call</el-button>
+        <span class="af-dialog-footer__spacer"></span>
+        <el-button :disabled="saving" @click="closeDialog">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -296,9 +221,6 @@ export default {
       navOpen: false,
       keyword: '',
       filter: 'all',
-      tip: '',
-      tipError: false,
-      tipTimer: null,
       searchTimer: null,
       loading: false,
       saving: false,
@@ -317,7 +239,7 @@ export default {
   },
   computed: {
     filters() {
-      const chips = [{ key: 'all', label: '全部' }]
+      const chips = [{ key: 'all', label: '全部类型' }]
       this.options.modelTypes.forEach((t) => {
         chips.push({ key: 'type-' + t.value, label: t.label })
       })
@@ -325,13 +247,6 @@ export default {
     },
     hasFilters() {
       return Boolean(this.keyword.trim()) || this.filter !== 'all'
-    },
-    pageNumbers() {
-      const start = Math.max(1, Math.min(this.currentPage - 2, this.totalPage - 4))
-      const end = Math.min(this.totalPage, start + 4)
-      const pages = []
-      for (let page = start; page <= end; page += 1) pages.push(page)
-      return pages
     }
   },
   watch: {
@@ -348,7 +263,6 @@ export default {
     this.loadModels()
   },
   beforeDestroy() {
-    if (this.tipTimer) clearTimeout(this.tipTimer)
     if (this.searchTimer) clearTimeout(this.searchTimer)
   },
   methods: {
@@ -445,14 +359,23 @@ export default {
         this.saving = false
       }
     },
-    onDelete(model) {
-      if (!window.confirm('确定删除模型「' + model.name + '」吗？')) return
-      deleteModel(model.id)
-        .then(() => {
-          this.toast('已删除「' + model.name + '」')
-          this.loadModels()
+    async onDelete(model) {
+      try {
+        await this.$confirm('删除后该模型配置将不可恢复，是否继续？', '删除模型「' + model.name + '」', {
+          type: 'warning',
+          confirmButtonText: '删除',
+          cancelButtonText: '取消'
         })
-        .catch((e) => this.toast('删除失败：' + e.message, true))
+      } catch (_e) {
+        return
+      }
+      try {
+        await deleteModel(model.id)
+        this.toast('已删除「' + model.name + '」')
+        this.loadModels()
+      } catch (e) {
+        this.toast('删除失败：' + e.message, true)
+      }
     },
     testPayload(model) {
       return {
@@ -519,12 +442,8 @@ export default {
         this.testingForm = null
       }
     },
-    clearKeyword() {
-      this.keyword = ''
-    },
     changeFilter(filter) {
-      if (this.filter === filter) return
-      this.filter = filter
+      if (this.filter !== filter) this.filter = filter
       this.currentPage = 1
       this.loadModels()
     },
@@ -533,7 +452,8 @@ export default {
       this.currentPage = page
       this.loadModels()
     },
-    changePageSize() {
+    changePageSize(size) {
+      this.pageSize = size
       this.currentPage = 1
       this.loadModels()
     },
@@ -579,13 +499,20 @@ export default {
       return date.toLocaleString('zh-CN', { hour12: false })
     },
     toast(text, isError = false) {
-      this.tip = text
-      this.tipError = isError
-      if (this.tipTimer) clearTimeout(this.tipTimer)
-      this.tipTimer = setTimeout(() => {
-        this.tip = ''
-      }, 2400)
+      this.$message({ message: text, type: isError ? 'error' : 'success', duration: 2400 })
     }
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.af-dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__spacer {
+    flex: 1;
+  }
+}
+</style>

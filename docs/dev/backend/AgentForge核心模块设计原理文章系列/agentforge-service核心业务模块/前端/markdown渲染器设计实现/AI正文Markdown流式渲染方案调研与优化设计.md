@@ -560,6 +560,71 @@ MarkdownView（对外唯一入口）
 
 V1/V2 是必须交付的最小闭环；V3 起按观感收益与维护成本评估是否继续。
 
+### 3.11 最终渲染完成事件与操作区时序
+
+#### 3.11.1 问题背景
+
+后端的 `resp_end` 只表示 AI 正文传输结束，不等于用户已经看到最终 Markdown DOM。在 `typewriter` / `typewriter-blur` 模式下，网络流结束后可能仍有缓冲字符需要通过 `requestAnimationFrame` 排空，随后还要执行最终 Markdown 解析、代码高亮、sanitize 和 DOM 更新。
+
+如果回答底部的复制、重试等操作按钮仅依赖 `message.status !== 'running'`，就会在正文仍在显影时提前出现，造成“回答已完成，文字却还在追赶”的时序割裂。
+
+#### 3.11.2 事件定义
+
+`MarkdownView` 在以下条件全部满足后发出 `render-complete`：
+
+1. `streaming` 已变为 `false`；
+2. 打字机缓冲已排空，`visibleLength` 与最终正文长度一致；
+3. 已使用完成态解析器生成最终 HTML（包含代码高亮）；
+4. `stableHtml` 已更新，`tailHtml` 已清空；
+5. Vue `$nextTick` 完成，最终 DOM 已提交。
+
+事件携带当次完成渲染的内容快照：
+
+```js
+this.$emit('render-complete', { content: renderedContent })
+```
+
+上层必须比较 `event.content === message.content`，只接受与当前正文一致的完成事件。这可以避免在快速切换会话、重试或内容继续追加时，旧的 `$nextTick` 回调误将新内容标记为已渲染。
+
+#### 3.11.3 调试与发布模式的统一透传
+
+两种展示模式共用同一条事件链：
+
+```text
+MarkdownView
+  │ render-complete({ content })
+  ▼
+ElegantMessage（发布模式）/ DebugMessage（调试模式）
+  │ 原样透传
+  ▼
+AgentMessageContent
+  │ 校验内容快照
+  ▼
+显示回答底部操作区
+```
+
+`AgentMessageContent` 的显示规则为：
+
+- `message.status === 'running'` 时始终隐藏操作区；
+- 有正文时，仅在收到与当前 `message.content` 匹配的 `render-complete` 后显示；
+- 无正文的错误消息没有 Markdown 可渲染，错误状态与操作区直接显示，避免永久等待不会发生的事件；
+- 消息重新进入 `running` 时清空已渲染快照，防止重试时沿用上一轮状态。
+
+#### 3.11.4 时序约束
+
+```text
+SSE resp_end
+  → message.status = success/error
+  → MarkdownView 进入 draining
+  → 排空未显示字符
+  → 完成态 Markdown 解析 + sanitize
+  → Vue DOM commit（$nextTick）
+  → render-complete
+  → 回答底部按钮出现
+```
+
+这个设计将“传输完成”与“可视渲染完成”明确分离：前者由会话协议层负责，后者由 Markdown 渲染器负责，上层 UI 只消费稳定的完成事件。
+
 ## 四、实施计划
 
 与 3.10.7 的 V1–V4 对齐，分两条线推进：**正确性线**（渲染得对）与**观感线**（看得舒服）。

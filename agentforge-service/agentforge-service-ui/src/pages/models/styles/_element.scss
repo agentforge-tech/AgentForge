@@ -1,0 +1,304 @@
+// ---------------------------------------------------------------------------
+// Element UI 主题微调
+// 管理页（模型 / Agent / MCP）整体组件风格统一走 Element UI，
+// 这里只做「品牌色 + 圆角 + 字号」级别的微调，并补充少量布局辅助类。
+// 注意：不要在这里写业务页面样式，业务样式放各自 .vue 的 <style> 中。
+// ---------------------------------------------------------------------------
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+// ------------------------------ Element 全局变量 ------------------------------
+:root {
+  --af-brand: #{$color-brand};
+}
+
+// ------------------------------ 布局辅助类 ------------------------------
+.af-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-2 + 2px;
+  margin-bottom: $space-4;
+
+  &__spacer {
+    flex: 1;
+  }
+
+  // 只作用于工具栏的直接子元素，避免命中 el-select 内部的 el-input
+  > .el-input {
+    width: 260px;
+  }
+
+  > .el-input.af-list-toolbar__search {
+    width: 300px;
+  }
+
+  > .el-select {
+    width: 170px;
+
+    .el-input {
+      width: 100%;
+    }
+  }
+}
+
+.af-panel {
+  padding: $space-4 + 2px;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  background: #fff;
+  box-shadow: $shadow-xs;
+}
+
+.af-table-card {
+  overflow: hidden;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  background: #fff;
+  box-shadow: $shadow-xs;
+
+  .el-table {
+    &::before {
+      display: none;
+    }
+  }
+}
+
+.af-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  margin-top: $space-3;
+  color: $color-text-muted;
+  font-size: 12px;
+
+  // 右下角分页：内容不足一屏时贴到页面底部
+  &--end {
+    margin-top: auto;
+    padding-top: $space-3;
+    justify-content: flex-end;
+  }
+}
+
+.af-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+
+  &__main {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    color: $color-text;
+    font-weight: 600;
+  }
+
+  &__sub {
+    color: $color-text-muted;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  &__mono {
+    color: $color-text-secondary;
+    font-family: $font-mono;
+    font-size: 12.5px;
+  }
+}
+
+.af-logo {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background: $color-brand-soft;
+  color: $color-brand-dark;
+  font-size: 12px;
+  font-weight: 700;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.af-form-section {
+  margin-bottom: $space-4;
+}
+
+.af-form-tip {
+  margin-top: 4px;
+  color: $color-text-muted;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.af-dialog-body-scroll {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+// ------------------------------ Element 组件微调 ------------------------------
+.el-button--text {
+  padding: 0 4px;
+}
+
+.el-table {
+  font-size: 13px;
+
+  th.el-table__cell {
+    background: $color-sidebar;
+    color: $color-text-secondary;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  td.el-table__cell {
+    color: $color-text-secondary;
+  }
+
+  .cell {
+    line-height: 1.55;
+  }
+}
+
+.el-table--border,
+.el-table--group {
+  border-color: $color-border;
+}
+
+.el-dialog {
+  border-radius: $radius-xl;
+
+  &__header {
+    padding: $space-4 $space-5;
+    border-bottom: 1px solid $color-border;
+  }
+
+  &__title {
+    color: $color-text;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  &__body {
+    padding: $space-5;
+    color: $color-text-secondary;
+  }
+
+  &__footer {
+    padding: $space-3 $space-5;
+    border-top: 1px solid $color-border;
+  }
+}
+
+.el-form-item__label {
+  color: $color-text-secondary;
+  font-weight: 500;
+}
+
+.el-pagination {
+  padding: 0;
+}
+
+.el-tag {
+  border-radius: $radius-sm;
+}
+
+// 移动端抽屉按钮：桌面隐藏，窄屏才出现（el-button 默认 inline-block，需提高权重）
+.af-mobile-menu.el-button {
+  display: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin-right: $space-2;
+  color: $color-text-secondary;
+
+  &:hover,
+  &:focus {
+    background: $color-hover;
+    color: $color-text;
+  }
+}
+
+@include respond('md') {
+  .af-mobile-menu.el-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// ------------------------------ 左侧导航（el-menu） ------------------------------
+.af-sidebar .af-menu {
+  border-right: 0;
+  background: transparent;
+
+  &:not(.el-menu--collapse) {
+    width: 100%;
+  }
+
+  .el-submenu__title,
+  .el-menu-item {
+    height: 38px;
+    line-height: 38px;
+    font-size: 13px;
+    border-radius: $radius-md;
+  }
+
+  .el-submenu__title {
+    color: $color-text-muted;
+    font-size: 12.5px;
+    font-weight: 600;
+
+    i {
+      color: $color-text-muted;
+      font-size: 14px;
+    }
+
+    &:hover {
+      background: $color-hover;
+      color: $color-text-secondary;
+    }
+  }
+
+  .el-menu-item {
+    min-width: 0;
+    color: $color-text-secondary;
+
+    i {
+      color: $color-text-muted;
+      font-size: 14px;
+    }
+
+    &:hover {
+      background: $color-hover;
+      color: $color-text;
+    }
+
+    &.is-active {
+      background: $color-brand-soft;
+      color: $color-brand-dark;
+      font-weight: 600;
+
+      i {
+        color: $color-brand;
+      }
+    }
+  }
+
+  .el-menu {
+    background: transparent;
+  }
+}

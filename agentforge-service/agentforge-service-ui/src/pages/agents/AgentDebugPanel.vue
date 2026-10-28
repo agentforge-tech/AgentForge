@@ -37,7 +37,13 @@
       </template>
     </div>
     <div class="agent-debug-input">
-      <textarea v-model="draft" placeholder="输入调试问题..." @keydown.enter.exact.prevent="send"></textarea>
+      <textarea
+        v-model="draft"
+        placeholder="输入调试问题..."
+        @compositionstart="composing = true"
+        @compositionend="composing = false"
+        @keydown.enter="onEnter"
+      ></textarea>
       <button class="af-btn af-btn--primary" :disabled="running || !draft.trim()" @click="send">{{ running ? '运行中' : '发送' }}</button>
     </div>
   </aside>
@@ -57,7 +63,7 @@ export default {
     agentName: { type: String, default: '' },
     agentAvatar: { type: String, default: '/logo.png' }
   },
-  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [] } },
+  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', composing: false, running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [] } },
   computed: {
     renderModes() { return RENDER_MODES },
     displayAgentName() { return this.agentName || 'AgentForge' }
@@ -66,6 +72,14 @@ export default {
   created() { localStorage.setItem(MODE_KEY, this.mode) },
   beforeDestroy() { if (this.controller) this.controller.abort() },
   methods: {
+    onEnter(event) {
+      // 中文等输入法正在组词时，Enter 只用于确认候选词，不发送消息。
+      if (this.composing || event.isComposing || event.keyCode === 229) return
+      // Shift + Enter 保留 textarea 的默认换行行为。
+      if (event.shiftKey) return
+      event.preventDefault()
+      this.send()
+    },
     async send() {
       const text = this.draft.trim(); if (!text || this.running) return
       const requestVersion = ++this.requestVersion
