@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import '../../plugins/element'
 import ModelsPage from './ModelsPage.vue'
 import './styles/models.scss'
 

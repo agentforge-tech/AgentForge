@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent.tool.mcp;
 
+import cloud.changlu.agentforge.agent.constant.ToolConstants;
 import cloud.changlu.agentforge.agent.tool.mcp.domain.McpTool;
 import cloud.changlu.agentforge.model.tool.ToolExecutor;
 import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
@@ -103,6 +104,20 @@ public class McpToolFactoryTest {
                         client, "demo", null, new HashSet<String>(Arrays.asList("echo")));
         assertEquals(1, disabled.size());
         assertEquals("demo__get_weather", disabled.keySet().iterator().next().name());
+    }
+
+    @Test
+    public void shouldInjectThoughtParameterWhenEnabled() {
+        FakeMcpClient client = new FakeMcpClient("demo", Collections.singletonList(weatherTool()));
+
+        Map<ToolSpecification, ToolExecutor> tools =
+                McpToolFactory.buildTools(client, "demo", null, null, true);
+
+        ToolSpecification spec = tools.keySet().iterator().next();
+        assertTrue(
+                spec.parameters().properties().containsKey(ToolConstants.THOUGHT_PARAMETER_NAME));
+        assertTrue(spec.parameters().required().contains(ToolConstants.THOUGHT_PARAMETER_NAME));
+        assertTrue(spec.parameters().required().contains("location"));
     }
 
     @Test

@@ -7,11 +7,7 @@
     <main class="af-workspace">
       <header class="af-topbar">
         <div class="af-crumb">
-          <button class="af-mobile-menu" type="button" aria-label="打开导航菜单" @click="navOpen = true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          <el-button class="af-mobile-menu" type="text" icon="el-icon-s-fold" aria-label="打开导航菜单" @click="navOpen = true" />
           <span>我的资源库</span>
           <span class="af-crumb__sep">/</span>
           <template v-if="view === 'detail'">
@@ -23,60 +19,46 @@
         </div>
         <div class="af-topbar__actions">
           <template v-if="view === 'list'">
-            <button class="af-btn af-btn--icon af-btn--ghost" title="刷新" :disabled="loading" @click="loadPlugins">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12a9 9 0 1 1-2.64-6.36" /><path d="M21 3v6h-6" />
-              </svg>
-            </button>
-            <button class="af-btn af-btn--primary af-btn--sm" @click="openImport">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v12M7 10l5 5 5-5" /><path d="M4 21h16" />
-              </svg>
-              一键导入
-            </button>
-            <button class="af-btn af-btn--primary af-btn--sm" @click="openCreatePlugin">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              新增 MCP 插件
-            </button>
+            <el-button icon="el-icon-refresh" :disabled="loading" @click="loadPlugins">刷新</el-button>
+            <el-button icon="el-icon-download" @click="openImport">一键导入</el-button>
+            <el-button type="primary" icon="el-icon-plus" @click="openCreatePlugin">新增 MCP 插件</el-button>
           </template>
           <template v-else>
-            <button class="af-btn af-btn--sm" @click="backToList">← 返回列表</button>
-            <button class="af-btn af-btn--sm mcp-export-btn" :disabled="exportDialog.loading" @click="openExport">快捷复制配置</button>
-            <button class="af-btn af-btn--sm" @click="openEditPlugin(plugin)">编辑插件</button>
-            <button class="af-btn af-btn--primary af-btn--sm" @click="openAddServer">新增 Server</button>
+            <el-button icon="el-icon-back" @click="backToList">返回列表</el-button>
+            <el-button icon="el-icon-document-copy" :disabled="exportDialog.loading" @click="openExport">快捷复制配置</el-button>
+            <el-button icon="el-icon-edit" @click="openEditPlugin(plugin)">编辑插件</el-button>
+            <el-button type="primary" icon="el-icon-plus" @click="openAddServer">新增 Server</el-button>
           </template>
         </div>
       </header>
 
       <section class="af-content">
         <div class="af-content__inner">
-          <!-- 列表：MCP 插件卡片 -->
+          <!-- ------------------------- 列表：MCP 插件 ------------------------- -->
           <template v-if="view === 'list'">
-            <div class="af-toolbar">
-              <div class="af-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />
-                </svg>
-                <input v-model="keyword" type="search" aria-label="搜索插件" placeholder="搜索插件名称或描述..." @input="loadPlugins" />
-                <button v-if="keyword" class="af-search__clear" type="button" aria-label="清除搜索" @click="clearKeyword">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+            <div class="af-list-toolbar">
+              <el-input
+                v-model="keyword"
+                class="af-list-toolbar__search"
+                clearable
+                prefix-icon="el-icon-search"
+                placeholder="搜索插件名称或描述..."
+                @input="loadPlugins"
+              />
+              <span class="af-list-toolbar__spacer"></span>
               <span class="mcp-count">{{ plugins.length }} 个 MCP 插件</span>
             </div>
 
             <div v-if="loading" class="af-loading"><span class="af-spinner"></span>正在加载 MCP 插件列表...</div>
 
             <div v-else-if="!plugins.length" class="af-empty">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" /><path d="M7 7.5h.01M7 16.5h.01M11 7.5h4M11 16.5h4" />
-              </svg>
-              <b>{{ keyword ? '未找到匹配的 MCP 插件' : '还没有 MCP 插件' }}</b>
-              <p>新建插件并添加 HTTP MCP Server，或在 Agent 中绑定插件后即可调用其工具。</p>
+              <span class="af-empty__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" /><path d="M7 7.5h.01M7 16.5h.01M11 7.5h4M11 16.5h4" />
+                </svg>
+              </span>
+              <div class="af-empty__title">{{ keyword ? '未找到匹配的 MCP 插件' : '还没有 MCP 插件' }}</div>
+              <p class="af-empty__desc">新建插件并添加 HTTP MCP Server，或在 Agent 中绑定插件后即可调用其工具。</p>
               <button class="af-btn af-btn--primary af-btn--sm" @click="openCreatePlugin">创建第一个 MCP 插件</button>
             </div>
 
@@ -115,230 +97,248 @@
             </div>
           </template>
 
-          <!-- 详情：插件下的 Server 列表 -->
+          <!-- ------------------------- 详情：插件下的 Server ------------------------- -->
           <template v-else>
-            <div v-if="pluginLoading" class="af-loading"><span class="af-spinner"></span>正在加载插件详情...</div>
-            <template v-else-if="plugin">
-              <div class="mcp-detail-head">
+            <div v-loading="pluginLoading" class="af-panel mcp-detail-head">
+              <template v-if="plugin">
                 <div class="mcp-detail-head__main">
-                  <div class="mcp-detail-head__title">
-                    <span class="mcp-avatar mcp-avatar--lg"><img v-if="plugin.icon" :src="plugin.icon" alt="" @error="onIconError" /><template v-else>M</template></span>
-                    <div>
+                  <span class="af-logo af-logo--lg">
+                    <img v-if="plugin.icon" :src="plugin.icon" alt="" @error="onIconError" />
+                    <template v-else>M</template>
+                  </span>
+                  <div class="mcp-detail-head__text">
+                    <div class="mcp-detail-head__title">
                       <h2>{{ plugin.name }}</h2>
-                      <p>{{ plugin.description || '暂无插件描述' }}</p>
+                      <el-tag size="mini" :type="plugin.status === 1 ? 'success' : 'info'" effect="plain">
+                        {{ plugin.status === 1 ? '已启用' : '已禁用' }}
+                      </el-tag>
                     </div>
+                    <p>{{ plugin.description || '暂无插件描述' }}</p>
                   </div>
-                  <span class="af-tag" :class="plugin.status === 1 ? 'af-tag--success' : 'af-tag--muted'">{{ plugin.status === 1 ? '插件已启用' : '插件已禁用' }}</span>
                 </div>
                 <div class="mcp-detail-head__stat">
                   <span>Server 总数</span>
                   <b>{{ page.total }}</b>
                 </div>
-              </div>
+              </template>
+            </div>
 
-              <div class="af-toolbar mcp-server-toolbar">
-                <div class="af-search">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />
-                  </svg>
-                  <input v-model.trim="serverQuery.serverName" type="search" placeholder="搜索 Server 名称" @input="searchServers" />
-                </div>
-                <select v-model="serverQuery.transportType" class="af-select mcp-filter" @change="searchServers">
-                  <option value="">全部传输协议</option>
-                  <option :value="1">Streamable HTTP</option>
-                  <option :value="2">SSE</option>
-                </select>
-                <select v-model="serverQuery.status" class="af-select mcp-filter" @change="searchServers">
-                  <option value="">全部状态</option>
-                  <option :value="1">已启用</option>
-                  <option :value="0">已禁用</option>
-                </select>
-                <button class="af-btn af-btn--sm" :disabled="serverLoading" @click="loadServers">刷新</button>
-              </div>
+            <div class="af-list-toolbar">
+              <el-input
+                v-model.trim="serverQuery.serverName"
+                class="af-list-toolbar__search"
+                clearable
+                prefix-icon="el-icon-search"
+                placeholder="搜索 Server 名称"
+                @input="searchServers"
+              />
+              <el-select v-model="serverQuery.transportType" placeholder="全部传输协议" @change="searchServers">
+                <el-option label="全部传输协议" value="" />
+                <el-option label="Streamable HTTP" :value="1" />
+                <el-option label="SSE" :value="2" />
+              </el-select>
+              <el-select v-model="serverQuery.status" placeholder="全部状态" @change="searchServers">
+                <el-option label="全部状态" value="" />
+                <el-option label="已启用" :value="1" />
+                <el-option label="已禁用" :value="0" />
+              </el-select>
+              <el-button icon="el-icon-refresh" :disabled="serverLoading" @click="loadServers">刷新</el-button>
+            </div>
 
-              <div class="mcp-table-wrap">
-                <table class="mcp-table">
-                  <thead>
-                    <tr>
-                      <th>Server 名称</th>
-                      <th>服务地址</th>
-                      <th class="mcp-col-transport">传输协议</th>
-                      <th class="mcp-col-headers">请求头</th>
-                      <th class="mcp-col-status">状态</th>
-                      <th class="mcp-col-ops">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-if="serverLoading">
-                      <td colspan="6" class="mcp-table__empty">正在加载 Server 列表...</td>
-                    </tr>
-                    <tr v-else-if="!servers.length">
-                      <td colspan="6" class="mcp-table__empty">暂无 Server 配置，点击右上角“新增 Server”添加。</td>
-                    </tr>
-                    <tr v-for="server in servers" :key="server.id">
-                      <td><span class="mcp-server-name" :title="server.serverName">{{ server.serverName }}</span></td>
-                      <td><span class="mcp-server-url" :title="server.serverUrl">{{ server.serverUrl }}</span></td>
-                      <td><span class="af-tag af-tag--muted">{{ transportLabel(server.transportType) }}</span></td>
-                      <td>
-                        <span v-if="headerCount(server.headers)" class="mcp-headers-cell" :title="prettyHeaders(server.headers)">{{ headerCount(server.headers) }} 项</span>
-                        <span v-else class="mcp-muted">未配置</span>
-                      </td>
-                      <td>
-                        <button type="button" class="mcp-switch" :class="{ 'mcp-switch--on': server.status === 1 }" :aria-pressed="server.status === 1" @click="toggleServerStatus(server)">
-                          <span class="mcp-switch__knob"></span>
-                        </button>
-                      </td>
-                      <td>
-                        <div class="mcp-row-ops">
-                          <button class="af-mini-btn" :disabled="testingServer === server.id" @click="onTestServer(server)">{{ testingServer === server.id ? '探测中' : '工具列表' }}</button>
-                          <button class="af-mini-btn" @click="openEditServer(server)">编辑</button>
-                          <button class="af-mini-btn af-mini-btn--danger" @click="onDeleteServer(server)">删除</button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div class="af-table-card">
+              <el-table v-loading="serverLoading" :data="servers" row-key="id" style="width: 100%">
+                <el-table-column label="Server 名称" min-width="180" show-overflow-tooltip>
+                  <template slot-scope="{ row }"><span class="mcp-code">{{ row.serverName }}</span></template>
+                </el-table-column>
+                <el-table-column label="服务地址" min-width="260" show-overflow-tooltip>
+                  <template slot-scope="{ row }"><span class="mcp-code mcp-code--url">{{ row.serverUrl }}</span></template>
+                </el-table-column>
+                <el-table-column label="传输协议" width="150">
+                  <template slot-scope="{ row }">
+                    <el-tag size="mini" type="info" effect="plain">{{ transportLabel(row.transportType) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="请求头" width="110">
+                  <template slot-scope="{ row }">
+                    <el-tooltip v-if="headerCount(row.headers)" :content="prettyHeaders(row.headers)" placement="top">
+                      <span class="mcp-headers-cell">{{ headerCount(row.headers) }} 项</span>
+                    </el-tooltip>
+                    <span v-else class="af-cell__sub">未配置</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="状态" width="100">
+                  <template slot-scope="{ row }">
+                    <el-switch :value="row.status === 1" @change="toggleServerStatus(row)" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="230" fixed="right">
+                  <template slot-scope="{ row }">
+                    <el-button type="text" :loading="testingServer === row.id" @click="onTestServer(row)">工具列表</el-button>
+                    <el-button type="text" @click="openEditServer(row)">编辑</el-button>
+                    <el-button type="text" class="af-text-danger" @click="onDeleteServer(row)">删除</el-button>
+                  </template>
+                </el-table-column>
 
-              <div v-if="page.total > 0" class="mcp-pager">
-                <span class="mcp-pager__info">共 {{ page.total }} 条 · 第 {{ page.page }} / {{ page.totalPage }} 页</span>
-                <div class="mcp-pager__ops">
-                  <select v-model.number="page.pageSize" class="af-select mcp-filter mcp-filter--sm" @change="searchServers">
-                    <option :value="10">10 条/页</option>
-                    <option :value="20">20 条/页</option>
-                    <option :value="50">50 条/页</option>
-                  </select>
-                  <button class="af-btn af-btn--sm" :disabled="page.page <= 1 || serverLoading" @click="gotoPage(page.page - 1)">上一页</button>
-                  <button class="af-btn af-btn--sm" :disabled="page.page >= page.totalPage || serverLoading" @click="gotoPage(page.page + 1)">下一页</button>
-                </div>
-              </div>
-            </template>
+                <template slot="empty">
+                  <el-empty description="暂无 Server 配置，点击右上角「新增 Server」添加。" />
+                </template>
+              </el-table>
+            </div>
+
+            <div v-if="page.total > 0" class="af-pager af-pager--end">
+              <span>共 {{ page.total }} 条 · 第 {{ page.page }} / {{ page.totalPage }} 页</span>
+              <el-pagination
+                background
+                layout="sizes, prev, pager, next, jumper"
+                :page-sizes="[10, 20, 50]"
+                :page-size="page.pageSize"
+                :current-page="page.page"
+                :total="page.total"
+                @size-change="changeServerPageSize"
+                @current-change="gotoPage"
+              />
+            </div>
           </template>
         </div>
       </section>
     </main>
 
-    <!-- 插件弹窗 -->
-    <div v-if="pluginDialog.visible" class="af-modal">
-      <div class="af-modal__backdrop" @click="closePluginDialog"></div>
-      <div class="af-modal__panel mcp-dialog" role="dialog" aria-modal="true">
-        <div class="af-modal__head"><h2 class="af-modal__title">{{ pluginDialog.form.id ? '编辑 MCP 插件' : '新增 MCP 插件' }}</h2><button class="af-modal__close" @click="closePluginDialog">×</button></div>
-        <div class="af-modal__body mcp-dialog__body">
-          <div class="af-field"><label class="af-field__label">插件名称 <i>*</i></label><input v-model.trim="pluginDialog.form.name" class="af-input" maxlength="128" placeholder="例如：地图服务" /></div>
-          <div class="af-field"><label class="af-field__label">图标地址</label><input v-model.trim="pluginDialog.form.icon" class="af-input" placeholder="https://...（选填）" /></div>
-          <div class="af-field"><label class="af-field__label">描述</label><textarea v-model.trim="pluginDialog.form.description" class="af-input" rows="3" maxlength="1024" placeholder="简单介绍插件用途（选填）"></textarea></div>
-          <div class="af-field"><label class="af-field__label">状态</label>
-            <div class="af-switch-row">
-              <button type="button" class="af-chip" :class="{ 'af-chip--active': pluginDialog.form.status === 1 }" @click="pluginDialog.form.status = 1">启用</button>
-              <button type="button" class="af-chip" :class="{ 'af-chip--active': pluginDialog.form.status === 0 }" @click="pluginDialog.form.status = 0">禁用</button>
-            </div>
-          </div>
-        </div>
-        <div class="af-modal__foot">
-          <button class="af-btn" @click="closePluginDialog">取消</button>
-          <button class="af-btn af-btn--primary" :disabled="pluginDialog.saving" @click="savePlugin">{{ pluginDialog.saving ? '保存中...' : '确定' }}</button>
-        </div>
-      </div>
-    </div>
+    <!-- ------------------------------ 插件弹窗 ------------------------------ -->
+    <el-dialog
+      :visible.sync="pluginDialog.visible"
+      :title="pluginDialog.form.id ? '编辑 MCP 插件' : '新增 MCP 插件'"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="pluginDialog.form" label-width="88px" @submit.native.prevent>
+        <el-form-item label="插件名称" required>
+          <el-input v-model.trim="pluginDialog.form.name" maxlength="128" placeholder="例如：地图服务" />
+        </el-form-item>
+        <el-form-item label="图标地址">
+          <el-input v-model.trim="pluginDialog.form.icon" placeholder="https://...（选填）" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model.trim="pluginDialog.form.description" type="textarea" :rows="3" maxlength="1024" placeholder="简单介绍插件用途（选填）" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-switch v-model="pluginDialog.form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="closePluginDialog">取消</el-button>
+        <el-button type="primary" :loading="pluginDialog.saving" @click="savePlugin">确定</el-button>
+      </span>
+    </el-dialog>
 
-    <!-- Server 弹窗 -->
-    <div v-if="serverDialog.visible" class="af-modal">
-      <div class="af-modal__backdrop" @click="closeServerDialog"></div>
-      <div class="af-modal__panel mcp-dialog mcp-dialog--wide" role="dialog" aria-modal="true">
-        <div class="af-modal__head"><h2 class="af-modal__title">{{ serverDialog.form.id ? '编辑 MCP Server' : '新增 MCP Server' }}</h2><button class="af-modal__close" @click="closeServerDialog">×</button></div>
-        <div class="af-modal__body mcp-dialog__body">
-          <div class="af-field"><label class="af-field__label">Server 名称 <i>*</i></label><input v-model.trim="serverDialog.form.serverName" class="af-input" maxlength="128" placeholder="例如：deepwiki" /></div>
-          <div class="af-field"><label class="af-field__label">服务地址 URL <i>*</i></label><input v-model.trim="serverDialog.form.serverUrl" class="af-input" placeholder="https://mcp.example.com/mcp" />
-            <div class="af-hint">当前支持 Streamable HTTP / SSE（https:// 或 http://）。</div>
-          </div>
-          <div class="af-field"><label class="af-field__label">传输协议</label>
-            <select v-model.number="serverDialog.form.transportType" class="af-select">
-              <option :value="1">Streamable HTTP</option>
-              <option :value="2">SSE</option>
-            </select>
-          </div>
-          <div class="af-field"><label class="af-field__label">请求头 Headers（JSON）</label><textarea v-model.trim="serverDialog.form.headersText" class="af-input mcp-headers" rows="8" placeholder='{ "Authorization": "Bearer xxx" }'></textarea>
-            <div class="af-hint">保存后仅显示脱敏内容，重新保存时会覆盖原值。</div>
-          </div>
-          <div class="af-field"><label class="af-field__label">状态</label>
-            <div class="af-switch-row">
-              <button type="button" class="af-chip" :class="{ 'af-chip--active': serverDialog.form.status === 1 }" @click="serverDialog.form.status = 1">启用</button>
-              <button type="button" class="af-chip" :class="{ 'af-chip--active': serverDialog.form.status === 0 }" @click="serverDialog.form.status = 0">禁用</button>
-            </div>
-          </div>
-        </div>
-        <div class="af-modal__foot">
-          <button class="af-btn" @click="closeServerDialog">取消</button>
-          <button class="af-btn af-btn--primary" :disabled="serverDialog.saving" @click="saveServer">{{ serverDialog.saving ? '保存中...' : '确定' }}</button>
-        </div>
-      </div>
-    </div>
+    <!-- ------------------------------ Server 弹窗 ------------------------------ -->
+    <el-dialog
+      :visible.sync="serverDialog.visible"
+      :title="serverDialog.form.id ? '编辑 MCP Server' : '新增 MCP Server'"
+      width="720px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="serverDialog.form" label-width="110px" @submit.native.prevent>
+        <el-form-item label="Server 名称" required>
+          <el-input v-model.trim="serverDialog.form.serverName" maxlength="128" placeholder="例如：deepwiki" />
+        </el-form-item>
+        <el-form-item label="服务地址 URL" required>
+          <el-input v-model.trim="serverDialog.form.serverUrl" placeholder="https://mcp.example.com/mcp" />
+          <div class="af-form-tip">当前支持 Streamable HTTP / SSE（https:// 或 http://）。</div>
+        </el-form-item>
+        <el-form-item label="传输协议">
+          <el-select v-model.number="serverDialog.form.transportType" style="width: 100%">
+            <el-option label="Streamable HTTP" :value="1" />
+            <el-option label="SSE" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="请求头 Headers">
+          <el-input
+            v-model.trim="serverDialog.form.headersText"
+            class="mcp-json-input"
+            type="textarea"
+            :rows="8"
+            placeholder='{ "Authorization": "Bearer xxx" }'
+          />
+          <div class="af-form-tip">保存后仅显示脱敏内容，重新保存时会覆盖原值。</div>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-switch v-model="serverDialog.form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="closeServerDialog">取消</el-button>
+        <el-button type="primary" :loading="serverDialog.saving" @click="saveServer">确定</el-button>
+      </span>
+    </el-dialog>
 
-    <!-- 导入弹窗 -->
-    <div v-if="importDialog.visible" class="af-modal">
-      <div class="af-modal__backdrop" @click="closeImportDialog"></div>
-      <div class="af-modal__panel mcp-dialog mcp-dialog--wide" role="dialog" aria-modal="true">
-        <div class="af-modal__head"><h2 class="af-modal__title">一键导入 MCP 插件</h2><button class="af-modal__close" @click="closeImportDialog">×</button></div>
-        <div class="af-modal__body mcp-dialog__body">
-          <div class="af-field"><label class="af-field__label">插件名称 <i>*</i></label><input v-model.trim="importDialog.form.name" class="af-input" maxlength="128" placeholder="例如：高德 MCP" /></div>
-          <div class="af-field"><label class="af-field__label">配置 JSON <i>*</i></label><textarea v-model.trim="importDialog.form.jsonText" class="af-input mcp-headers mcp-json-input" placeholder='{
-  "mcpServers": {
-    "deepwiki": {
-      "url": "https://mcp.deepwiki.com/mcp",
-      "headers": {}
-    }
-  }
-}'></textarea>
-            <div class="af-hint">支持主流 MCP 配置片段；仅导入包含 url 的 HTTP 服务。</div>
-          </div>
-        </div>
-        <div class="af-modal__foot">
-          <button class="af-btn" @click="closeImportDialog">取消</button>
-          <button class="af-btn af-btn--primary" :disabled="importDialog.importing" @click="doImport">{{ importDialog.importing ? '导入中...' : '确定导入' }}</button>
-        </div>
-      </div>
-    </div>
+    <!-- ------------------------------ 导入弹窗 ------------------------------ -->
+    <el-dialog :visible.sync="importDialog.visible" title="一键导入 MCP 插件" width="720px" :close-on-click-modal="false">
+      <el-form :model="importDialog.form" label-width="96px" @submit.native.prevent>
+        <el-form-item label="插件名称" required>
+          <el-input v-model.trim="importDialog.form.name" maxlength="128" placeholder="例如：高德 MCP" />
+        </el-form-item>
+        <el-form-item label="配置 JSON" required>
+          <el-input
+            v-model.trim="importDialog.form.jsonText"
+            class="mcp-json-input"
+            type="textarea"
+            :rows="14"
+            placeholder='{ "mcpServers": { "deepwiki": { "url": "https://mcp.deepwiki.com/mcp" } } }'
+          />
+          <div class="af-form-tip">支持主流 MCP 配置片段；仅导入包含 url 的 HTTP 服务。</div>
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="closeImportDialog">取消</el-button>
+        <el-button type="primary" :loading="importDialog.importing" @click="doImport">确定导入</el-button>
+      </span>
+    </el-dialog>
 
-    <!-- 工具探测弹窗 -->
-    <div v-if="toolsDialog.visible" class="af-modal">
-      <div class="af-modal__backdrop" @click="closeToolsDialog"></div>
-      <div class="af-modal__panel mcp-dialog mcp-dialog--wide" role="dialog" aria-modal="true">
-        <div class="af-modal__head"><h2 class="af-modal__title">{{ toolsDialog.serverName }} · 工具列表</h2><button class="af-modal__close" @click="closeToolsDialog">×</button></div>
-        <div class="af-modal__body mcp-dialog__body">
-          <div v-if="toolsDialog.loading" class="af-loading"><span class="af-spinner"></span>正在连接服务并获取工具...</div>
-          <div v-else-if="!toolsDialog.ok" class="mcp-import-result mcp-import-result--error"><b>连接失败</b><p>{{ toolsDialog.error }}</p></div>
-          <div v-else-if="!toolsDialog.tools.length" class="af-empty af-empty--sm"><b>该服务未返回任何工具</b></div>
-          <ul v-else class="mcp-tool-list">
-            <li v-for="tool in toolsDialog.tools" :key="tool.name" class="mcp-tool-item">
-              <b>{{ tool.name }}</b>
-              <p>{{ tool.description || '暂无描述' }}</p>
-            </li>
-          </ul>
-        </div>
-        <div class="af-modal__foot">
-          <button class="af-btn" @click="closeToolsDialog">关闭</button>
-          <button class="af-btn af-btn--primary" :disabled="toolsDialog.loading" @click="retryTools">重新探测</button>
-        </div>
+    <!-- ------------------------------ 工具探测弹窗 ------------------------------ -->
+    <el-dialog :visible.sync="toolsDialog.visible" :title="toolsDialog.serverName + ' · 工具列表'" width="760px">
+      <div v-loading="toolsDialog.loading" class="mcp-tools-body">
+        <el-alert
+          v-if="!toolsDialog.loading && !toolsDialog.ok"
+          type="error"
+          :closable="false"
+          show-icon
+          title="连接失败"
+          :description="toolsDialog.error || '无法获取工具列表'"
+        />
+        <el-empty v-else-if="!toolsDialog.loading && !toolsDialog.tools.length" description="该服务未返回任何工具" />
+        <ul v-else-if="toolsDialog.tools.length" class="mcp-tool-list">
+          <li v-for="tool in toolsDialog.tools" :key="tool.name" class="mcp-tool-item">
+            <b>{{ tool.name }}</b>
+            <p>{{ tool.description || '暂无描述' }}</p>
+          </li>
+        </ul>
       </div>
-    </div>
+      <span slot="footer">
+        <el-button @click="closeToolsDialog">关闭</el-button>
+        <el-button type="primary" :loading="toolsDialog.loading" @click="retryTools">重新探测</el-button>
+      </span>
+    </el-dialog>
 
-    <!-- 快捷复制导出弹窗 -->
-    <div v-if="exportDialog.visible" class="af-modal">
-      <div class="af-modal__backdrop" @click="exportDialog.visible = false"></div>
-      <div class="af-modal__panel mcp-dialog mcp-dialog--wide" role="dialog" aria-modal="true">
-        <div class="af-modal__head"><h2 class="af-modal__title">快捷复制配置</h2><button class="af-modal__close" @click="exportDialog.visible = false">×</button></div>
-        <div class="af-modal__body mcp-dialog__body">
-          <div class="mcp-export-tip">配置中可能包含鉴权信息（已脱敏展示），请妥善保管并仅提供给可信应用。</div>
-          <textarea class="af-input mcp-headers mcp-json-input mcp-export-json" readonly :value="exportDialog.json"></textarea>
-        </div>
-        <div class="af-modal__foot">
-          <button class="af-btn" @click="exportDialog.visible = false">关闭</button>
-          <button class="af-btn af-btn--primary" :disabled="!exportDialog.json" @click="copyExport">复制配置</button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="tip" class="af-toast af-toast--show" :class="{ 'af-toast--error': tipError }">{{ tip }}</div>
+    <!-- ------------------------------ 快捷复制导出弹窗 ------------------------------ -->
+    <el-dialog :visible.sync="exportDialog.visible" title="快捷复制配置" width="760px">
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        title="配置中可能包含鉴权信息（已脱敏展示），请妥善保管并仅提供给可信应用。"
+      />
+      <el-input
+        v-model="exportDialog.json"
+        class="mcp-json-input mcp-export-json"
+        type="textarea"
+        :rows="14"
+        readonly
+      />
+      <span slot="footer">
+        <el-button @click="exportDialog.visible = false">关闭</el-button>
+        <el-button type="primary" :disabled="!exportDialog.json" @click="copyExport">复制配置</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -373,7 +373,7 @@ export default {
   data() {
     return {
       navOpen: false,
-      // list：插件卡片列表；detail：某个插件的 Server 列表
+      // list：插件列表；detail：某个插件的 Server 列表
       view: 'list',
       pluginId: null,
       loading: true,
@@ -390,10 +390,7 @@ export default {
       importDialog: { visible: false, importing: false, form: { name: '', jsonText: '' } },
       toolsDialog: { visible: false, loading: false, ok: false, error: '', tools: [], serverId: null, serverName: '' },
       exportDialog: { visible: false, loading: false, json: '' },
-      testingServer: null,
-      tip: '',
-      tipError: false,
-      tipTimer: null
+      testingServer: null
     }
   },
   async created() {
@@ -403,7 +400,6 @@ export default {
     window.addEventListener('popstate', this.handlePopState)
   },
   beforeDestroy() {
-    clearTimeout(this.tipTimer)
     window.removeEventListener('popstate', this.handlePopState)
   },
   methods: {
@@ -451,10 +447,6 @@ export default {
         this.loading = false
       }
     },
-    clearKeyword() {
-      this.keyword = ''
-      this.loadPlugins()
-    },
     async loadPlugin(id) {
       this.pluginLoading = true
       try {
@@ -472,13 +464,24 @@ export default {
     },
     openEditPlugin(plugin) {
       if (!plugin) return
-      this.pluginDialog.form = { id: plugin.id, name: plugin.name, icon: plugin.icon || '', description: plugin.description || '', status: plugin.status }
+      this.pluginDialog.form = {
+        id: plugin.id,
+        name: plugin.name,
+        icon: plugin.icon || '',
+        description: plugin.description || '',
+        status: plugin.status
+      }
       this.pluginDialog.visible = true
     },
-    closePluginDialog() { this.pluginDialog.visible = false },
+    closePluginDialog() {
+      this.pluginDialog.visible = false
+    },
     async savePlugin() {
       const form = this.pluginDialog.form
-      if (!form.name) return this.toast('请填写插件名称', true)
+      if (!form.name) {
+        this.toast('请填写插件名称', true)
+        return
+      }
       this.pluginDialog.saving = true
       try {
         const saved = await upsertMcpPlugin(form)
@@ -510,7 +513,15 @@ export default {
       }
     },
     async onDeletePlugin(plugin) {
-      if (!window.confirm(`确认删除插件「${plugin.name}」？其下所有 Server 将一并删除。`)) return
+      try {
+        await this.$confirm('其下所有 Server 将一并删除，是否继续？', '删除插件「' + plugin.name + '」', {
+          type: 'warning',
+          confirmButtonText: '删除',
+          cancelButtonText: '取消'
+        })
+      } catch (_e) {
+        return
+      }
       try {
         await deleteMcpPlugin(plugin.id)
         this.toast('MCP 插件已删除')
@@ -555,8 +566,20 @@ export default {
       this.page = { ...this.page, page }
       this.loadServers()
     },
+    changeServerPageSize(size) {
+      this.page = { ...this.page, page: 1, pageSize: size }
+      this.loadServers()
+    },
     openAddServer() {
-      this.serverDialog.form = { id: null, pluginId: this.pluginId, serverName: '', serverUrl: '', transportType: 1, headersText: '', status: 1 }
+      this.serverDialog.form = {
+        id: null,
+        pluginId: this.pluginId,
+        serverName: '',
+        serverUrl: '',
+        transportType: 1,
+        headersText: '',
+        status: 1
+      }
       this.serverDialog.visible = true
     },
     async openEditServer(server) {
@@ -577,12 +600,22 @@ export default {
         this.toast('加载 Server 详情失败：' + e.message, true)
       }
     },
-    closeServerDialog() { this.serverDialog.visible = false },
+    closeServerDialog() {
+      this.serverDialog.visible = false
+    },
     async saveServer() {
       const form = this.serverDialog.form
-      if (!form.serverName || !form.serverUrl) return this.toast('请填写 Server 名称与地址', true)
+      if (!form.serverName || !form.serverUrl) {
+        this.toast('请填写 Server 名称与地址', true)
+        return
+      }
       if (form.headersText) {
-        try { JSON.parse(form.headersText) } catch (e) { return this.toast('Headers 不是合法 JSON：' + e.message, true) }
+        try {
+          JSON.parse(form.headersText)
+        } catch (e) {
+          this.toast('Headers 不是合法 JSON：' + e.message, true)
+          return
+        }
       }
       this.serverDialog.saving = true
       try {
@@ -609,7 +642,15 @@ export default {
       }
     },
     async onDeleteServer(server) {
-      if (!window.confirm(`确认删除 MCP Server「${server.serverName}」？`)) return
+      try {
+        await this.$confirm('删除后该 Server 的工具将不可再用，是否继续？', '删除 MCP Server「' + server.serverName + '」', {
+          type: 'warning',
+          confirmButtonText: '删除',
+          cancelButtonText: '取消'
+        })
+      } catch (_e) {
+        return
+      }
       try {
         await deleteMcpServer(server.id)
         this.toast('MCP Server 已删除')
@@ -623,7 +664,16 @@ export default {
     // ---------- 工具探测 ----------
     async onTestServer(server) {
       this.testingServer = server.id
-      this.toolsDialog = { ...this.toolsDialog, visible: true, loading: true, ok: false, error: '', tools: [], serverId: server.id, serverName: server.serverName }
+      this.toolsDialog = {
+        ...this.toolsDialog,
+        visible: true,
+        loading: true,
+        ok: false,
+        error: '',
+        tools: [],
+        serverId: server.id,
+        serverName: server.serverName
+      }
       try {
         const result = await testMcpServerTools(server.id)
         this.toolsDialog.ok = Boolean(result.success)
@@ -641,18 +691,30 @@ export default {
       if (this.toolsDialog.serverId == null) return
       await this.onTestServer({ id: this.toolsDialog.serverId, serverName: this.toolsDialog.serverName })
     },
-    closeToolsDialog() { this.toolsDialog.visible = false },
+    closeToolsDialog() {
+      this.toolsDialog.visible = false
+    },
     // ---------- 导入 / 导出 ----------
     openImport() {
       this.importDialog.form = { name: this.keyword || '', jsonText: '' }
       this.importDialog.visible = true
     },
-    closeImportDialog() { this.importDialog.visible = false },
+    closeImportDialog() {
+      this.importDialog.visible = false
+    },
     async doImport() {
       const form = this.importDialog.form
-      if (!form.name) return this.toast('请填写插件名称', true)
+      if (!form.name) {
+        this.toast('请填写插件名称', true)
+        return
+      }
       let payload
-      try { payload = JSON.parse(form.jsonText) } catch (e) { return this.toast('JSON 解析失败：' + e.message, true) }
+      try {
+        payload = JSON.parse(form.jsonText)
+      } catch (e) {
+        this.toast('JSON 解析失败：' + e.message, true)
+        return
+      }
       const mcpServers = payload && payload.mcpServers ? payload.mcpServers : payload
       this.importDialog.importing = true
       try {
@@ -707,68 +769,269 @@ export default {
     },
     prettyHeaders(headers) {
       if (!headers || !Object.keys(headers).length) return '未配置请求头'
-      try { return JSON.stringify(headers, null, 2) } catch (_e) { return '未配置请求头' }
+      try {
+        return JSON.stringify(headers, null, 2)
+      } catch (_e) {
+        return '未配置请求头'
+      }
     },
     toast(text, error = false) {
-      this.tip = text
-      this.tipError = error
-      clearTimeout(this.tipTimer)
-      this.tipTimer = setTimeout(() => { this.tip = '' }, 2800)
+      this.$message({ message: text, type: error ? 'error' : 'success', duration: 2800 })
     }
   }
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @use '../models/styles/tokens' as *;
-.mcp-count { color: $color-text-muted; font-size: 12px; white-space: nowrap; }
-.mcp-avatar { display: flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(145deg, #6b9fe8, #4b7fd6); color: #fff; font-weight: 700; font-size: 16px; img { width: 100%; height: 100%; object-fit: cover; } }
-.mcp-avatar--lg { width: 46px; height: 46px; flex: 0 0 46px; border-radius: 12px; font-size: 18px; }
-.mcp-desc { min-height: 38px; }
-.mcp-card { cursor: pointer; transition: box-shadow .16s ease, transform .16s ease; &:hover { box-shadow: 0 8px 22px rgba(31, 56, 88, .1); transform: translateY(-1px); } }
 
-/* ---------- 详情页 ---------- */
-.mcp-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; padding: 16px 18px; border: 1px solid $color-border; border-radius: 12px; background: #fff; box-shadow: $shadow-xs; }
-.mcp-detail-head__main { display: flex; min-width: 0; align-items: center; gap: 14px; }
-.mcp-detail-head__title { display: flex; min-width: 0; align-items: center; gap: 12px; h2 { margin: 0; color: $color-text; font-size: 16px; font-weight: 700; } p { margin: 4px 0 0; max-width: 640px; color: $color-text-muted; font-size: 12px; line-height: 1.6; } }
-.mcp-detail-head__stat { display: flex; flex-shrink: 0; flex-direction: column; align-items: center; gap: 2px; padding: 8px 16px; border-radius: 10px; background: $color-sidebar; span { color: $color-text-muted; font-size: 11px; } b { color: $color-brand; font-size: 18px; } }
-.mcp-server-toolbar { justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: wrap; }
-.mcp-server-toolbar .af-search { flex: 0 1 320px; min-width: 180px; max-width: 320px; }
-.mcp-server-toolbar .mcp-filter,
-.mcp-pager .mcp-filter { width: 150px; height: 34px; flex: 0 0 auto; font-size: 12.5px; }
-.mcp-pager .mcp-filter--sm { width: 104px; height: 28px; font-size: 12px; }
-.mcp-table-wrap { overflow: hidden; border: 1px solid $color-border; border-radius: 12px; background: #fff; box-shadow: $shadow-xs; }
-.mcp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid $color-border; vertical-align: middle; } thead th { background: $color-sidebar; color: $color-text-secondary; font-size: 12px; font-weight: 700; white-space: nowrap; } tbody tr:last-child td { border-bottom: 0; } tbody tr:hover td { background: #fafcff; } }
-.mcp-col-transport { width: 150px; }
-.mcp-col-headers { width: 110px; }
-.mcp-col-status { width: 90px; }
-.mcp-col-ops { width: 220px; }
-.mcp-table__empty { padding: 34px 14px; color: $color-text-muted; text-align: center; }
-.mcp-server-name { display: block; max-width: 220px; overflow: hidden; color: $color-text; font-family: $font-mono; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.mcp-server-url { display: block; max-width: 420px; overflow: hidden; color: $color-text-secondary; font-family: $font-mono; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.mcp-headers-cell { color: #2f6bc4; cursor: help; font-size: 12px; }
-.mcp-muted { color: $color-text-muted; font-size: 12px; }
-.mcp-row-ops { display: flex; flex-wrap: wrap; gap: 6px; }
-.mcp-switch { position: relative; width: 38px; height: 20px; padding: 0; border: 0; border-radius: 999px; background: #d3dbe6; cursor: pointer; transition: background .18s ease; &__knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(31, 56, 88, .28); transition: transform .18s ease; } &--on { background: #24b36b; .mcp-switch__knob { transform: translateX(18px); } } }
-.mcp-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
-.mcp-pager__info { color: $color-text-muted; font-size: 12px; }
-.mcp-pager__ops { display: flex; align-items: center; gap: 8px; }
+.mcp-count {
+  color: $color-text-muted;
+  font-size: 12px;
+  white-space: nowrap;
+}
 
-/* ---------- 弹窗 ---------- */
-.mcp-dialog { width: min(560px, calc(100vw - 32px)); &--wide { width: min(760px, calc(100vw - 32px)); } &__body { display: flex; flex-direction: column; gap: 14px; max-height: 60vh; overflow-y: auto; } .af-modal__foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid $color-border; } }
-.mcp-dialog--wide .mcp-dialog__body { max-height: 72vh; }
-.af-switch-row { display: flex; gap: 8px; }
-.mcp-headers { min-height: 168px; padding: 10px 12px; font-family: $font-mono; font-size: 12.5px; line-height: 1.7; resize: vertical; }
-.mcp-json-input { min-height: 320px; }
-.mcp-export-btn { border-color: #b9d2f5; background: #f4f8ff; color: #286bc5; }
-.mcp-export-tip { padding: 9px 12px; border: 1px solid #f3ddb3; border-radius: 8px; background: #fffaef; color: #8a6320; font-size: 12px; line-height: 1.6; }
-.mcp-export-json { color: $color-text-secondary; }
-.mcp-import-result { padding: 10px 12px; border: 1px solid #bfe3cd; border-radius: 8px; background: #f2fbf5; b { color: #1d8a55; font-size: 12.5px; } p { margin: 6px 0 0; color: #c9423a; font-size: 12px; word-break: break-all; } &--error { border-color: #f0c4c0; background: #fff5f4; b { color: #c9423a; } } }
-.mcp-tool-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.mcp-tool-item { padding: 10px 12px; border: 1px solid $color-border; border-radius: 8px; background: $color-sidebar; b { color: $color-text; font-family: $font-mono; font-size: 12.5px; } p { margin: 4px 0 0; color: $color-text-secondary; font-size: 12px; line-height: 1.6; } }
-.af-mini-btn { padding: 3px 8px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: $color-text-secondary; cursor: pointer; font-size: 11.5px; transition: all .15s; &:hover { border-color: #b9d2f5; background: #f0f6ff; color: #2f6bc4; } &--danger:hover { border-color: #f0c4c0; background: #fff3f2; color: #c9423a; } &:disabled { cursor: not-allowed; opacity: .5; } }
-.af-empty { display: flex; flex-direction: column; align-items: center; padding: 64px 16px; text-align: center; color: $color-text-muted; svg { width: 40px; height: 40px; margin-bottom: 12px; color: #aeb9c8; } b { color: $color-text-secondary; font-size: 14px; } p { margin: 6px 0 0; max-width: 320px; font-size: 12px; line-height: 1.7; } .af-btn { margin-top: 14px; } &--sm { padding: 24px 12px; } }
-.af-tag--success { border-color: #bfe3cd; background: #eaf7f0; color: #1d8a55; }
-.af-tag--muted { border-color: $color-border; background: $color-sidebar; color: $color-text-muted; }
-.af-crumb__link { color: $color-text-secondary; text-decoration: none; &:hover { color: $color-brand; } }
+.af-tag--success {
+  border-color: #bfe3cd;
+  background: #eaf7f0;
+  color: #1d8a55;
+}
+
+.af-tag--muted {
+  border-color: $color-border;
+  background: $color-sidebar;
+  color: $color-text-muted;
+}
+
+.af-mini-btn {
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: $color-text-secondary;
+  cursor: pointer;
+  font-size: 11.5px;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: #b9d2f5;
+    background: #f0f6ff;
+    color: #2f6bc4;
+  }
+
+  &--danger:hover {
+    border-color: #f0c4c0;
+    background: #fff3f2;
+    color: #c9423a;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.mcp-card {
+  cursor: pointer;
+  transition: box-shadow 0.16s ease, transform 0.16s ease;
+
+  &:hover {
+    box-shadow: 0 8px 22px rgba(31, 56, 88, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
+.mcp-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(145deg, #6b9fe8, #4b7fd6);
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    // 兜底：防止无固有尺寸的 SVG/超大图片把卡片撑变形
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    background: #fff;
+  }
+}
+
+// 空状态：撑满内容区剩余高度（底边贴到页面底部），图标交给全局 .af-empty__icon 控制尺寸
+.af-empty {
+  flex: 1;
+  min-height: 320px;
+
+  > svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  &__desc {
+    max-width: 420px;
+    margin: 0;
+    line-height: 1.7;
+  }
+}
+
+.mcp-desc {
+  min-height: 38px;
+}
+
+.af-text-danger {
+  color: #d64545;
+
+  &:hover,
+  &:focus {
+    color: #f56c6c;
+  }
+}
+
+.af-crumb__link {
+  color: $color-text-secondary;
+  text-decoration: none;
+
+  &:hover {
+    color: $color-brand;
+  }
+}
+
+.af-logo--lg {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  font-size: 18px;
+}
+
+.mcp-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+
+  &__main {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 14px;
+  }
+
+  &__text {
+    min-width: 0;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    h2 {
+      margin: 0;
+      color: $color-text;
+      font-size: 16px;
+      font-weight: 700;
+    }
+  }
+
+  p {
+    margin: 4px 0 0;
+    max-width: 640px;
+    color: $color-text-muted;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  &__stat {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: $color-sidebar;
+
+    span {
+      color: $color-text-muted;
+      font-size: 11px;
+    }
+
+    b {
+      color: $color-brand;
+      font-size: 18px;
+    }
+  }
+}
+
+.mcp-code {
+  color: $color-text;
+  font-family: $font-mono;
+  font-size: 12.5px;
+  font-weight: 600;
+
+  &--url {
+    color: $color-text-secondary;
+    font-weight: 400;
+    font-size: 12px;
+  }
+}
+
+.mcp-headers-cell {
+  color: #2f6bc4;
+  cursor: help;
+  font-size: 12px;
+}
+
+.mcp-json-input {
+  ::v-deep .el-textarea__inner {
+    font-family: $font-mono;
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+}
+
+.mcp-export-json {
+  margin-top: 12px;
+}
+
+.mcp-tools-body {
+  min-height: 120px;
+}
+
+.mcp-tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mcp-tool-item {
+  padding: 10px 12px;
+  border: 1px solid $color-border;
+  border-radius: 8px;
+  background: $color-sidebar;
+
+  b {
+    color: $color-text;
+    font-family: $font-mono;
+    font-size: 12.5px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: $color-text-secondary;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+}
 </style>

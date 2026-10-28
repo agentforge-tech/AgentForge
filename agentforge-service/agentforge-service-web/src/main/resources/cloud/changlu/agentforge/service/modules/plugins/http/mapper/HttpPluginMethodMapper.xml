@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.plugins.http.dao.HttpPluginMethodMapper">
+  <resultMap id="result" type="cloud.changlu.agentforge.service.modules.plugins.http.domain.pojo.HttpPluginMethodPojo">
+    <id property="id" column="id"/><result property="pluginId" column="plugin_id"/><result property="methodName" column="method_name"/>
+    <result property="displayName" column="display_name"/><result property="methodDescription" column="method_description"/>
+    <result property="httpMethodType" column="http_method_type"/><result property="uri" column="uri"/>
+    <result property="status" column="status"/><result property="sortOrder" column="sort_order"/><result property="isDeleted" column="is_deleted"/>
+    <result property="createTime" column="create_time"/><result property="modifyTime" column="modify_time"/>
+  </resultMap>
+  <sql id="cols">select id,plugin_id,method_name,display_name,method_description,http_method_type,uri,status,sort_order,is_deleted,create_time,modify_time from ai_plugin_http_method</sql>
+  <select id="selectById" resultMap="result"><include refid="cols"/> where id=#{id} and is_deleted=0</select>
+  <select id="selectByPluginId" resultMap="result"><include refid="cols"/> where plugin_id=#{pluginId} and is_deleted=0 <if test="onlyEnabled">and status=1</if> order by sort_order,id</select>
+  <select id="selectByIds" resultMap="result"><include refid="cols"/> where is_deleted=0 and id in <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach> order by sort_order,id</select>
+  <select id="countByName" resultType="long">select count(1) from ai_plugin_http_method where plugin_id=#{pluginId} and method_name=#{methodName} and is_deleted=0 <if test="excludeId!=null">and id!=#{excludeId}</if></select>
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">insert into ai_plugin_http_method(plugin_id,method_name,display_name,method_description,http_method_type,uri,status,sort_order,is_deleted,create_time,modify_time) values(#{pluginId},#{methodName},#{displayName},#{methodDescription},#{httpMethodType},#{uri},#{status},#{sortOrder},#{isDeleted},#{createTime},#{modifyTime})</insert>
+  <update id="update">update ai_plugin_http_method set method_name=#{methodName},display_name=#{displayName},method_description=#{methodDescription},http_method_type=#{httpMethodType},uri=#{uri},status=#{status},sort_order=#{sortOrder},modify_time=#{modifyTime} where id=#{id} and is_deleted=0</update>
+  <update id="updateStatus">update ai_plugin_http_method set status=#{status},modify_time=current_timestamp where id=#{id} and is_deleted=0</update>
+  <update id="deleteById">update ai_plugin_http_method set is_deleted=1,modify_time=current_timestamp where id=#{id} and is_deleted=0</update>
+  <update id="deleteByPluginId">update ai_plugin_http_method set is_deleted=1,modify_time=current_timestamp where plugin_id=#{pluginId} and is_deleted=0</update>
+</mapper>

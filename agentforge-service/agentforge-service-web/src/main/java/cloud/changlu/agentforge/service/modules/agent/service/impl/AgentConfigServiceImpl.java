@@ -10,7 +10,7 @@ import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPublishe
 import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigVersionPojo;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentModelConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.ChatMemoryConfig;
-import cloud.changlu.agentforge.service.modules.agent.domain.config.McpToolConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.config.PluginConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigQueryReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigUpsertReq;
@@ -218,7 +218,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
                         req.getSystemPrompt(),
                         req.getChatMemoryType(),
                         req.getChatMemoryMaxMessages(),
-                        req.getMcpPlugins()));
+                        req.getPluginConfig()));
         return pojo;
     }
 
@@ -244,9 +244,9 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
                         prompt,
                         memoryType,
                         maxMessages,
-                        req.getMcpPlugins() == null
-                                ? oldConfig.getMcpPlugins()
-                                : req.getMcpPlugins()));
+                        req.getPluginConfig() == null
+                                ? oldConfig.getPluginConfig()
+                                : req.getPluginConfig()));
         pojo.setModifyTime(modifyTime);
     }
 
@@ -381,7 +381,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
             String prompt,
             Integer memoryType,
             Integer maxMessages,
-            List<McpToolConfig> mcpPlugins) {
+            PluginConfig pluginConfig) {
         AgentModelConfig chatModel = new AgentModelConfig();
         chatModel.setLlmModelId(modelId);
         StandardAgentConfig config = new StandardAgentConfig();
@@ -398,7 +398,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
             memoryConfig.setMemoryConfig("{\"maxMessage\":" + maxMessages + "}");
         }
         config.setChatMemoryConfig(memoryConfig);
-        config.setMcpPlugins(mcpPlugins == null || mcpPlugins.isEmpty() ? null : mcpPlugins);
+        config.setPluginConfig(pluginConfig);
         return StandardAgentConfig.toJson(config, objectMapper);
     }
 
@@ -423,7 +423,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         vo.setSystemPrompt(config.getSystemPrompt());
         vo.setChatMemoryType(resolveMemoryType(config.getChatMemoryConfig()));
         vo.setChatMemoryMaxMessages(resolveMaxMessages(config.getChatMemoryConfig()));
-        vo.setMcpPlugins(config.getMcpPlugins());
+        vo.setPluginConfig(config.getPluginConfig());
         Long modelId = readModelId(pojo.getAgentConfig());
         vo.setModelId(modelId);
         if (modelId != null) {

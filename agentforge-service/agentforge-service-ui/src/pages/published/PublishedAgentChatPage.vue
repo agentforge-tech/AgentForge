@@ -75,16 +75,14 @@
         <div class="header-left">
           <div class="chat-title">{{ title }}</div>
         </div>
-        <div v-if="agentBasic && agentBasic.lastPublishTime" class="published-time">最新发布时间：{{ formatPublishedTime(agentBasic.lastPublishTime) }}</div>
       </div>
 
       <div class="message-input-wrapper" :class="{ 'input-at-bottom': messages.length > 0 }">
-      <section ref="feed" class="chat-scroll">
+      <section ref="feed" class="chat-scroll" @scroll.passive="onFeedScroll">
         <div class="chat-inner">
           <div v-if="!messages.length" class="welcome">
             <h2>{{ agentLoading ? '正在加载 Agent...' : (canChat ? '今天想解决什么问题？' : '请从已发布的 Agent 进入') }}</h2>
             <p v-if="!canChat">{{ agentError || '当前地址缺少有效的 Agent 标识，暂时无法发起正式对话。' }}</p>
-            <p v-else-if="agentBasic && agentBasic.description">{{ agentBasic.description }}</p>
           </div>
 
           <template v-for="(message, index) in messages">
@@ -111,6 +109,25 @@
         </div>
       </section>
 
+      <transition name="chat-scroll-btn">
+        <button
+          v-if="isUserScrolledUp && messages.length"
+          class="chat-scroll-btn"
+          :class="{ 'is-streaming': running }"
+          type="button"
+          title="回到底部"
+          aria-label="回到底部"
+          @click="scrollToBottom"
+        >
+          <span class="chat-scroll-btn__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </span>
+          <span class="chat-scroll-btn__label">回到底部</span>
+        </button>
+      </transition>
+
       <div class="composer-wrap">
         <div class="composer-inner">
           <div class="composer-box" :class="{ focus: focused }">
@@ -129,7 +146,7 @@
               <span v-else class="stop-square"></span>
             </button>
           </div>
-          <div class="composer-tip">Enter / ⌘ + Enter 发送 · Shift + Enter 换行 · AI 生成内容可能不准确，请核对重要信息</div>
+          <div class="composer-tip">AI 生成内容可能不准确，请核对重要信息</div>
         </div>
       </div>
       </div>
@@ -141,6 +158,7 @@
 <script>
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
 import AppUserPanel from '../../components/AppUserPanel.vue'
+import chatAutoScroll from '../../utils/chatAutoScroll'
 import { postSse } from '../../utils/sse'
 import {
   fetchSessionList,
@@ -170,6 +188,7 @@ function resolveAid() {
 export default {
   name: 'PublishedAgentChatPage',
   components: { AgentMessageContent, AppUserPanel },
+  mixins: [chatAutoScroll],
   data: () => ({
     aid: resolveAid(), agentBasic: null, agentLoading: false, agentError: '',
     draft: '', focused: false, running: false, sessionId: '', controller: null, messages: [],
@@ -195,9 +214,6 @@ export default {
     window.removeEventListener('popstate', this.handlePopState)
   },
   methods: {
-    formatPublishedTime(value) {
-      return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : ''
-    },
     async loadAgentBasic() {
       if (!this.aid) return
       this.agentLoading = true; this.agentError = ''
@@ -297,6 +313,7 @@ export default {
       try {
         const records = await fetchSessionMessages(sessionRefId)
         this.messages = replaySessionMessages(records)
+        this.resetScrollFollow()
         this.scroll()
       } catch (error) {
         this.$message.error(error.message || '会话消息加载失败')
@@ -392,6 +409,7 @@ export default {
       this.messages.push(answer)
       this.running = true
       this.controller = new AbortController()
+      this.resetScrollFollow()
       this.scroll()
       try {
         await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: false }, {
@@ -520,7 +538,6 @@ export default {
       if (this.controller) this.controller.abort()
       this.running = false
     },
-    scroll() { this.$nextTick(() => { if (this.$refs.feed) this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight }) }
   }
 }
 </script>

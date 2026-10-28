@@ -73,6 +73,12 @@ public abstract class AbstractAgentManager<T, F> implements IAgentManager<T, F> 
         }
     }
 
+    @Override
+    public final void clearAgents() {
+        agents.clear();
+        agentConfigs.clear();
+    }
+
     protected abstract F parseAgentConf(String agentConfig);
 
     protected abstract T createAgent(AgentInitContext context);

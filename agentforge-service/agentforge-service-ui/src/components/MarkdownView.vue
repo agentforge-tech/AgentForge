@@ -143,6 +143,10 @@ export default {
     finishRender(final) {
       this.cancelFrame(); this.draining = false; this.visibleLength = toChars(this.content).length; this.lastFrameAt = 0
       this.lastStableText = this.content || ''; this.stableHtml = this.render(this.content, final); this.tailHtml = ''
+      if (final) {
+        const renderedContent = this.content
+        this.$nextTick(() => this.$emit('render-complete', { content: renderedContent }))
+      }
     },
     decorateTail() {
       const root = this.$refs.tail

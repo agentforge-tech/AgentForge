@@ -2,8 +2,6 @@ package cloud.changlu.agentforge.service.modules.agent.domain.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.List;
-
 /**
  * 通用单 Agent 配置。
  *
@@ -14,7 +12,7 @@ public class StandardAgentConfig {
     private String systemPrompt;
     private AgentModelConfig chatModel;
     private ChatMemoryConfig chatMemoryConfig;
-    private List<McpToolConfig> mcpPlugins;
+    private PluginConfig pluginConfig;
 
     public String getSystemPrompt() {
         return systemPrompt;
@@ -40,12 +38,12 @@ public class StandardAgentConfig {
         this.chatMemoryConfig = chatMemoryConfig;
     }
 
-    public List<McpToolConfig> getMcpPlugins() {
-        return mcpPlugins;
+    public PluginConfig getPluginConfig() {
+        return pluginConfig;
     }
 
-    public void setMcpPlugins(List<McpToolConfig> mcpPlugins) {
-        this.mcpPlugins = mcpPlugins;
+    public void setPluginConfig(PluginConfig pluginConfig) {
+        this.pluginConfig = pluginConfig;
     }
 
     public static String toJson(StandardAgentConfig config, ObjectMapper objectMapper) {

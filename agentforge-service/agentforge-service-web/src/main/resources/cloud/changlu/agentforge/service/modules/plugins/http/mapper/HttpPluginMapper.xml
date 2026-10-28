@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.plugins.http.dao.HttpPluginMapper">
+  <resultMap id="result" type="cloud.changlu.agentforge.service.modules.plugins.http.domain.pojo.HttpPluginPojo">
+    <id property="id" column="id"/><result property="name" column="name"/><result property="alias" column="alias"/>
+    <result property="baseUrl" column="base_url"/><result property="staticHeaders" column="static_headers"/>
+    <result property="description" column="description"/><result property="icon" column="icon"/>
+    <result property="status" column="status"/><result property="isPublic" column="is_public"/>
+    <result property="createUserId" column="create_user_id"/><result property="isDeleted" column="is_deleted"/>
+    <result property="createTime" column="create_time"/><result property="modifyTime" column="modify_time"/>
+  </resultMap>
+  <sql id="cols">select id,name,alias,base_url,static_headers,description,icon,status,is_public,create_user_id,is_deleted,create_time,modify_time from ai_plugin_http</sql>
+  <sql id="filters"><where>is_deleted=0 <if test="keyword!=null and keyword!=''">and (name like concat('%',#{keyword},'%') or alias like concat('%',#{keyword},'%') or description like concat('%',#{keyword},'%'))</if><if test="status!=null">and status=#{status}</if></where></sql>
+  <select id="selectById" resultMap="result"><include refid="cols"/> where id=#{id} and is_deleted=0</select>
+  <select id="selectPage" resultMap="result"><include refid="cols"/><include refid="filters"/> order by modify_time desc,id desc limit #{offset},#{pageSize}</select>
+  <select id="selectCount" resultType="long">select count(1) from ai_plugin_http <include refid="filters"/></select>
+  <select id="countByAlias" resultType="long">select count(1) from ai_plugin_http where is_deleted=0 and create_user_id=#{userId} and alias=#{alias}<if test="excludeId!=null"> and id!=#{excludeId}</if></select>
+  <select id="countMethods" resultType="int">select count(1) from ai_plugin_http_method where plugin_id=#{id} and is_deleted=0</select>
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">insert into ai_plugin_http(name,alias,base_url,static_headers,description,icon,status,is_public,create_user_id,is_deleted,create_time,modify_time) values(#{name},#{alias},#{baseUrl},#{staticHeaders},#{description},#{icon},#{status},#{isPublic},#{createUserId},#{isDeleted},#{createTime},#{modifyTime})</insert>
+  <update id="update">update ai_plugin_http set name=#{name},alias=#{alias},base_url=#{baseUrl},static_headers=#{staticHeaders},description=#{description},icon=#{icon},status=#{status},modify_time=#{modifyTime} where id=#{id} and is_deleted=0</update>
+  <update id="updateStatus">update ai_plugin_http set status=#{status},modify_time=current_timestamp where id=#{id} and is_deleted=0</update>
+  <update id="deleteById">update ai_plugin_http set is_deleted=1,modify_time=current_timestamp where id=#{id} and is_deleted=0</update>
+</mapper>

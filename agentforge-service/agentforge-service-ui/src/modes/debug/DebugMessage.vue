@@ -26,6 +26,7 @@
         :content="message.content"
         :streaming="message.status === 'running'"
         mode="typewriter-blur"
+        @render-complete="$emit('render-complete', $event)"
       />
     </div>
 
