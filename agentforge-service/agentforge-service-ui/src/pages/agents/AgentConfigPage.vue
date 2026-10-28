@@ -156,6 +156,29 @@
               </el-collapse>
             </el-form-item>
 
+            <el-form-item label="HTTP 插件">
+              <div class="agent-mcp-toolbar">
+                <el-button size="mini" icon="el-icon-link" @click="openHttpPicker">选择 HTTP 工具</el-button>
+                <span class="af-form-tip">已绑定 {{ form.httpPlugins.length }} 个插件</span>
+              </div>
+              <div v-if="!form.httpPlugins.length" class="agent-mcp-empty">未绑定 HTTP 插件。</div>
+              <el-collapse v-else class="agent-mcp-collapse">
+                <el-collapse-item v-for="item in form.httpPlugins" :key="item.pluginId" :name="'http-' + item.pluginId">
+                  <template slot="title">
+                    <div class="agent-mcp-item__title">
+                      <span class="agent-mcp-icon agent-mcp-icon--compact"><i class="el-icon-link"></i></span>
+                      <b>{{ httpPluginName(item.pluginId) }}</b>
+                      <el-tag size="mini" effect="plain">{{ (item.pluginMethodIds || []).length ? item.pluginMethodIds.length + ' 个工具' : '全部工具' }}</el-tag>
+                      <el-button type="text" class="af-text-danger agent-mcp-item__remove" @click.stop="removeHttpPlugin(item.pluginId)">移除</el-button>
+                    </div>
+                  </template>
+                  <ul class="agent-mcp-servers">
+                    <li v-for="method in boundHttpMethods(item)" :key="method.id"><i class="el-icon-link"></i><span>{{ method.displayName || method.methodName }}</span><code>{{ method.toolName }}</code></li>
+                  </ul>
+                </el-collapse-item>
+              </el-collapse>
+            </el-form-item>
+
             <el-form-item label="记忆类型">
               <el-select v-model.number="form.chatMemoryType" style="width: 100%">
                 <el-option :value="1" label="窗口会话记忆" />
@@ -294,6 +317,45 @@
           </section>
         </article>
       </div>
+    </el-dialog>
+
+    <!-- ------------------------------ HTTP 插件选择 ------------------------------ -->
+    <el-dialog class="agent-mcp-picker-dialog" :visible.sync="httpPickerVisible" title="选择 HTTP 插件工具" width="860px" :close-on-click-modal="false">
+      <div class="af-list-toolbar">
+        <el-input v-model.trim="httpKeyword" class="af-list-toolbar__search" clearable prefix-icon="el-icon-search" placeholder="搜索插件名称、别名或描述" @input="httpPage = 1" />
+        <span class="af-list-toolbar__spacer"></span>
+        <span class="af-form-tip">已选 {{ httpDraft.length }} 个插件 · {{ httpSelectedMethodCount }} 个工具</span>
+      </div>
+      <div v-loading="httpLoading" class="agent-mcp-picker__body">
+        <el-empty v-if="!httpLoading && !httpPlugins.length" description="暂无可用 HTTP 插件，请先在「HTTP 插件」页面创建" />
+        <el-empty v-else-if="!httpLoading && !httpPagedPlugins.length" description="未找到匹配的 HTTP 插件" />
+        <div v-else class="agent-mcp-picker">
+          <div v-for="plugin in httpPagedPlugins" :key="plugin.id" class="agent-mcp-picker__plugin" :class="{ 'agent-mcp-picker__plugin--selected': httpPluginSelected(plugin.id) }">
+            <div class="agent-mcp-picker__head">
+              <el-checkbox :value="httpPluginAllChecked(plugin)" :indeterminate="httpPluginIndeterminate(plugin)" @change="toggleHttpPlugin(plugin.id, $event)" />
+              <span class="agent-mcp-icon"><i class="el-icon-link"></i></span>
+              <div class="agent-mcp-picker__identity"><b>{{ plugin.name }}</b><span>{{ (plugin.methods || []).length }} 个可用工具 · {{ plugin.alias }}__*</span></div>
+              <button v-if="(plugin.methods || []).length" type="button" class="agent-mcp-picker__expand" :aria-expanded="httpPluginExpanded(plugin.id) ? 'true' : 'false'" @click="toggleHttpPluginExpanded(plugin.id)">
+                {{ httpPluginExpanded(plugin.id) ? '收起工具' : '展开工具' }}
+                <i class="el-icon-arrow-down" :class="{ 'is-expanded': httpPluginExpanded(plugin.id) }"></i>
+              </button>
+            </div>
+            <p v-if="plugin.description" class="agent-mcp-picker__desc">{{ plugin.description }}</p>
+            <ul v-if="httpPluginExpanded(plugin.id) && (plugin.methods || []).length" class="agent-mcp-picker__servers">
+              <li v-for="method in plugin.methods || []" :key="method.id">
+                <i class="el-icon-link"></i>
+                <el-checkbox :value="httpMethodChecked(plugin.id, method.id)" @change="toggleHttpMethod(plugin.id, method.id, $event)" />
+                <div class="agent-mcp-picker__server-info"><div class="agent-mcp-picker__server-head"><b>{{ method.displayName || method.methodName }}</b><el-tag size="mini" type="info" effect="plain">{{ method.methodName }}</el-tag></div><span>{{ method.methodDescription || method.toolName }}</span></div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="af-pager">
+        <span>共 {{ httpFilteredPlugins.length }} 个插件 · 第 {{ httpPage }} / {{ httpTotalPages }} 页</span>
+        <el-pagination background layout="sizes, prev, pager, next" :page-sizes="[5, 8, 20]" :page-size="httpPageSize" :current-page="httpPage" :total="httpFilteredPlugins.length" @size-change="changeHttpPageSize" @current-change="gotoHttpPage" />
+      </div>
+      <span slot="footer"><el-button @click="httpPickerVisible=false">取消</el-button><el-button type="primary" @click="confirmHttpPicker">确定</el-button></span>
     </el-dialog>
 
     <!-- ------------------------------ MCP 插件选择 ------------------------------ -->
@@ -441,6 +503,7 @@
 <script>
 import { fetchAgentVersions, fetchChatModels, getAgent, getAgentVersion, switchAgentVersion, updateAgentPublish, updateAgentVersionRemark, upsertAgent } from './api'
 import { fetchMcpPlugins } from '../mcp/api'
+import { fetchHttpPluginOptions } from '../http/api'
 import AgentDebugPanel from './AgentDebugPanel.vue'
 
 export default {
@@ -470,6 +533,14 @@ export default {
       detail: {},
       models: [],
       mcpPlugins: [],
+      httpPlugins: [],
+      httpLoading: false,
+      httpPickerVisible: false,
+      httpDraft: [],
+      expandedHttpPickerPlugins: [],
+      httpKeyword: '',
+      httpPage: 1,
+      httpPageSize: 5,
       mcpLoading: false,
       mcpPickerVisible: false,
       mcpDraft: [],
@@ -487,7 +558,8 @@ export default {
         systemPrompt: '',
         chatMemoryType: 1,
         chatMemoryMaxMessages: 1000,
-        mcpPlugins: []
+        mcpPlugins: [],
+        httpPlugins: []
       },
       baseline: ''
     }
@@ -497,6 +569,22 @@ export default {
     isDirty() { return Boolean(this.baseline) && JSON.stringify(this.form) !== this.baseline },
     publishedChatUrl() { return '/agent/published/' + encodeURIComponent(this.detail.aid || '') },
     lastPublishTimeText() { return this.formatTime(this.detail.lastPublishTime) },
+    httpFilteredPlugins() {
+      const kw = this.httpKeyword.trim().toLowerCase()
+      if (!kw) return this.httpPlugins
+      return this.httpPlugins.filter((item) => [item.name, item.alias, item.description].some((value) => (value || '').toLowerCase().includes(kw)))
+    },
+    httpTotalPages() { return Math.max(1, Math.ceil(this.httpFilteredPlugins.length / this.httpPageSize)) },
+    httpPagedPlugins() {
+      const start = (this.httpPage - 1) * this.httpPageSize
+      return this.httpFilteredPlugins.slice(start, start + this.httpPageSize)
+    },
+    httpSelectedMethodCount() {
+      return this.httpDraft.reduce((total, item) => {
+        const plugin = this.httpPlugins.find((entry) => Number(entry.id) === Number(item.pluginId))
+        return total + ((item.pluginMethodIds || []).length || ((plugin && plugin.methods) || []).length)
+      }, 0)
+    },
     mcpFilteredPlugins() {
       const kw = this.mcpKeyword.trim().toLowerCase()
       if (!kw) return this.mcpPlugins
@@ -527,14 +615,16 @@ export default {
     }
     try {
       // 三个接口并行请求，模型与插件列表失败不影响配置本体
-      const [detail, modelResult, pluginList] = await Promise.all([
+      const [detail, modelResult, pluginList, httpPluginList] = await Promise.all([
         getAgent(id),
         fetchChatModels().catch(() => null),
-        fetchMcpPlugins('', true).catch(() => null)
+        fetchMcpPlugins('', true).catch(() => null),
+        fetchHttpPluginOptions().catch(() => null)
       ])
       this.applyDetail(detail)
       this.models = (modelResult && modelResult.data) || []
       this.mcpPlugins = pluginList || []
+      this.httpPlugins = httpPluginList || []
     } catch (e) {
       this.toast('加载 Agent 配置失败：' + e.message, true)
     } finally {
@@ -553,10 +643,36 @@ export default {
         systemPrompt: detail.systemPrompt || '',
         chatMemoryType: detail.chatMemoryType || 1,
         chatMemoryMaxMessages: detail.chatMemoryMaxMessages || 1000,
-        mcpPlugins: (detail.mcpPlugins || []).map((item) => ({ pluginId: item.pluginId, serverIds: item.serverIds || [] }))
+        mcpPlugins: ((detail.pluginConfig && detail.pluginConfig.mcpPlugins) || []).map((item) => ({ pluginId: item.pluginId, serverIds: item.serverIds || [] })),
+        httpPlugins: ((detail.pluginConfig && detail.pluginConfig.httpPlugins) || []).map((item) => ({ pluginId: item.pluginId, pluginMethodIds: item.pluginMethodIds || [] }))
       }
       this.baseline = JSON.stringify(this.form)
     },
+    // ---------- HTTP 选择 ----------
+    async openHttpPicker() {
+      this.httpPickerVisible = true
+      this.httpKeyword = ''
+      this.httpPage = 1
+      this.expandedHttpPickerPlugins = []
+      this.httpLoading = true
+      try { this.httpPlugins = (await fetchHttpPluginOptions()) || [] } catch (e) { this.toast('加载 HTTP 插件失败：' + e.message, true) } finally { this.httpLoading = false }
+      this.httpDraft = this.form.httpPlugins.map((item) => ({ pluginId: item.pluginId, pluginMethodIds: [...(item.pluginMethodIds || [])] }))
+    },
+    httpPluginSelected(pluginId) { return this.httpDraft.some((item) => Number(item.pluginId) === Number(pluginId)) },
+    httpPluginChecked(pluginId) { return this.httpPluginSelected(pluginId) },
+    httpPluginExpanded(pluginId) { return this.expandedHttpPickerPlugins.some((id) => Number(id) === Number(pluginId)) },
+    toggleHttpPluginExpanded(pluginId) { if (this.httpPluginExpanded(pluginId)) this.expandedHttpPickerPlugins = this.expandedHttpPickerPlugins.filter((id) => Number(id) !== Number(pluginId)); else this.expandedHttpPickerPlugins.push(pluginId) },
+    httpPluginAllChecked(plugin) { const item = this.httpDraft.find((entry) => Number(entry.pluginId) === Number(plugin.id)); if (!item) return false; const count = (plugin.methods || []).length; return !count || !item.pluginMethodIds.length || item.pluginMethodIds.length === count },
+    httpPluginIndeterminate(plugin) { const item = this.httpDraft.find((entry) => Number(entry.pluginId) === Number(plugin.id)); const count = item && (item.pluginMethodIds || []).length; return Boolean(count && count < (plugin.methods || []).length) },
+    httpMethodChecked(pluginId, methodId) { const item = this.httpDraft.find((entry) => Number(entry.pluginId) === Number(pluginId)); return Boolean(item && (!item.pluginMethodIds.length || item.pluginMethodIds.some((id) => Number(id) === Number(methodId)))) },
+    toggleHttpPlugin(pluginId, checked) { const plugin = this.httpPlugins.find((item) => Number(item.id) === Number(pluginId)); this.httpDraft = this.httpDraft.filter((item) => Number(item.pluginId) !== Number(pluginId)); if (checked) this.httpDraft.push({ pluginId, pluginMethodIds: ((plugin && plugin.methods) || []).map((method) => method.id) }) },
+    toggleHttpMethod(pluginId, methodId, checked) { let item = this.httpDraft.find((entry) => Number(entry.pluginId) === Number(pluginId)); if (!item) { if (!checked) return; item = { pluginId, pluginMethodIds: [] }; this.httpDraft.push(item) } if (checked) { if (!item.pluginMethodIds.some((id) => Number(id) === Number(methodId))) item.pluginMethodIds.push(methodId) } else { if (!item.pluginMethodIds.length) { const plugin = this.httpPlugins.find((entry) => Number(entry.id) === Number(pluginId)); item.pluginMethodIds = ((plugin && plugin.methods) || []).map((method) => method.id) } item.pluginMethodIds = item.pluginMethodIds.filter((id) => Number(id) !== Number(methodId)); if (!item.pluginMethodIds.length) this.httpDraft = this.httpDraft.filter((entry) => Number(entry.pluginId) !== Number(pluginId)) } },
+    gotoHttpPage(page) { if (page < 1 || page > this.httpTotalPages) return; this.httpPage = page },
+    changeHttpPageSize(size) { this.httpPageSize = size; this.httpPage = 1 },
+    confirmHttpPicker() { this.form.httpPlugins = this.httpDraft.map((item) => ({ pluginId: item.pluginId, pluginMethodIds: [...item.pluginMethodIds] })); this.httpPickerVisible = false },
+    httpPluginName(pluginId) { const plugin = this.httpPlugins.find((item) => Number(item.id) === Number(pluginId)); return plugin ? plugin.name : '插件 #' + pluginId },
+    boundHttpMethods(item) { const plugin = this.httpPlugins.find((entry) => Number(entry.id) === Number(item.pluginId)); const methods = (plugin && plugin.methods) || []; const ids = (item.pluginMethodIds || []).map(Number); return ids.length ? methods.filter((method) => ids.includes(Number(method.id))) : methods },
+    removeHttpPlugin(pluginId) { this.form.httpPlugins = this.form.httpPlugins.filter((item) => Number(item.pluginId) !== Number(pluginId)) },
     // ---------- MCP 选择 ----------
     async openMcpPicker() {
       this.mcpPickerVisible = true
@@ -642,7 +758,8 @@ export default {
       }
       this.saving = true
       try {
-        const detail = await upsertAgent({ ...this.form, submitVersion, versionRemark: submitVersion ? this.versionRemarkDraft : '' })
+        const { mcpPlugins, httpPlugins, ...basicForm } = this.form
+        const detail = await upsertAgent({ ...basicForm, pluginConfig: { mcpPlugins, httpPlugins }, submitVersion, versionRemark: submitVersion ? this.versionRemarkDraft : '' })
         this.applyDetail(detail)
         this.toast(submitVersion ? 'Agent 配置已保存并提交 V' + detail.submittedVersionNo : 'Agent 配置已保存')
         if (this.historyVisible) await this.loadVersions()
@@ -963,6 +1080,7 @@ export default {
 .agent-debug-head { gap: 10px; }
 .agent-debug-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .agent-debug-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0; border: 1px solid #cbd8e9; border-radius: 5px; background: #f6f9fd; color: #657791; cursor: pointer; box-shadow: 0 1px 2px rgba(59, 111, 182, .06); transition: all .15s; svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; } &:hover { border-color: #8eb3e5; background: #edf4fd; color: #3b6fb6; box-shadow: 0 2px 6px rgba(59, 111, 182, .14); transform: translateY(-1px); } &:active { transform: translateY(0); box-shadow: none; } }
+.agent-debug { position: relative; }
 .agent-debug-feed { flex: 1; overflow-y: auto; padding: 16px 32px; }
 .agent-debug-empty { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; color: $color-text-muted; span { margin-bottom: 12px; color: $color-brand; font-size: 30px; } b { color: $color-text-secondary; font-size: 13px; } p { max-width: 240px; font-size: 11.5px; line-height: 1.6; } }
 .agent-debug-message-row { display: flex; width: 100%; margin-bottom: 20px; font-size: 13px; &--user { justify-content: flex-end; } &--assistant { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; justify-items: stretch; } }

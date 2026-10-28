@@ -4,6 +4,7 @@ import cloud.changlu.agentforge.agent.tool.http.domain.HttpPlugin;
 import cloud.changlu.agentforge.agent.tool.http.domain.HttpPluginMethod;
 import cloud.changlu.agentforge.agent.tool.http.domain.HttpToolParameter;
 import cloud.changlu.agentforge.agent.tool.http.enums.HttpPluginEnums;
+import cloud.changlu.agentforge.agent.tool.support.ToolSpecificationThoughts;
 import cloud.changlu.agentforge.model.http.HttpTransport;
 import cloud.changlu.agentforge.model.tool.ToolExecutor;
 import cloud.changlu.agentforge.model.tool.spec.ToolParameters;
@@ -43,6 +44,19 @@ public class HttpToolFactory {
      */
     public static Map<ToolSpecification, ToolExecutor> buildHttpTools(
             List<HttpPlugin> httpPlugins, HttpTransport httpTransport) {
+        return buildHttpTools(httpPlugins, httpTransport, false);
+    }
+
+    /**
+     * 将多个HttpPlugin转换为工具映射，可选择向工具 Schema 注入思考参数
+     *
+     * @param httpPlugins HttpPlugin列表
+     * @param httpTransport HTTP传输实现，为null时使用默认的JDK实现
+     * @param withThought 是否追加必填的思考参数
+     * @return 合并后的工具映射
+     */
+    public static Map<ToolSpecification, ToolExecutor> buildHttpTools(
+            List<HttpPlugin> httpPlugins, HttpTransport httpTransport, boolean withThought) {
         Map<ToolSpecification, ToolExecutor> result =
                 new HashMap<ToolSpecification, ToolExecutor>();
 
@@ -52,7 +66,7 @@ public class HttpToolFactory {
 
         for (HttpPlugin httpPlugin : httpPlugins) {
             if (httpPlugin != null) {
-                result.putAll(buildHttpTools(httpPlugin, httpTransport));
+                result.putAll(buildHttpTools(httpPlugin, httpTransport, withThought));
             }
         }
 
@@ -78,6 +92,31 @@ public class HttpToolFactory {
      */
     public static Map<ToolSpecification, ToolExecutor> buildHttpTools(
             HttpPlugin httpPlugin, HttpTransport httpTransport) {
+        return buildHttpTools(httpPlugin, httpTransport, false);
+    }
+
+    /**
+     * 构建单个HttpPlugin对应的工具映射，可选择向工具 Schema 注入思考参数
+     *
+     * @param httpPlugin HttpPlugin
+     * @param withThought 是否追加必填的思考参数
+     * @return ToolSpecification 方法定义、ToolExecutor 方法执行器（http插件执行器）
+     */
+    public static Map<ToolSpecification, ToolExecutor> buildHttpToolsWithThought(
+            HttpPlugin httpPlugin, boolean withThought) {
+        return buildHttpTools(httpPlugin, null, withThought);
+    }
+
+    /**
+     * 构建单个HttpPlugin对应的工具映射，可选择向工具 Schema 注入思考参数
+     *
+     * @param httpPlugin HttpPlugin
+     * @param httpTransport HTTP传输实现，为null时使用默认的JDK实现
+     * @param withThought 是否追加必填的思考参数
+     * @return ToolSpecification 方法定义、ToolExecutor 方法执行器（http插件执行器）
+     */
+    public static Map<ToolSpecification, ToolExecutor> buildHttpTools(
+            HttpPlugin httpPlugin, HttpTransport httpTransport, boolean withThought) {
         Map<ToolSpecification, ToolExecutor> result =
                 new HashMap<ToolSpecification, ToolExecutor>();
 
@@ -94,6 +133,9 @@ public class HttpToolFactory {
                             httpPluginMethod.getMethodName(),
                             httpPluginMethod.getMethodDescription(),
                             httpPluginMethod.getParameters());
+            if (withThought) {
+                toolSpecification = ToolSpecificationThoughts.withThought(toolSpecification);
+            }
 
             Map<String, HttpToolExecutor.ParameterConfig> parameterConfigs =
                     new HashMap<String, HttpToolExecutor.ParameterConfig>();

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.plugins.http.dao.HttpPluginParameterMapper">
+  <resultMap id="result" type="cloud.changlu.agentforge.service.modules.plugins.http.domain.pojo.HttpPluginParameterPojo">
+    <id property="id" column="id"/><result property="methodId" column="method_id"/><result property="methodParamName" column="method_param_name"/>
+    <result property="methodParamDescription" column="method_param_description"/><result property="mappedName" column="mapped_name"/>
+    <result property="useTypeValue" column="use_type_value"/><result property="dataTypeValue" column="data_type_value"/>
+    <result property="defaultValue" column="default_value"/><result property="required" column="required"/><result property="sortOrder" column="sort_order"/>
+    <result property="isDeleted" column="is_deleted"/><result property="createTime" column="create_time"/><result property="modifyTime" column="modify_time"/>
+  </resultMap>
+  <sql id="cols">select id,method_id,method_param_name,method_param_description,mapped_name,use_type_value,data_type_value,default_value,required,sort_order,is_deleted,create_time,modify_time from ai_plugin_http_parameter</sql>
+  <select id="selectByMethodId" resultMap="result"><include refid="cols"/> where method_id=#{methodId} and is_deleted=0 order by sort_order,id</select>
+  <select id="selectByMethodIds" resultMap="result"><include refid="cols"/> where is_deleted=0 and method_id in <foreach collection="methodIds" item="id" open="(" separator="," close=")">#{id}</foreach> order by method_id,sort_order,id</select>
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">insert into ai_plugin_http_parameter(method_id,method_param_name,method_param_description,mapped_name,use_type_value,data_type_value,default_value,required,sort_order,is_deleted,create_time,modify_time) values(#{methodId},#{methodParamName},#{methodParamDescription},#{mappedName},#{useTypeValue},#{dataTypeValue},#{defaultValue},#{required},#{sortOrder},#{isDeleted},#{createTime},#{modifyTime})</insert>
+  <update id="deleteByMethodId">update ai_plugin_http_parameter set is_deleted=1,modify_time=current_timestamp where method_id=#{methodId} and is_deleted=0</update>
+  <update id="deleteByPluginId">update ai_plugin_http_parameter p join ai_plugin_http_method m on m.id=p.method_id set p.is_deleted=1,p.modify_time=current_timestamp where m.plugin_id=#{pluginId} and p.is_deleted=0</update>
+</mapper>

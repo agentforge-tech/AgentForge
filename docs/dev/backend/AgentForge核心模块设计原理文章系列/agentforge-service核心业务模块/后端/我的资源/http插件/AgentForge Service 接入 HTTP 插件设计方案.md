@@ -69,7 +69,7 @@ AgentForge 框架层已经具备 HTTP 工具能力：
 | 工具方法 | 插件下的一个 HTTP API 端点，最终变成一个模型可调用的 Tool |
 | 工具参数 | 方法参数的模型侧名称、API 侧映射名、位置、类型、默认值、是否必填 |
 | 暴露工具名 | 最终注册进 `ToolService` 的函数名，格式为 `{alias}__{methodName}` |
-| Agent 工具引用 | `ai_agent_config.agent_config.tools[]` 中对插件和方法的引用 |
+| Agent 工具引用 | `ai_agent_config.agent_config.pluginConfig` 中对 HTTP/MCP 插件的引用 |
 | 运行期装配 | 根据 Agent 配置读取插件定义，转换为 `ToolSpecification + ToolExecutor` 并注册进 `ToolService` |
 
 ---
@@ -112,7 +112,7 @@ ai_plugin_http 1 ────── N ai_plugin_http_method 1 ──────
 | --- | --- | --- |
 | `method_name` 同时承担展示名和工具名 | 拆成 `method_name`（工具名后缀）+ `display_name`（展示名） | 模型工具名需要稳定、可校验、避免中文和空格 |
 | 工具名直接使用方法名 | 最终工具名增加插件别名前缀 `{alias}__{methodName}` | 一个 Agent 可挂多个插件，`ToolService` 对重复工具名会直接抛异常 |
-| 无 Agent 引用关系 | 增加 `ai_plugin_http_agent_ref` 派生关系表 | 插件修改后需要反查受影响的 Agent 并失效运行实例 |
+| Agent 与插件关联 | 直接保存在 `agent_config.pluginConfig` | Agent 配置 JSON 作为唯一事实源，避免双写关联表 |
 | `publish` 标记控制插件发布 | V1 只保留 `status`，不引入插件版本 | 避免首版引入插件版本快照，先用「实时定义 + 缓存失效」 |
 | 市场统计表 | V1 不建表，保留 `is_public` 字段 | AgentForge 暂无插件市场/安装体系 |
 | `static_headers` 明文存储、日志直接打印 | API 返回脱敏；框架日志脱敏；后续加密 | 防止 Token 泄漏 |
@@ -193,7 +193,7 @@ private ChatMemoryConfig chatMemoryConfig;
 | 没有插件管理接口 | 无法配置 | 新增 Controller / Service / Mapper |
 | `StandardAgentConfig` 没有 `tools` | Agent 无法引用插件 | 扩展配置 JSON 与 Java 模型 |
 | `ReActAgentFactory` 只装配本地工具 | 运行时不加载插件 | 新增 `HttpPluginRuntimeService` |
-| 插件变更后 Agent 缓存不失效 | 继续使用旧工具 | 增加引用关系表 + 缓存失效 |
+| 插件变更后 Agent 缓存不失效 | 继续使用旧工具 | 事务提交后统一失效标准 Agent 缓存 |
 | 框架 `HttpToolExecutor` 有若干限制 | 部分场景不可用 | 在接入前修复框架问题，见第 10 章 |
 
 ---
@@ -214,10 +214,9 @@ private ChatMemoryConfig chatMemoryConfig;
 │  HttpPluginController        HttpPluginMethodController             │
 │  HttpPluginService           HttpPluginMethodService                │
 │  HttpPluginParameterService  HttpPluginCurlService                  │
-│  HttpPluginRuntimeService    HttpPluginReferenceService             │
+│  HttpPluginRuntimeService    HttpPluginAgentCacheService            │
 │                                                                    │
 │  ai_plugin_http / ai_plugin_http_method / ai_plugin_http_parameter │
-│  ai_plugin_http_agent_ref                                          │
 └───────────────────────────────┬────────────────────────────────────┘
                                 │ 转换为 HttpPlugin
 ┌───────────────────────────────▼────────────────────────────────────┐
@@ -244,10 +243,10 @@ private ChatMemoryConfig chatMemoryConfig;
 ### 3.2 设计原则
 
 1. **配置与运行分离**：表只存配置，运行期按 Agent 配置装配 `HttpPlugin`，不缓存数据库实体到框架层。
-2. **插件定义与 Agent 引用分离**：插件是共享资源，Agent 只保存 `pluginId + methodIds` 引用，不复制参数定义。
+2. **插件定义与 Agent 引用分离**：插件是共享资源，Agent 只在 `pluginConfig.httpPlugins` 中保存 `pluginId + pluginMethodIds` 引用，不复制参数定义。
 3. **工具名命名空间化**：最终工具名必须带插件别名前缀，避免多个插件、MCP、本地工具之间重名。
 4. **失败隔离**：某个插件加载失败、某个方法配置非法，不应阻断整个 Agent 构建；跳过并记录日志。
-5. **变更可失效**：插件/方法/参数变更后，必须能找到引用它的 Agent 并清理运行实例。
+5. **变更可失效**：插件/方法/参数变更后，V1 直接清理标准 Agent 运行时缓存，不为反查再建派生关联表。
 6. **逻辑删除 + 数据隔离**：所有业务表使用 `is_deleted`、`create_user_id`，与现有表规范一致。
 7. **敏感信息不落前端、不落日志**：静态 Header 在查询接口中脱敏，框架日志中屏蔽敏感 Header。
 
@@ -256,10 +255,10 @@ private ChatMemoryConfig chatMemoryConfig;
 | 决策点 | 方案 | 说明 |
 | --- | --- | --- |
 | 表名 | `ai_plugin_http*` | 与现有 `ai_agent_config`、`ai_model_config` 一致 |
-| 核心表数量 | 3 张核心表 + 1 张引用关系表 + 可选调用日志表 | 引用关系表解决缓存失效，日志表后置 |
+| 核心表数量 | 3 张核心表 + 可选调用日志表 | Agent 引用保存在自身配置 JSON，不新建关联表 |
 | 工具名 | `{alias}__{method_name}` | 与 MCP 的 `{server_alias}__{tool_name}` 保持一致 |
 | 方法标识 | `method_name` 存模型可见后缀，`display_name` 存展示名 | 避免展示名变更导致工具名漂移 |
-| Agent 引用 | `agent_config.tools[]` | 不新增 Agent-插件关系主表；引用关系表只做派生关系 |
+| Agent 引用 | `agent_config.pluginConfig.httpPlugins[]` | HTTP 与 MCP 都收敛在技能配置中 |
 | 发布语义 | Agent 快照保存引用，插件定义实时生效 | V1 不引入插件版本；需要冻结时复制插件 |
 | 市场能力 | V1 不做 | 保留 `is_public`，后续再加安装/市场表 |
 | 参数默认值 | 统一按字符串存 `default_value` | Array/Object 以 JSON 字符串存储，执行期转换 |
@@ -309,15 +308,6 @@ private ChatMemoryConfig chatMemoryConfig;
 │ default_value / required         │
 └──────────────────────────────────┘
 
-┌──────────────────────────────────┐
-│     ai_plugin_http_agent_ref     │
-├──────────────────────────────────┤
-│ aid                              │
-│ plugin_id                        │
-│ method_ids (JSON)                │
-│ ref_scope (0草稿/1发布)          │
-└──────────────────────────────────┘
-（派生关系数据，非配置源）
 ```
 
 关系说明：
@@ -325,8 +315,8 @@ private ChatMemoryConfig chatMemoryConfig;
 - 一个插件包含多个方法；
 - 一个方法包含多个参数；
 - 一个 Agent 可以引用多个插件；
-- Agent 与插件的引用关系以 `ai_agent_config.agent_config` 为准，`ai_plugin_http_agent_ref` 只用于反查和缓存失效；
-- 删除插件时，逻辑删除其下方法和参数，并清理引用关系。
+- Agent 与插件的引用关系只以 `ai_agent_config.agent_config` 为准；
+- 删除插件时，逻辑删除其下方法和参数，并失效 Agent 运行时缓存。
 
 ### 4.2 插件主表 `ai_plugin_http`
 
@@ -452,35 +442,9 @@ CREATE TABLE IF NOT EXISTS `ai_plugin_http_parameter` (
 6. `default_value` 统一按字符串存；Array/Object 使用 JSON 字符串，例如 `["a","b"]`、`{"taskName":"","searchType":1}`。
 7. Body 参数的 `mapped_name` 会作为 JSON Body 的 key；同名 key 会被后者覆盖，保存时校验同方法下 Body 参数 `mapped_name` 唯一。
 
-### 4.5 Agent 引用关系表 `ai_plugin_http_agent_ref`
+### 4.5 Agent 引用与缓存失效
 
-这张表不是配置源，而是为了让「插件变更后找到受影响 Agent」这件事可落地。
-
-```sql
-CREATE TABLE IF NOT EXISTS `ai_plugin_http_agent_ref` (
-    `id`          BIGINT   NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `aid`         VARCHAR(64) NOT NULL COMMENT 'Agent唯一标识',
-    `plugin_id`   BIGINT   NOT NULL COMMENT 'HTTP插件ID',
-    `method_ids`  TEXT              DEFAULT NULL COMMENT '方法ID JSON数组；NULL表示引用插件下全部启用方法',
-    `ref_scope`   TINYINT  NOT NULL DEFAULT 0 COMMENT '引用范围：0草稿配置 1已发布配置',
-    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `modify_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Agent引用HTTP插件关系表';
-```
-
-维护规则：
-
-| 场景 | 动作 |
-| --- | --- |
-| 新增/编辑 Agent | 解析 `agent_config.tools[]`，重建该 `aid + ref_scope=0` 的引用 |
-| 发布 Agent | 解析发布快照，重建该 `aid + ref_scope=1` 的引用 |
-| 取消发布 | 删除该 `aid + ref_scope=1` 的引用 |
-| 切换历史版本 | 重建草稿引用；如果已发布，发布快照不变 |
-| 删除 Agent | 删除该 `aid` 的全部引用 |
-| 插件/方法/参数变更 | 按 `plugin_id` 查引用，找出 `aid`，分别失效草稿态和发布态 Agent 实例 |
-
-> 如果 V1 不想维护这张表，也可以在插件变更时扫描 `ai_agent_config.agent_config LIKE '%"pluginId":1001%'`，但这种方式无法覆盖发布快照，且性能和准确性都较差，不建议作为长期方案。
+HTTP 插件引用直接保存在 Agent 的 `pluginConfig.httpPlugins` 中，不建立 `ai_plugin_http_agent_ref`。V1 中插件、方法或参数变更后，事务提交成功再清理标准 Agent 的运行时缓存，下次请求按 Agent 配置 JSON 重新装配工具。
 
 ### 4.6 调用日志表 `ai_plugin_http_call_log`（P1 可选）
 
@@ -619,7 +583,7 @@ VALUES
 
 ### 5.1 `agent_config` JSON 结构
 
-在现有 `StandardAgentConfig` 上新增 `tools` 字段：
+在现有 `StandardAgentConfig` 上新增统一的 `pluginConfig` 技能配置：
 
 ```json
 {
@@ -632,27 +596,15 @@ VALUES
     "type": 1,
     "memoryConfig": "{\"maxMessage\":20}"
   },
-  "tools": [
-    {
-      "type": "local",
-      "name": "webSearch"
-    },
-    {
-      "type": "http",
-      "pluginId": 1001,
-      "methodIds": [11, 12],
-      "alias": "github"
-    },
-    {
-      "type": "http",
-      "pluginId": 1002,
-      "methodIds": []
-    },
-    {
-      "type": "mcp",
-      "serverId": 101
-    }
-  ]
+  "pluginConfig": {
+    "httpPlugins": [
+      { "pluginId": 1001, "pluginMethodIds": [11, 12] },
+      { "pluginId": 1002, "pluginMethodIds": [] }
+    ],
+    "mcpPlugins": [
+      { "pluginId": 2001, "serverIds": [101] }
+    ]
+  }
 }
 ```
 
@@ -660,18 +612,17 @@ VALUES
 
 | 字段 | 说明 |
 | --- | --- |
-| `type` | 工具来源：`local` / `http` / `mcp` |
-| `name` | 本地工具名，仅 `type=local` 使用 |
-| `pluginId` | HTTP 插件 ID，仅 `type=http` 使用 |
-| `methodIds` | 选择的方法 ID；空数组或 `null` 表示该插件下全部启用方法 |
-| `alias` | 可选，覆盖插件自身 `alias`，用于解决同一 Agent 内的命名冲突 |
-| `serverId` | MCP Server ID，仅 `type=mcp` 使用，后续扩展 |
+| `httpPlugins` | HTTP 插件选择列表 |
+| `pluginId` | HTTP/MCP 插件 ID |
+| `pluginMethodIds` | HTTP 方法 ID；空数组或 `null` 表示全部启用方法 |
+| `mcpPlugins` | MCP 插件选择列表 |
+| `serverIds` | MCP Server ID 列表 |
 
 兼容性：
 
-- `tools` 为 `null` 或空数组时，行为与当前一致，只装配默认本地工具；
-- 旧 Agent 配置不需要迁移，Jackson 反序列化缺失字段为 `null`；
-- `agent_config` 整体仍写入 `ai_agent_config`、`ai_agent_config_version`、`ai_agent_config_published`，版本/发布快照自动包含 `tools`。
+- `pluginConfig` 为 `null` 时只装配默认本地工具；
+- 初版不考虑历史字段兼容，不再使用顶层 `httpPlugins` / `mcpPlugins`；
+- `agent_config` 整体仍写入 Agent 草稿、版本和发布快照表。
 
 ### 5.2 Java 模型调整
 
@@ -682,45 +633,31 @@ package cloud.changlu.agentforge.service.modules.agent.domain.config;
 
 import java.util.List;
 
-public class AgentToolRef {
-
-    public static final String TYPE_LOCAL = "local";
-    public static final String TYPE_HTTP = "http";
-    public static final String TYPE_MCP = "mcp";
-
-    private String type;
-    private String name;
+public class HttpToolConfig {
     private Long pluginId;
-    private List<Long> methodIds;
-    private String alias;
-    private Long serverId;
+    private Long[] pluginMethodIds;
+}
 
-    // getters / setters
+public class PluginConfig {
+    private List<HttpToolConfig> httpPlugins;
+    private List<McpToolConfig> mcpPlugins;
 }
 ```
 
 `StandardAgentConfig` 增加：
 
 ```java
-private List<AgentToolRef> tools;
-
-public List<AgentToolRef> getTools() {
-    return tools;
-}
-
-public void setTools(List<AgentToolRef> tools) {
-    this.tools = tools;
-}
+private PluginConfig pluginConfig;
 ```
 
-`AgentConfigUpsertReq` / `AgentConfigVo` 增加同名 `tools` 字段，供前端编辑与回显。
+`AgentConfigUpsertReq` / `AgentConfigVo` 增加同名 `pluginConfig` 字段，供前端编辑与回显。
 
 ### 5.3 工具名校验
 
 最终工具名：
 
 ```text
-exposedName = (ref.alias != null ? ref.alias : plugin.alias) + "__" + method.method_name
+exposedName = plugin.alias + "__" + method.method_name
 ```
 
 校验规则：
@@ -735,8 +672,8 @@ exposedName = (ref.alias != null ? ref.alias : plugin.alias) + "__" + method.met
 
 AgentForge 的发布快照保存的是 `agent_config` 的完整 JSON，因此：
 
-- 发布时会把 `tools[]` 一起写入 `ai_agent_config_published`；
-- 但 `tools[]` 只保存引用，不保存插件定义；
+- 发布时会把 `pluginConfig` 一起写入 `ai_agent_config_published`；
+- 但 `pluginConfig` 只保存引用，不保存插件定义；
 - 插件方法后续被修改，已发布 Agent 下次重新构建时会加载新定义；
 - 如果业务需要「发布后冻结插件定义」，应复制一个新插件、修改 Agent 引用后重新发布，而不是修改原插件。
 
@@ -757,12 +694,10 @@ cloud.changlu.agentforge.service.modules.plugin.http
 │   ├── HttpPluginMapper.java
 │   ├── HttpPluginMethodMapper.java
 │   ├── HttpPluginParameterMapper.java
-│   └── AgentHttpPluginRefMapper.java
 ├── domain
 │   ├── HttpPluginPojo.java
 │   ├── HttpPluginMethodPojo.java
 │   ├── HttpPluginParameterPojo.java
-│   ├── AgentHttpPluginRefPojo.java
 │   ├── req
 │   │   ├── HttpPluginQueryReq.java
 │   │   ├── HttpPluginUpsertReq.java
@@ -781,7 +716,7 @@ cloud.changlu.agentforge.service.modules.plugin.http
 │   ├── IHttpPluginService.java
 │   ├── IHttpPluginMethodService.java
 │   ├── HttpPluginRuntimeService.java
-│   ├── HttpPluginReferenceService.java
+│   ├── HttpPluginAgentCacheService.java
 │   └── impl
 │       ├── HttpPluginServiceImpl.java
 │       ├── HttpPluginMethodServiceImpl.java
@@ -794,7 +729,6 @@ cloud.changlu.agentforge.service.modules.plugin.http
     ├── HttpPluginMapper.xml
     ├── HttpPluginMethodMapper.xml
     ├── HttpPluginParameterMapper.xml
-    └── AgentHttpPluginRefMapper.xml
 ```
 
 > MyBatis XML 放在 `src/main/resources/cloud/changlu/agentforge/service/modules/plugin/http/mapper/` 下，现有配置 `classpath*:cloud/changlu/agentforge/service/modules/**/mapper/*.xml` 可以直接扫描到。
@@ -809,7 +743,7 @@ cloud.changlu.agentforge.service.modules.plugin.http
 | `HttpPluginMethodServiceImpl` | 方法 CRUD、参数整体替换、方法/参数校验 |
 | `HttpPluginCurlServiceImpl` | 调用 `CurlParser` / `CurlToHttpPluginConverter`，完成预览与保存 |
 | `HttpPluginRuntimeService` | 根据 `AgentToolRef` 加载插件、方法、参数，构建 `HttpPlugin` 并调用 `HttpToolFactory` |
-| `HttpPluginReferenceService` | 维护 `ai_plugin_http_agent_ref`，按插件反查并失效 Agent |
+| `HttpPluginAgentCacheService` | 插件变更事务提交后失效标准 Agent 运行时缓存 |
 | `HttpPluginConverter` | PO -> 框架 `HttpPlugin` / `HttpPluginMethod` / `HttpToolParameter` |
 | `HttpPluginValidator` | 别名、方法名、URI 占位符、参数位置/类型、Header 合法性校验 |
 | `SecretCipher` | 静态 Header 加密/解密（P1），V1 可先留接口 |
@@ -980,22 +914,18 @@ private ToolService buildToolService(StandardAgentConfig agentConfig) {
 agents: aid/debug + channelId -> ReActAgent
 ```
 
-因此插件变更后必须清理相关 Agent。实现方式：
+因此插件变更后必须清理 Agent 运行时缓存。V1 不维护引用关系表，直接清理标准 Agent 缓存：
 
 ```java
 @Service
-public class HttpPluginReferenceService {
+public class HttpPluginAgentCacheService {
 
-    public void evictAgentsByPluginId(Long pluginId) {
-        List<AgentHttpPluginRefPojo> refs =
-                agentHttpPluginRefMapper.selectByPluginId(pluginId);
-        for (AgentHttpPluginRefPojo ref : refs) {
-            afterCommit(() -> {
-                IAgentManager<Object, Object> manager =
-                        agentManagerFactory.getAgentManagerByType(STANDARD_AGENT_TYPE);
-                manager.removeAgent(ref.getAid());
-            });
-        }
+    public void evictAllAfterCommit() {
+        afterCommit(() -> {
+            IAgentManager<Object, Object> manager =
+                    agentManagerFactory.getAgentManagerByType(STANDARD_AGENT_TYPE);
+            manager.clearAgents();
+        });
     }
 }
 ```
@@ -1009,11 +939,9 @@ public class HttpPluginReferenceService {
 
 注意：
 
-- `removeAgent(aid)` 会同时清理调试态和发布态；
+- `clearAgents()` 会同时清理调试态和发布态；
 - 必须在事务提交后执行，避免回滚后实例已被清理；
-- 删除插件时，正确顺序是「先按 plugin_id 查引用 -> 事务提交后失效 Agent -> 再清理引用关系」，不能先清索引导致无法反查；
-- 如果引用表暂时不可用，降级为清理全部 HTTP Agent 或记录告警，不能静默继续使用旧实例。
-- 引用关系是派生数据，允许通过 `agent_config` 全量重建；建议提供 `rebuildAgentHttpPluginRef()` 运维接口或启动时补偿任务。
+- 缓存清理只影响内存中的 Agent 实例与配置快照，不修改 Agent 配置和会话数据。
 
 ### 6.7 事务边界
 
@@ -1368,7 +1296,7 @@ ReActAgentFactory.createReActAgent(StandardAgentConfig)
             │
             └── HttpPluginRuntimeService.buildHttpTools(tools)
                     │
-                    ├── 遍历 tools[]，筛选 type=http
+                    ├── 遍历 pluginConfig.httpPlugins
                     ├── 读取 ai_plugin_http
                     ├── 读取 ai_plugin_http_method
                     ├── 读取 ai_plugin_http_parameter
@@ -1611,7 +1539,7 @@ private Map<String, String> maskHeaders(Map<String, String> headers) {
 | 阶段 | 内容 | 产出 |
 | --- | --- | --- |
 | P0 | 表结构 + 插件/方法/参数 CRUD + 校验 | 可创建、编辑、删除插件与方法 |
-| P0 | Agent 配置扩展 `tools[]` + 运行时装配 | Agent 可调用 HTTP 工具 |
+| P0 | Agent 配置扩展 `pluginConfig.httpPlugins` + 运行时装配 | Agent 可调用 HTTP 工具 |
 | P0 | curl 导入预览/保存 | 可从 curl 快速创建插件 |
 | P0 | 在线试运行 | 配置后可直接验证 |
 | P1 | 引用关系 + 缓存失效 | 插件变更后 Agent 立即使用新定义 |
@@ -1627,7 +1555,7 @@ private Map<String, String> maskHeaders(Map<String, String> headers) {
 4. 扩展 `StandardAgentConfig`、`AgentConfigUpsertReq`、`AgentConfigVo`。
 5. 修改 `AgentConfigServiceImpl.buildAgentConfig` 持久化 `tools`。
 6. 修改 `ReActAgentFactory.buildToolService` 装配 HTTP 工具。
-7. 新增 `HttpPluginReferenceService` 并在 Agent 保存/发布/版本切换时维护引用。
+7. 新增 `HttpPluginAgentCacheService`，插件变更事务提交后清理标准 Agent 缓存。
 8. 插件/方法/参数变更后调用缓存失效。
 9. 增加 curl 导入接口与试运行接口。
 10. 补充框架层 F1/F2/F3 修复及单元测试。
@@ -1749,18 +1677,15 @@ public enum ParameterType {
     "type": 1,
     "memoryConfig": "{\"maxMessage\":20}"
   },
-  "tools": [
-    {
-      "type": "local",
-      "name": "webSearch"
-    },
-    {
-      "type": "http",
-      "pluginId": 1001,
-      "methodIds": [11, 12],
-      "alias": "github"
-    }
-  ]
+  "pluginConfig": {
+    "httpPlugins": [
+      {
+        "pluginId": 1001,
+        "pluginMethodIds": [11, 12]
+      }
+    ],
+    "mcpPlugins": []
+  }
 }
 ```
 
@@ -1810,10 +1735,10 @@ public enum ParameterType {
 
 | 维度 | 原设计 | 本方案 |
 | --- | --- | --- |
-| 表数量 | 4 张（含市场表） | 3 张核心 + 1 张引用关系 + 可选日志 |
+| 表数量 | 4 张（含市场表） | 3 张核心 + 可选日志 |
 | 方法命名 | `method_name` 即工具名 | `method_name` 为工具名后缀，增加 `display_name` |
 | 工具命名 | 直接使用方法名 | `{alias}__{method_name}` 命名空间 |
-| Agent 关系 | 文档未展开 | `agent_config.tools[]` + 引用关系表 |
+| Agent 关系 | 文档未展开 | `agent_config.pluginConfig.httpPlugins[]`，不建关联表 |
 | 发布控制 | 插件 `publish` 字段 | V1 不引入插件版本，Agent 发布快照保存引用 |
 | 市场能力 | `ai_plugin_http_market` | V1 不做，保留 `is_public` |
 | 安全 | 文档提及日志 | 明确 SSRF、Header 脱敏、响应限制、密钥处理 |
@@ -1826,8 +1751,8 @@ public enum ParameterType {
 AgentForge 接入 HTTP 插件的关键不是「再写一个 HTTP 客户端」，而是把已有的框架能力接到 Service 的配置体系上：
 
 1. **三张核心表**承载插件、方法、参数；
-2. **一张引用关系表**解决插件变更后的 Agent 缓存失效；
-3. **扩展 `StandardAgentConfig.tools[]`** 让 Agent 可以引用插件方法；
+2. **不建 Agent-HTTP 关联表**，插件变更后统一失效标准 Agent 缓存；
+3. **扩展 `StandardAgentConfig.pluginConfig.httpPlugins[]`** 让 Agent 可以引用插件方法；
 4. **`HttpPluginRuntimeService`** 在运行时完成 PO -> `HttpPlugin` -> `ToolSpecification + ToolExecutor` 的转换；
 5. **命名空间、校验、失败隔离、安全限制**保证多插件场景可用；
 6. **框架层 F1/F2/F3 修复**是上线前的硬性前置条件。

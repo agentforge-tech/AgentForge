@@ -30,6 +30,10 @@
             <i class="el-icon-connection"></i>
             <span slot="title">MCP 插件</span>
           </el-menu-item>
+          <el-menu-item index="/http-plugins">
+            <i class="el-icon-link"></i>
+            <span slot="title">HTTP 插件</span>
+          </el-menu-item>
         </el-submenu>
 
         <el-submenu index="agent">
@@ -52,12 +56,12 @@
 <script>
 import AppUserPanel from './AppUserPanel.vue'
 
-const ACTIVE_INDEX = { models: '/', mcp: '/mcp', agents: '/agents' }
+const ACTIVE_INDEX = { models: '/', mcp: '/mcp', http: '/http-plugins', agents: '/agents' }
 
 export default {
   name: 'AppSidebar',
   components: { AppUserPanel },
-  props: { active: { type: String, required: true, validator: (value) => ['agents', 'models', 'mcp'].includes(value) } },
+  props: { active: { type: String, required: true, validator: (value) => ['agents', 'models', 'mcp', 'http'].includes(value) } },
   data: () => ({ defaultOpeneds: ['resources', 'agent'] }),
   computed: {
     activeIndex() { return ACTIVE_INDEX[this.active] || '/' }

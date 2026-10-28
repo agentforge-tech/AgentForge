@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent.tool.mcp;
 
+import cloud.changlu.agentforge.agent.constant.ToolConstants;
 import cloud.changlu.agentforge.agent.tool.mcp.domain.McpCallToolResult;
 import cloud.changlu.agentforge.agent.tool.mcp.support.McpJson;
 import cloud.changlu.agentforge.agent.tool.mcp.support.McpResultConverter;
@@ -7,6 +8,7 @@ import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.tool.ToolExecutor;
 import cloud.changlu.agentforge.model.tool.execution.ToolExecutionResult;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -36,15 +38,14 @@ public class McpToolExecutor implements ToolExecutor {
 
     @Override
     public String execute(ToolExecutionRequest request, Object memoryId) {
-        Map<String, Object> arguments = McpJson.argumentsAsMap(request.arguments());
+        Map<String, Object> arguments = sanitizeArguments(request);
         return McpResultConverter.toText(client.callTool(remoteToolName, arguments));
     }
 
     @Override
     public ToolExecutionResult executeWithResult(ToolExecutionRequest request, Object memoryId) {
         try {
-            McpCallToolResult result =
-                    client.callTool(remoteToolName, McpJson.argumentsAsMap(request.arguments()));
+            McpCallToolResult result = client.callTool(remoteToolName, sanitizeArguments(request));
             return ToolExecutionResult.builder()
                     .isError(result.isError())
                     .result(result.structuredContent())
@@ -55,5 +56,16 @@ public class McpToolExecutor implements ToolExecutor {
         } catch (McpTransportException e) {
             return ToolExecutionResult.failure("MCP transport error: " + e.getMessage(), e);
         }
+    }
+
+    /** 思考参数仅用于引导模型，不应透传给远端 MCP Server。 */
+    private Map<String, Object> sanitizeArguments(ToolExecutionRequest request) {
+        Map<String, Object> arguments = McpJson.argumentsAsMap(request.arguments());
+        if (!arguments.containsKey(ToolConstants.THOUGHT_PARAMETER_NAME)) {
+            return arguments;
+        }
+        Map<String, Object> sanitized = new LinkedHashMap<String, Object>(arguments);
+        sanitized.remove(ToolConstants.THOUGHT_PARAMETER_NAME);
+        return sanitized;
     }
 }

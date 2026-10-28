@@ -2,6 +2,7 @@ package cloud.changlu.agentforge.agent.tool.mcp;
 
 import cloud.changlu.agentforge.agent.tool.mcp.domain.McpTool;
 import cloud.changlu.agentforge.agent.tool.mcp.support.McpToolSpecificationMapper;
+import cloud.changlu.agentforge.agent.tool.support.ToolSpecificationThoughts;
 import cloud.changlu.agentforge.model.tool.ToolExecutor;
 import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
 
@@ -65,6 +66,40 @@ public final class McpToolFactory {
             String serverAlias,
             Set<String> enabledTools,
             Set<String> disabledTools) {
+        return buildTools(client, serverAlias, enabledTools, disabledTools, false);
+    }
+
+    /**
+     * Builds the tool map, optionally injecting the required {@code __thought} parameter.
+     *
+     * @param client the MCP client to discover and call tools on
+     * @param serverAlias the alias used to prefix tool names; when blank, {@link
+     *     McpClient#serverAlias()} is used
+     * @param withThought when true, append the required {@code __thought} parameter to each schema
+     * @return the discovered tools keyed by specification
+     */
+    public static Map<ToolSpecification, ToolExecutor> buildToolsWithThought(
+            McpClient client, String serverAlias, boolean withThought) {
+        return buildTools(client, serverAlias, null, null, withThought);
+    }
+
+    /**
+     * Builds the tool map with optional name filtering and thought-parameter injection.
+     *
+     * @param client the MCP client to discover and call tools on
+     * @param serverAlias the alias used to prefix tool names; when blank, {@link
+     *     McpClient#serverAlias()} is used
+     * @param enabledTools when non-empty, only these remote tool names are exposed
+     * @param disabledTools when non-null, these remote tool names are hidden
+     * @param withThought when true, append the required {@code __thought} parameter to each schema
+     * @return the discovered tools keyed by specification
+     */
+    public static Map<ToolSpecification, ToolExecutor> buildTools(
+            McpClient client,
+            String serverAlias,
+            Set<String> enabledTools,
+            Set<String> disabledTools,
+            boolean withThought) {
         String alias = resolveAlias(client, serverAlias);
         Map<ToolSpecification, ToolExecutor> result =
                 new LinkedHashMap<ToolSpecification, ToolExecutor>();
@@ -87,6 +122,9 @@ public final class McpToolFactory {
                             .addMetadata("mcp.server", alias == null ? "" : alias)
                             .addMetadata("mcp.tool", tool.name())
                             .build();
+            if (withThought) {
+                specification = ToolSpecificationThoughts.withThought(specification);
+            }
             result.put(specification, new McpToolExecutor(client, tool.name()));
         }
         return result;

@@ -1,19 +1,15 @@
 package cloud.changlu.agentforge.agent.tool.local;
 
-import cloud.changlu.agentforge.agent.constant.ToolConstants;
 import cloud.changlu.agentforge.agent.tool.local.support.LoggingToolExecutor;
+import cloud.changlu.agentforge.agent.tool.support.ToolSpecificationThoughts;
 import cloud.changlu.agentforge.model.tool.Tool;
 import cloud.changlu.agentforge.model.tool.ToolExecutor;
-import cloud.changlu.agentforge.model.tool.spec.ToolParameters;
 import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
 import cloud.changlu.agentforge.model.tool.spec.ToolSpecifications;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -83,7 +79,8 @@ public class LocalToolFactory {
                     ToolSpecification toolSpecification =
                             ToolSpecifications.toolSpecificationFrom(method);
                     if (withThought) {
-                        toolSpecification = withThoughtParameter(toolSpecification);
+                        toolSpecification =
+                                ToolSpecificationThoughts.withThought(toolSpecification);
                     }
                     if (result.containsKey(toolSpecification)) {
                         throw new IllegalArgumentException(
@@ -105,44 +102,5 @@ public class LocalToolFactory {
         }
 
         return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static ToolSpecification withThoughtParameter(ToolSpecification original) {
-        ToolParameters parameters = original.parameters();
-        Map<String, Object> schema =
-                parameters == null
-                        ? new LinkedHashMap<String, Object>()
-                        : new LinkedHashMap<String, Object>(parameters.toMap());
-        schema.put("type", "object");
-
-        Object rawProperties = schema.get("properties");
-        Map<String, Object> properties =
-                rawProperties instanceof Map
-                        ? new LinkedHashMap<String, Object>((Map<String, Object>) rawProperties)
-                        : new LinkedHashMap<String, Object>();
-        if (properties.containsKey(ToolConstants.THOUGHT_PARAMETER_NAME)) {
-            return original;
-        }
-
-        Map<String, Object> thoughtDefinition = new LinkedHashMap<String, Object>();
-        thoughtDefinition.put("type", "string");
-        thoughtDefinition.put("description", ToolConstants.THOUGHT_PARAMETER_DESCRIPTION);
-        properties.put(ToolConstants.THOUGHT_PARAMETER_NAME, thoughtDefinition);
-        schema.put("properties", properties);
-
-        Object rawRequired = schema.get("required");
-        List<String> required = new ArrayList<String>();
-        if (rawRequired instanceof Collection) {
-            for (Object item : (Collection<Object>) rawRequired) {
-                required.add(String.valueOf(item));
-            }
-        }
-        if (!required.contains(ToolConstants.THOUGHT_PARAMETER_NAME)) {
-            required.add(ToolConstants.THOUGHT_PARAMETER_NAME);
-        }
-        schema.put("required", required);
-
-        return original.toBuilder().parameters(ToolParameters.from(schema)).build();
     }
 }

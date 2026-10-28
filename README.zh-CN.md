@@ -25,10 +25,11 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 
 **核心特性**
 
-- Provider-neutral 的模型抽象，内置 [OI]-compatible 与 Anthropic 实现
-- ReAct Agent 运行时：流式输出、记忆、工具调用、Middleware、重试与取消
-- Harness 运行时：权限、工具审批、沙箱、Trace 与可恢复执行
-- 开箱即用的 Spring Boot + Vue 服务，统一 SSE 流式协议
+- Provider-neutral 的模型抽象，内置 OpenAI-compatible 与 Anthropic 实现
+- ReAct Agent 运行时：流式输出、ChatMemory、本地 / HTTP / MCP 工具、Middleware、重试与取消
+- 开箱即用的 AgentForge Service：模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与插件管理
+- 统一 SSE 事件协议，MySQL 持久化 ChatMemory，会话事件可重放，调试与优雅双渲染模式
+- Harness 运行时与高级可观测能力在路线图中
 
 ## 文档
 
@@ -48,6 +49,7 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 
 - [文档](#文档)
 - [架构](#架构)
+- [AgentForge Service](#agentforge-service)
 - [快速开始](#快速开始)
 - [问题反馈](#问题反馈)
 - [参与贡献](#参与贡献)
@@ -84,7 +86,7 @@ AgentForge
 │   └── agentforge-model-registry # 开箱即用的 ChatModel 工厂
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent 运行时
-│   └── agentforge-harness-agent  # Harness 运行时（权限 / 审批 / 沙箱 / 可恢复执行）
+│   └── agentforge-harness-agent  # Harness 运行时（设计阶段）
 ├── agentforge-service            # 开箱即用服务（Vue 前端 + Spring Boot 后端）
 │   ├── agentforge-service-ui     # Vue 2 + Vite 前端
 │   └── agentforge-service-web    # Spring Boot 后端
@@ -102,9 +104,41 @@ AgentForge
 | `agentforge-model-openai` | OpenAI Chat Completions 同步 / 流式、Function Calling、OpenAI-compatible endpoint |
 | `agentforge-model-anthropic` | Anthropic Messages API 同步 / 流式、Tool Use |
 | `agentforge-model-registry` | `LlmFactory` 按 provider 构建 ChatModel / StreamingChatModel |
-| `agentforge-agent-core` | ReAct 主循环（同步 / 流式）、窗口记忆、工具调用回合、Middleware 链路、重试与取消 |
-| `agentforge-harness-agent` | 基于核心 Agent 的 Harness 运行时：权限、工具审批、Human-in-the-loop、沙箱、Trace、可恢复执行 |
-| `agentforge-service` | 统一 SSE 协议的开箱即用服务（Vue 前端 + Spring Boot 后端） |
+| `agentforge-agent-core` | ReAct 主循环（同步 / 流式）、可插拔 `ChatMemory` / `ChatMemoryStore`、窗口记忆、本地 / HTTP / MCP 工具、工具调用回合、Middleware 链路、重试与取消 |
+| `agentforge-harness-agent` | 基于核心 Agent 的 Harness 运行时（设计阶段）：权限、工具审批、Human-in-the-loop、沙箱、Trace、可恢复执行 |
+| `agentforge-service` | 可运行的 Agent 工作台：模型配置、Agent 配置 / 调试 / 版本 / 发布、会话与重放、MySQL ChatMemory、HTTP / MCP 插件、统一 SSE（Vue 前端 + Spring Boot 后端） |
+
+### AgentForge Service
+
+`agentforge-service` 不是 Demo 外壳，而是一套可运行的单用户 Agent 工作台，打通了从模型配置到正式发布的完整闭环：
+
+```text
+模型配置 → Agent 配置 → 调试 → 版本 → 发布 → 对话与会话历史
+```
+
+| 能力 | 当前实现 |
+| --- | --- |
+| 模型管理 | OpenAI / Anthropic / OpenAI-compatible endpoint、API Key、baseUrl 与模型名，运行时由 `LlmFactory` 解析 |
+| Agent 配置 | Prompt、对话模型、窗口记忆与插件引用统一持久化到 `ai_agent_config` |
+| 调试与预览 | 调试请求使用当前编辑配置；同一套事件流可切换高信息密度 `debug` 模式与面向用户的 `elegant` 模式 |
+| 版本历史 | `ai_agent_config_version` 版本快照、可编辑版本备注、历史版本切换与左右对比 |
+| 发布快照 | `ai_agent_config_published` 隔离线上配置与编辑中配置；发布 / 取消发布会失效运行时实例缓存 |
+| 会话与重放 | `ai_agent_session` / `ai_agent_session_message` 保存会话标题、置顶、消息与 SSE 事件快照，支持历史重放 |
+| ChatMemory | `ai_agent_memrory` 通过可插拔 `ChatMemoryStore` 持久化模型上下文（默认内存实现，Service 使用 MySQL） |
+| HTTP 插件 | HTTP 插件 / 方法 / 参数三层模型，支持 curl 与 JSON 导入、在线试运行、工具名 `{alias}__{method}` |
+| MCP 插件 | MCP 插件 / Server 管理、`mcpServers` 一键导入导出、工具探测、多 Server 聚合与单 Server 失败隔离 |
+| 流式交互 | 统一 SSE 事件（`session` / `think` / `resp` / `tool_call` / `resp_end` / `error`）、Markdown 流式渲染与 `__thought` 工具意图 |
+
+后端按业务模块组织：
+
+```text
+agentforge-service-web
+└── modules
+    ├── model      # 模型配置
+    ├── agent      # Agent 配置、版本、发布与运行时装配
+    ├── session    # 会话、消息与 SSE 事件重放
+    └── plugins    # HTTP / MCP 插件
+```
 
 ### 设计原则
 
@@ -119,9 +153,11 @@ AgentForge
 | 阶段 | 状态 | 内容 |
 | --- | --- | --- |
 | Phase 1 — LLM Foundation | ✅ 已完成 | 模型契约与 OpenAI / Anthropic Provider，稳定 Message / Request / Response |
-| Phase 2 — LLM Capability | 🚧 进行中 | 流式、Tool Calling 已落地；Structured Output / Multimodal / Embedding / More Providers 规划中 |
-| Phase 3 — Agent Foundation | 🚧 当前 | `model-registry`、`agent-core`；ReAct 主循环、窗口记忆、工具调用回合、Middleware |
-| Phase 4 — Production Agent Runtime | ⏳ 规划中 | SubAgent / Multi-Agent / Sandbox / Human-in-the-loop / Tracing / Persistence |
+| Phase 2 — LLM Capability | 🚧 进行中 | 流式、Tool Calling 已落地；Structured Output / Multimodal / Embedding / 更多 Provider 规划中 |
+| Phase 3 — Agent Foundation | ✅ 已完成 | `model-registry`、`agent-core`；ReAct 主循环、窗口记忆、工具调用、Middleware、重试 |
+| Phase 4 — Service Foundation | 🚧 当前 | 模型配置、Agent 配置 / 调试 / 版本 / 发布、会话与重放、MySQL ChatMemory、HTTP / MCP 插件、统一 SSE、双渲染模式 |
+| Phase 5 — Production Runtime | ⏳ 规划中 | Harness（权限 / 审批 / 沙箱 / 可恢复执行）、Agent Trace、Data Monitor、定时任务 |
+| Phase 6 — Multi-form | ⏳ 规划中 | Platform、CLI、Desktop 多形态分发 |
 
 ---
 
@@ -133,24 +169,6 @@ AgentForge
 
 - 日常开发与 CI 默认推荐 **JDK 17**；公共模块编译目标为 **Java 8 bytecode**，JDK 8 可直接依赖运行；
 - 统一根包名与 `groupId` 均为 `cloud.changlu.agentforge`。
-
-### 构建与依赖
-
-```bash
-git clone https://github.com/agentforge-tech/AgentForge.git
-cd AgentForge
-mvn clean install -DskipTests
-```
-
-按需引入所需模块。在首个 Maven Central 版本发布前，请使用本地安装的 `1.0.0-SNAPSHOT` 产物：
-
-```xml
-<dependency>
-    <groupId>cloud.changlu.agentforge</groupId>
-    <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-</dependency>
-```
 
 ### 调用模型
 
@@ -190,20 +208,32 @@ ChatResult result = agent.run(AgentRequest.builder()
 流式执行通过 `agent.runStream(request)` 返回 `TokenStream`，可订阅文本 / 思考增量、工具执行与完成事件；
 `agent.cancel(memoryId)` 用于取消任务。模型、记忆、工具与中间件均通过 Builder 注入，详见文档站。
 
+### 构建与依赖
+
+```bash
+git clone https://github.com/agentforge-tech/AgentForge.git
+cd AgentForge
+mvn clean install -DskipTests
+```
+
+构建会将 `1.0.0-SNAPSHOT` 产物安装到本地 Maven 仓库。按需引入模块，例如 `agentforge-agent-core`、`agentforge-model-openai`，或完整的 `agentforge-service`。
+
 ### 运行 AgentForge Service
 
 ```bash
 # 后端（Spring Boot，默认 8080）
+cp agentforge-service/conf/application.yml.example agentforge-service/conf/application.yml
 export AGENTFORGE_MODEL_API_KEY=your-api-key
 mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
-java -jar agentforge-service/agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
+cd agentforge-service
+java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 
 # 前端（Vue 2 + Vite，默认 5173，代理 /api 到 8080）
 cd agentforge-service/agentforge-service-ui
 npm install && npm run dev
 ```
 
-详见 [agentforge-service/README.md](agentforge-service/README.md)。
+前端页面包括模型管理（`/`）、Agent（`/agents`）、HTTP 插件（`/http-plugins`）、MCP 插件（`/mcp`）与发布对话页（`/agent/published/{aid}`）。详见 [agentforge-service/README.md](agentforge-service/README.md)。
 
 ### 测试
 

@@ -14,11 +14,15 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.SocketException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,6 +37,15 @@ import java.util.stream.Collectors;
 public class HttpToolExecutor implements ToolExecutor {
 
     private static final Logger log = Logger.getLogger(HttpToolExecutor.class.getName());
+    private static final Set<String> SENSITIVE_HEADERS =
+            new HashSet<String>(
+                    Arrays.asList(
+                            "authorization",
+                            "cookie",
+                            "set-cookie",
+                            "x-api-key",
+                            "x-auth-token",
+                            "proxy-authorization"));
 
     private final HttpTransport httpTransport;
     private final String baseUrl;
@@ -126,6 +139,7 @@ public class HttpToolExecutor implements ToolExecutor {
         addHeaderParameters(headers, finalArguments);
 
         // 智能判断请求体类型并处理参数
+        url = appendQueryParameters(url, finalArguments);
         String requestBody = "";
         if (shouldUseJsonBody(finalArguments)) {
             Map<String, Object> bodyParams = new LinkedHashMap<String, Object>();
@@ -138,8 +152,6 @@ public class HttpToolExecutor implements ToolExecutor {
             }
             requestBody = ToolExecutionRequestUtil.toJson(bodyParams);
             headers.put("Content-Type", "application/json");
-        } else {
-            url = appendQueryParameters(url, finalArguments);
         }
 
         HttpRequest request =
@@ -374,7 +386,10 @@ public class HttpToolExecutor implements ToolExecutor {
                 String paramName = entry.getKey();
                 String placeholder = "{" + entry.getValue().mappedName + "}";
                 if (arguments.containsKey(paramName)) {
-                    url = url.replace(placeholder, arguments.get(paramName).toString());
+                    url =
+                            url.replace(
+                                    placeholder,
+                                    encodePathSegment(arguments.get(paramName).toString()));
                 }
             }
         }
@@ -413,7 +428,7 @@ public class HttpToolExecutor implements ToolExecutor {
         log.info("=== HTTP 请求详情 ===");
         log.info("URL: " + request.url());
         log.info("方法: " + method);
-        log.info("请求头: " + request.headers());
+        log.info("请求头: " + maskHeaders(request.headers()));
         Map<HttpPluginEnums.ParameterUseType, Map<String, Object>> paramsByType =
                 arguments.entrySet().stream()
                         .collect(
@@ -422,7 +437,14 @@ public class HttpToolExecutor implements ToolExecutor {
                                         Collectors.toMap(
                                                 e -> parameterConfigs.get(e.getKey()).mappedName,
                                                 Map.Entry::getValue)));
-        paramsByType.forEach((type, params) -> log.info(type + " 参数: " + params));
+        paramsByType.forEach(
+                (type, params) ->
+                        log.info(
+                                type
+                                        + " 参数: "
+                                        + (type == HttpPluginEnums.ParameterUseType.HEADER
+                                                ? maskHeaders(toStringMap(params))
+                                                : params)));
         if (requestBody != null && !requestBody.isEmpty()) {
             log.info("请求体: " + requestBody);
         }
@@ -447,5 +469,29 @@ public class HttpToolExecutor implements ToolExecutor {
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException("UTF-8 encoding is not supported", e);
         }
+    }
+
+    private static String encodePathSegment(String value) {
+        return encode(value).replace("+", "%20");
+    }
+
+    private static Map<String, String> maskHeaders(Map<String, String> headers) {
+        Map<String, String> result = new LinkedHashMap<String, String>();
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            result.put(
+                    entry.getKey(),
+                    SENSITIVE_HEADERS.contains(entry.getKey().toLowerCase(Locale.ROOT))
+                            ? "******"
+                            : entry.getValue());
+        }
+        return result;
+    }
+
+    private static Map<String, String> toStringMap(Map<String, Object> source) {
+        Map<String, String> result = new LinkedHashMap<String, String>();
+        for (Map.Entry<String, Object> entry : source.entrySet()) {
+            result.put(entry.getKey(), String.valueOf(entry.getValue()));
+        }
+        return result;
     }
 }

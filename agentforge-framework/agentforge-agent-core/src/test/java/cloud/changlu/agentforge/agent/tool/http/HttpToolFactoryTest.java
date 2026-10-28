@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent.tool.http;
 
+import cloud.changlu.agentforge.agent.constant.ToolConstants;
 import cloud.changlu.agentforge.agent.tool.http.domain.HttpPlugin;
 import cloud.changlu.agentforge.agent.tool.http.domain.HttpPluginMethod;
 import cloud.changlu.agentforge.agent.tool.http.domain.HttpToolParameter;
@@ -44,6 +45,29 @@ public class HttpToolFactoryTest {
         assertTrue(spec.parameters().properties().containsKey("verbose"));
         assertEquals(Collections.singletonList("id"), spec.parameters().required());
         assertTrue(tools.get(spec) instanceof HttpToolExecutor);
+    }
+
+    @Test
+    public void shouldInjectThoughtParameterWhenEnabled() {
+        HttpPlugin plugin = samplePlugin();
+
+        Map<ToolSpecification, ToolExecutor> tools =
+                HttpToolFactory.buildHttpTools(plugin, null, true);
+
+        ToolSpecification spec = tools.keySet().iterator().next();
+        assertTrue(
+                spec.parameters().properties().containsKey(ToolConstants.THOUGHT_PARAMETER_NAME));
+        assertTrue(spec.parameters().required().contains(ToolConstants.THOUGHT_PARAMETER_NAME));
+    }
+
+    @Test
+    public void shouldNotInjectThoughtParameterByDefault() {
+        HttpPlugin plugin = samplePlugin();
+
+        ToolSpecification spec = HttpToolFactory.buildHttpTools(plugin).keySet().iterator().next();
+
+        assertTrue(
+                !spec.parameters().properties().containsKey(ToolConstants.THOUGHT_PARAMETER_NAME));
     }
 
     @Test

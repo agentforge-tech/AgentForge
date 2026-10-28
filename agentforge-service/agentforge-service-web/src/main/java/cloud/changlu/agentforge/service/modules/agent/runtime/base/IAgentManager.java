@@ -26,6 +26,8 @@ public interface IAgentManager<T, F> {
 
     void removeAgent(String aid);
 
+    void clearAgents();
+
     ChatResult ask(T agent, AgentChatReq req);
 
     TokenStream stream(T agent, AgentChatReq req);

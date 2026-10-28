@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent.tool.mcp;
 
+import cloud.changlu.agentforge.agent.constant.ToolConstants;
 import cloud.changlu.agentforge.agent.tool.mcp.domain.McpCallToolResult;
 import cloud.changlu.agentforge.agent.tool.mcp.domain.McpContent;
 import cloud.changlu.agentforge.agent.tool.mcp.domain.McpTool;
@@ -44,6 +45,25 @@ public class McpToolExecutorTest {
 
         assertEquals("杭州 26℃", text);
         assertEquals("get_weather", client.lastToolName());
+        assertEquals("杭州", client.lastArguments().get("location"));
+    }
+
+    @Test
+    public void shouldStripThoughtParameterBeforeCallingRemoteTool() {
+        FakeMcpClient client =
+                new FakeMcpClient("weather", Collections.<McpTool>emptyList())
+                        .withResult("get_weather", textResult("杭州 26℃", false));
+        McpToolExecutor executor = new McpToolExecutor(client, "get_weather");
+
+        executor.execute(
+                request(
+                        "get_weather",
+                        "{\"location\":\"杭州\",\""
+                                + ToolConstants.THOUGHT_PARAMETER_NAME
+                                + "\":\"need weather\"}"),
+                null);
+
+        assertFalse(client.lastArguments().containsKey(ToolConstants.THOUGHT_PARAMETER_NAME));
         assertEquals("杭州", client.lastArguments().get("location"));
     }
 

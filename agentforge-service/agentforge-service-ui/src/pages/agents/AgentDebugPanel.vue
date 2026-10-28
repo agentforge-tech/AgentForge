@@ -14,7 +14,7 @@
         </button>
       </div>
     </div>
-    <div ref="feed" class="agent-debug-feed">
+    <div ref="feed" class="agent-debug-feed" @scroll.passive="onFeedScroll">
       <div v-if="!messages.length" class="agent-debug-empty"><span>✦</span><b>开始一次调试对话</b><p>支持调试事件时间线与发布后交互展示两种模式。</p></div>
       <template v-for="(message, index) in messages">
         <div v-if="message.role === 'user'" :key="index" class="agent-debug-message-row agent-debug-message-row--user">
@@ -36,6 +36,18 @@
         </div>
       </template>
     </div>
+    <transition name="chat-scroll-btn">
+      <button
+        v-if="isUserScrolledUp && messages.length"
+        class="chat-scroll-btn agent-debug-scroll-btn"
+        type="button"
+        title="回到底部"
+        aria-label="回到底部"
+        @click="scrollToBottom"
+      >
+        <i class="el-icon-arrow-down"></i>
+      </button>
+    </transition>
     <div class="agent-debug-input">
       <textarea
         v-model="draft"
@@ -52,12 +64,14 @@
 <script>
 import { RENDER_MODES, DEFAULT_RENDER_MODE } from '../../modes'
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
+import chatAutoScroll from '../../utils/chatAutoScroll'
 import { postSse } from '../../utils/sse'
 
 const MODE_KEY = 'agentforge.render.mode'
 export default {
   name: 'AgentDebugPanel',
   components: { AgentMessageContent },
+  mixins: [chatAutoScroll],
   props: {
     aid: { type: String, required: true },
     agentName: { type: String, default: '' },
@@ -83,7 +97,7 @@ export default {
     async send() {
       const text = this.draft.trim(); if (!text || this.running) return
       const requestVersion = ++this.requestVersion
-      this.draft = ''; this.messages.push({ role: 'user', text }); const answer = { role: 'assistant', status: 'running', parts: [], content: '', error: '', startedAt: Date.now(), finishedAt: null, elapsedMs: null }; this.messages.push(answer); this.running = true; this.controller = new AbortController(); const controller = this.controller; this.scroll()
+      this.draft = ''; this.messages.push({ role: 'user', text }); const answer = { role: 'assistant', status: 'running', parts: [], content: '', error: '', startedAt: Date.now(), finishedAt: null, elapsedMs: null }; this.messages.push(answer); this.running = true; this.controller = new AbortController(); const controller = this.controller; this.resetScrollFollow(); this.scroll()
       try {
         await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: true }, { signal: controller.signal, onEvent: (event) => this.handleEvent(answer, event) })
       } catch (e) {
@@ -99,7 +113,7 @@ export default {
       ++this.requestVersion
       if (this.controller) this.controller.abort()
       if (this.running && oldSessionId) fetch(`/api/chat/stop?sessionId=${encodeURIComponent(oldSessionId)}`, { method: 'POST' }).catch(() => {})
-      this.controller = null; this.running = false; this.messages = []; this.draft = ''; this.sessionId = this.createSessionId()
+      this.controller = null; this.running = false; this.messages = []; this.draft = ''; this.sessionId = this.createSessionId(); this.resetScrollFollow()
       this.$message.success('已新建会话')
     },
     handleEvent(answer, event) {
@@ -162,7 +176,6 @@ export default {
         this.$message.warning('复制失败，请手动选择文本')
       }
     },
-    scroll() { this.$nextTick(() => { if (this.$refs.feed) this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight }) }
   }
 }
 </script>

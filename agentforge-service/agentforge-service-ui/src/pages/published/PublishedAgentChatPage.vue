@@ -78,7 +78,7 @@
       </div>
 
       <div class="message-input-wrapper" :class="{ 'input-at-bottom': messages.length > 0 }">
-      <section ref="feed" class="chat-scroll">
+      <section ref="feed" class="chat-scroll" @scroll.passive="onFeedScroll">
         <div class="chat-inner">
           <div v-if="!messages.length" class="welcome">
             <h2>{{ agentLoading ? '正在加载 Agent...' : (canChat ? '今天想解决什么问题？' : '请从已发布的 Agent 进入') }}</h2>
@@ -108,6 +108,19 @@
           </template>
         </div>
       </section>
+
+      <transition name="chat-scroll-btn">
+        <button
+          v-if="isUserScrolledUp && messages.length"
+          class="chat-scroll-btn"
+          type="button"
+          title="回到底部"
+          aria-label="回到底部"
+          @click="scrollToBottom"
+        >
+          <i class="el-icon-arrow-down"></i>
+        </button>
+      </transition>
 
       <div class="composer-wrap">
         <div class="composer-inner">
@@ -139,6 +152,7 @@
 <script>
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
 import AppUserPanel from '../../components/AppUserPanel.vue'
+import chatAutoScroll from '../../utils/chatAutoScroll'
 import { postSse } from '../../utils/sse'
 import {
   fetchSessionList,
@@ -168,6 +182,7 @@ function resolveAid() {
 export default {
   name: 'PublishedAgentChatPage',
   components: { AgentMessageContent, AppUserPanel },
+  mixins: [chatAutoScroll],
   data: () => ({
     aid: resolveAid(), agentBasic: null, agentLoading: false, agentError: '',
     draft: '', focused: false, running: false, sessionId: '', controller: null, messages: [],
@@ -292,6 +307,7 @@ export default {
       try {
         const records = await fetchSessionMessages(sessionRefId)
         this.messages = replaySessionMessages(records)
+        this.resetScrollFollow()
         this.scroll()
       } catch (error) {
         this.$message.error(error.message || '会话消息加载失败')
@@ -387,6 +403,7 @@ export default {
       this.messages.push(answer)
       this.running = true
       this.controller = new AbortController()
+      this.resetScrollFollow()
       this.scroll()
       try {
         await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: false }, {
@@ -515,7 +532,6 @@ export default {
       if (this.controller) this.controller.abort()
       this.running = false
     },
-    scroll() { this.$nextTick(() => { if (this.$refs.feed) this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight }) }
   }
 }
 </script>
