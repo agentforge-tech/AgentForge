@@ -1,0 +1,29 @@
+README.zh-CN.md
+  s_6f14746a74bdf1::t_ea998ca6ad1b9b 139
+  s_6f14746a74bdf1::t_1629227f003c0f 204,212
+  s_6f14746a74bdf1::t_c6c5d693c4ad47 145-158
+  s_6f14746a74bdf1::t_5a9b50613c610b 241-256
+  s_6f14746a74bdf1::t_3d0ed8e2436da0 39
+README.md
+  s_6f14746a74bdf1::t_e3b50ade5e0ea0 137
+  s_6f14746a74bdf1::t_03cc1fb263ef6f 37
+  s_6f14746a74bdf1::t_c9293f89d048bc 143-156
+  s_6f14746a74bdf1::t_a911b33a550f08 200,208
+  s_6f14746a74bdf1::t_4d8b562750d25f 237-252
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "24560f5dd912a0ef3aff8a556c2937853ee62d7c",
+  "prompts": {},
+  "sessions": {
+    "s_6f14746a74bdf1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7c7bc607ffeGn1GNXZxJF1akg",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
