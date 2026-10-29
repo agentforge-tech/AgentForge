@@ -29,26 +29,12 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 - Unified SSE event protocol with MySQL-backed ChatMemory, replayable session events and dual debug / elegant rendering
 - Harness runtime and advanced observability are on the roadmap
 
-## Documentation
-
-The documentation site is the best place to start. It is available in both 简体中文 and English, and covers the architecture, module-by-module design notes, and end-to-end guides.
-
-| Resource | Link |
-| --- | --- |
-| Documentation | <https://agentforge-tech.github.io/AgentForge/> |
-| Introduction | <https://agentforge-tech.github.io/AgentForge/docs/about/introduction> |
-| Getting Started | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started> |
-| Contributing | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/contributing> |
-| Blog | <https://agentforge-tech.github.io/AgentForge/blog> |
-| Source (GitHub) | <https://github.com/agentforge-tech/AgentForge> |
-| Mirror (Gitee) | <https://gitee.com/changluJava/agent-forge> |
-
 ### Table of Contents
 
-- [Documentation](#documentation)
 - [Architecture](#architecture)
 - [AgentForge Service](#agentforge-service)
 - [Quick Start](#quick-start)
+- [Documentation](#documentation)
 - [Questions](#questions)
 - [Contribution](#contribution)
 - [License](#license)
@@ -148,18 +134,25 @@ agentforge-service-web
 
 ### Roadmap
 
-| Phase | Status | Content |
-| --- | --- | --- |
-| Phase 1 — LLM Foundation | ✅ Done | Model contracts and OpenAI / Anthropic providers; stable Message / Request / Response |
-| Phase 2 — LLM Capability | 🚧 In progress | Streaming and Tool Calling shipped; Structured Output / Multimodal / Embedding / more providers planned |
-| Phase 3 — Agent Foundation | ✅ Done | `model-registry`, `agent-core`; ReAct loop, window memory, tool calling, Middleware, retry |
-| Phase 4 — Service Foundation | 🚧 Current | Model config, Agent config / debug / version / publish, sessions and replay, MySQL ChatMemory, HTTP / MCP plugins, unified SSE, dual rendering modes |
-| Phase 5 — Production Runtime | ⏳ Planned | Harness (permission / approval / sandbox / resumable execution), Agent Trace, Data Monitor, scheduled tasks |
-| Phase 6 — Multi-form | ⏳ Planned | Platform, CLI and Desktop distributions |
+The roadmap is maintained and discussed in [Issue #1](https://github.com/agentforge-tech/AgentForge/issues/1).
 
 ---
 
 ## Quick Start
+
+### Dependency
+
+Until the first Maven Central release is published, use the locally built `1.0.0-SNAPSHOT` artifacts:
+
+```xml
+<dependency>
+    <groupId>cloud.changlu.agentforge</groupId>
+    <artifactId>agentforge-agent-core</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+Other common modules: `agentforge-model-openai`, `agentforge-model-anthropic`, or the full `agentforge-service`.
 
 ### Requirements
 
@@ -204,7 +197,7 @@ ChatResult result = agent.run(AgentRequest.builder()
 
 For streaming, `agent.runStream(request)` returns a `TokenStream` that lets you subscribe to text / thinking deltas, tool executions, and completion events; `agent.cancel(memoryId)` cancels a task. Models, memory, tools, and middleware are all injected through the builder — see the documentation site for details.
 
-### Build & Dependency
+### Build from Source
 
 ```bash
 git clone https://github.com/agentforge-tech/AgentForge.git
@@ -212,7 +205,7 @@ cd AgentForge
 mvn clean install -DskipTests
 ```
 
-This installs `1.0.0-SNAPSHOT` artifacts into your local Maven repository. Add only the modules you need, for example `agentforge-agent-core`, `agentforge-model-openai`, or the full `agentforge-service`.
+This installs the `1.0.0-SNAPSHOT` artifacts into your local Maven repository.
 
 ### Run AgentForge Service
 
@@ -238,6 +231,22 @@ mvn clean test
 ```
 
 Unit tests do not hit real model services by default; they verify requests and responses through a replaceable `HttpTransport` and scripted models, so CI needs no API key.
+
+---
+
+## Documentation
+
+The documentation site is the best place to start. It is available in both 简体中文 and English, and covers the architecture, module-by-module design notes, and end-to-end guides.
+
+| Resource | Link |
+| --- | --- |
+| Documentation | <https://agentforge-tech.github.io/AgentForge/> |
+| Introduction | <https://agentforge-tech.github.io/AgentForge/docs/about/introduction> |
+| Getting Started | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started> |
+| Contributing | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/contributing> |
+| Blog | <https://agentforge-tech.github.io/AgentForge/blog> |
+| Source (GitHub) | <https://github.com/agentforge-tech/AgentForge> |
+| Mirror (Gitee) | <https://gitee.com/changluJava/agent-forge> |
 
 ---
 
