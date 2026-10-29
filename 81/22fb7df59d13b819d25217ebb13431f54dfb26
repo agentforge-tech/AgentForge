@@ -1,0 +1,28 @@
+bin/local/README.md
+  s_6f14746a74bdf1::t_fc9edf2d649718 9
+  s_6f14746a74bdf1::t_e5d1eca12a9174 41
+  s_6f14746a74bdf1::t_2a768b05df63fc 14-15,20
+  s_6f14746a74bdf1::t_9d6f4e286500ad 30
+README.md
+  s_6f14746a74bdf1::t_f8f558431e86d0 24-25
+.gitignore
+  s_6f14746a74bdf1::t_e7633fa35e4300 34-36
+README.zh-CN.md
+  s_6f14746a74bdf1::t_c4dee5d8ef3cf4 26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8122fb7df59d13b819d25217ebb13431f54dfb26",
+  "prompts": {},
+  "sessions": {
+    "s_6f14746a74bdf1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e7c7bc607ffeGn1GNXZxJF1akg",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
