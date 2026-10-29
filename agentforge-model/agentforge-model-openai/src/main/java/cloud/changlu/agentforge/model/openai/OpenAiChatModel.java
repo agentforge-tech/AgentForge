@@ -166,9 +166,26 @@ public final class OpenAiChatModel implements ChatModel {
             long input = Json.longValue(usage.get("prompt_tokens"), 0L);
             long output = Json.longValue(usage.get("completion_tokens"), 0L);
             long total = Json.longValue(usage.get("total_tokens"), input + output);
-            response.tokenUsage(new TokenUsage(input, output, total));
+            long cached = cachedTokens(usage);
+            response.tokenUsage(new TokenUsage(input, output, total, cached));
         }
         return response.build();
+    }
+
+    /**
+     * 读取缓存命中的输入 token：Chat Completions 官方字段为 {@code
+     * usage.prompt_tokens_details.cached_tokens}，DeepSeek 等兼容实现另提供 {@code
+     * usage.prompt_cache_hit_tokens}。
+     *
+     * @see <a href="https://platform.openai.com/docs/guides/prompt-caching">OpenAI Prompt
+     *     caching</a>
+     * @see <a href="https://api-docs.deepseek.com/guides/kv_cache">DeepSeek Context Caching</a>
+     */
+    private static long cachedTokens(Map<String, Object> usage) {
+        Map<String, Object> details = Json.object(usage.get("prompt_tokens_details"));
+        long cached = details == null ? 0L : Json.longValue(details.get("cached_tokens"), 0L);
+        if (cached <= 0L) cached = Json.longValue(usage.get("prompt_cache_hit_tokens"), 0L);
+        return Math.max(0L, cached);
     }
 
     private static String extractThinking(Map<String, Object> message) {

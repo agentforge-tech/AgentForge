@@ -118,7 +118,7 @@ public class OpenAiStreamingChatModelTest {
                         "",
                         "data: {\"id\":\"chatcmpl-1\",\"model\":\"gpt-test\",\"choices\":[{\"delta\":{\"content\":\"lo\"},\"finish_reason\":null}]}",
                         "data: {\"id\":\"chatcmpl-1\",\"model\":\"gpt-test\",\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}",
-                        "data: {\"id\":\"chatcmpl-1\",\"model\":\"gpt-test\",\"choices\":[],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":2,\"total_tokens\":6}}",
+                        "data: {\"id\":\"chatcmpl-1\",\"model\":\"gpt-test\",\"choices\":[],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":2,\"total_tokens\":6,\"prompt_tokens_details\":{\"cached_tokens\":3}}}",
                         "data: [DONE]");
 
         OpenAiStreamingChatModel model =
@@ -146,6 +146,7 @@ public class OpenAiStreamingChatModelTest {
         assertEquals(4L, handler.completeResponse.tokenUsage().inputTokens());
         assertEquals(2L, handler.completeResponse.tokenUsage().outputTokens());
         assertEquals(6L, handler.completeResponse.tokenUsage().totalTokens());
+        assertEquals(3L, handler.completeResponse.tokenUsage().cachedTokens());
         assertEquals("chatcmpl-1", handler.completeResponse.metadata().get("id"));
         assertEquals("gpt-test", handler.completeResponse.metadata().get("model"));
         assertEquals(

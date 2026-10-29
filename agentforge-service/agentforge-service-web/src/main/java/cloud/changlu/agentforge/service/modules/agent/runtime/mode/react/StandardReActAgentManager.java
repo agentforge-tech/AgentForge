@@ -9,6 +9,7 @@ import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.AbstractAgentManager;
 import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitContext;
+import cloud.changlu.agentforge.service.modules.trace.AgentTraceAttributes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -66,6 +67,8 @@ public class StandardReActAgentManager
         }
         java.util.Map<String, Object> extensions = new java.util.HashMap<>();
         extensions.put(SessionLifecycleMiddleware.EXT_SESSION_ID, sessionId);
+        extensions.put(AgentTraceAttributes.AID, req.getAid());
+        extensions.put(AgentTraceAttributes.DEBUG, isDebug);
         if (req.getAiMessageId() != null) {
             extensions.put(SessionLifecycleMiddleware.EXT_AI_MESSAGE_ID, req.getAiMessageId());
         }

@@ -98,7 +98,7 @@ public class OpenAiChatModelTest {
                                 200,
                                 "{\"id\":\"chatcmpl-1\",\"model\":\"gpt-test\",\"created\":123,"
                                         + "\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"Hello!\"},\"finish_reason\":\"stop\"}],"
-                                        + "\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":2,\"total_tokens\":6}}"));
+                                        + "\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":2,\"total_tokens\":6,\"prompt_tokens_details\":{\"cached_tokens\":3}}}"));
 
         OpenAiChatModel model =
                 OpenAiChatModel.builder()
@@ -160,6 +160,7 @@ public class OpenAiChatModelTest {
         assertEquals(4L, response.tokenUsage().inputTokens());
         assertEquals(2L, response.tokenUsage().outputTokens());
         assertEquals(6L, response.tokenUsage().totalTokens());
+        assertEquals(3L, response.tokenUsage().cachedTokens());
         assertEquals("chatcmpl-1", response.metadata().get("id"));
         assertEquals("gpt-test", response.metadata().get("model"));
     }

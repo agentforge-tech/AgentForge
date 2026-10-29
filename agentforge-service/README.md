@@ -54,6 +54,8 @@ npm install
 npm run dev
 ```
 
-前端为单站点多页面：`/` 打开「我的模型」管理列表，`/chat` 进入对话门户（`npm run build` 会一并产出到 `dist/`）。
+前端为单入口 Vue Router SPA：`/` 我的模型、`/agents` Agent 列表、`/mcp` MCP 插件、`/http-plugins` HTTP 插件、`/agent-trace` Agent Trace、`/chat` 与 `/agent/published/:aid` 对话页（`npm run build` 统一产出到 `dist/`）。生产环境使用 history 路由时，需要将未知路径回退到 `index.html`（例如 Nginx `try_files $uri $uri/ /index.html`）。
+
+前端目录：`src/router` 路由、`src/api` 接口模块、`src/pages` 路由页面、`src/components` 共享组件、`src/styles` 全局与后台样式。页面内仍保留 `.vue` 的 scoped 样式，构建时 Vite 会按路由动态 `import()` 自动拆出 `AgentTracePage-*.js/.css` 等按需加载 chunk；这不是多页面入口，首屏只加载公共 vendor 与当前路由资源。
 
 The UI sends `POST /api/chat/stream` and consumes the unified SSE events: `session`, `step`, `think`, `tool_call`, `resp`, `resp_end`, and `error`.

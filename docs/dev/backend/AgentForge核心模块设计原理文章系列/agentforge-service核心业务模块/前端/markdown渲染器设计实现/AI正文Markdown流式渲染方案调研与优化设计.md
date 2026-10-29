@@ -364,6 +364,54 @@ MarkdownView（对外不变）
 | 注入防护 | 对 `javascript:`、`data:` 协议链接直接丢弃；图片 `onerror` 类属性天然被 `html:false` + sanitize 拦截 |
 | 内存 | 单条消息渲染完成后释放尾块补全中间态，只保留最终 HTML |
 
+#### 3.8.1 正文链接新标签页打开的落地机制
+
+需求：AI 正文中的链接（含 `[文本](url)` 与 `linkify` 自动识别的裸 URL）在**发布页**与**Agent 调试页**点击后，均以新标签页打开，不打断当前对话。
+
+这两处页面共用同一条渲染链路：
+
+```text
+PublishedAgentChatPage / AgentDebugPanel
+  → AgentMessageContent
+  → 对应 render mode 组件
+  → MarkdownView
+```
+
+因此只需在 `MarkdownView` 内统一处理，即可覆盖两种场景，无需各页面单独改造。
+
+**第一层：解析阶段注入属性。** markdown-it 的 `link_open` 规则同时服务于显式链接与 `linkify` 自动链接，在此统一写入 `target` 与 `rel`：
+
+```js
+const defaultLinkOpen = md.renderer.rules.link_open
+  || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options))
+
+md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+  tokens[idx].attrSet('target', '_blank')
+  tokens[idx].attrSet('rel', 'noopener noreferrer')
+  return defaultLinkOpen(tokens, idx, options, env, self)
+}
+```
+
+`rel="noopener noreferrer"` 用于切断新页面对 `window.opener` 的访问，避免反向控制与 Referer 泄露。
+
+**第二层：sanitize 阶段保留属性（易踩坑）。** DOMPurify 的 `DEFAULT_ALLOWED_ATTR` 包含 `href`、`rel`，但**不包含 `target`**。若净化配置未显式放行，`link_open` 刚写入的 `target` 会在 `DOMPurify.sanitize` 后被静默移除，表现为"代码里设了 `_blank`，实际仍在当前页打开"。因此必须通过 `ADD_ATTR` 放行：
+
+```js
+const sanitize = (html) => DOMPurify.sanitize(html, {
+  USE_PROFILES: { html: true, svg: true, mathMl: true },
+  ADD_ATTR: ['target']
+})
+```
+
+**链路顺序**为：解析注入 `target`/`rel` → 合并稳定块与尾块 → 全量 sanitize（放行 `target`）→ 写入 DOM。流式过程中的尾块与最终完成态复用同一套解析器与净化配置，因此动画结束前后链接行为一致。
+
+**验收**：
+
+- 发布页与调试页回答中的显式链接、裸 URL 均在新标签页打开；
+- 新标签页 `window.opener` 为 `null`；
+- `[x](javascript:alert(1))` 等注入样例仍被拦截，净化后节点不含可执行协议；
+- 历史消息重放（`events` 回放）与实时输出链接行为一致。
+
 ### 3.9 与后端事件的配合
 
 当前 `resp` 事件只带文本增量，前端无法区分"块边界"。两种可选增强（不影响本次前端改造）：
@@ -655,6 +703,7 @@ SSE resp_end
 - 长回答（>8KB）滚动不抖动，代码块高亮只在闭合后计算一次；
 - 历史消息重放（`events` 中连续的 `resp`）与实时渲染最终结果完全一致；
 - 注入样例（`<img src=x onerror=alert(1)>`、`[x](javascript:alert(1))`）不产生任何执行或畸形节点；
+- 正文链接（含 `linkify` 裸 URL）在发布页与调试页均以新标签页打开，且 `rel="noopener noreferrer"` 生效；
 - `typewriter` 模式下文字出现节奏均匀，不出现「一次蹦出几十字再停顿」；
 - 消息结束后光标消失，无残留动画；
 - `typewriter-blur` 下同一时刻处于模糊态的字符数 ≤ 2，无拖影/晕眩；

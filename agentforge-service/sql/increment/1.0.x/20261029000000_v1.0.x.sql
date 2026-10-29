@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS `ai_agent_trace_snapshot` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `session_id` VARCHAR(128) NOT NULL COMMENT '会话ID，对应Agent memoryId',
+  `aid` VARCHAR(64) NOT NULL COMMENT 'Agent唯一标识',
+  `question_round` INT NOT NULL COMMENT '当前会话第几次用户提问',
+  `step` INT NOT NULL COMMENT '当前ReAct Loop步骤',
+  `started_at` DATETIME(3) DEFAULT NULL COMMENT '开始时间',
+  `finished_at` DATETIME(3) DEFAULT NULL COMMENT '结束时间',
+  `duration_ms` BIGINT DEFAULT NULL COMMENT '总耗时，毫秒',
+  `input_tokens` BIGINT DEFAULT NULL COMMENT '输入token数（含缓存命中与缓存写入）',
+  `output_tokens` BIGINT DEFAULT NULL COMMENT '输出token数',
+  `cached_tokens` BIGINT DEFAULT NULL COMMENT '缓存命中的输入token数',
+  `total_tokens` BIGINT DEFAULT NULL COMMENT '总token数',
+  `finished` TINYINT NOT NULL DEFAULT 0 COMMENT '是否为问答终态快照',
+  `status` VARCHAR(16) NOT NULL COMMENT 'CONTINUE/NORMAL/CANCEL/ERROR/MAX_STEPS',
+  `debug` TINYINT NOT NULL DEFAULT 0 COMMENT '是否调试态：1调试，0发布态',
+  `snapshot_json` LONGTEXT NOT NULL COMMENT '完整链路追踪快照JSON',
+  `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+  `modify_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '修改时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Agent链路追踪快照表';

@@ -18,7 +18,7 @@ public interface IAgentSessionService {
             String aid, String sessionId, String message, Long createUserId, boolean debug);
 
     /** 普通历史会话列表（未置顶）。 */
-    List<SessionVo> listNormal(String aid, Long createUserId, Integer limit);
+    List<SessionVo> listNormal(String aid, Long createUserId, Boolean debug, Integer limit);
 
     /** 置顶会话列表。 */
     List<SessionVo> listTop(String aid, Long createUserId);

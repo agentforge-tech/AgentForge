@@ -55,6 +55,9 @@
         <if test="aid != null and aid != ''">
             and aid = #{aid}
         </if>
+        <if test="debug != null">
+            and is_debug = #{debug}
+        </if>
         order by modify_time desc, id desc
         limit #{limit}
     </select>

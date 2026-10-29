@@ -146,11 +146,19 @@ public final class AnthropicChatModel implements ChatModel {
                         .metadata("model", root.get("model"))
                         .metadata("type", root.get("type"));
 
+        // Anthropic 官方语义：input_tokens 只统计最后一个 cache 断点之后的未缓存输入，
+        // 总输入 = input_tokens + cache_read_input_tokens + cache_creation_input_tokens，
+        // 缓存命中率 = cache_read_input_tokens / 总输入。
+        // https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#tracking-cache-performance
         Map<String, Object> usage = Json.object(root.get("usage"));
         if (usage != null) {
-            long input = Json.longValue(usage.get("input_tokens"), 0L);
+            long cached = Json.longValue(usage.get("cache_read_input_tokens"), 0L);
+            long input =
+                    Json.longValue(usage.get("input_tokens"), 0L)
+                            + cached
+                            + Json.longValue(usage.get("cache_creation_input_tokens"), 0L);
             long output = Json.longValue(usage.get("output_tokens"), 0L);
-            response.tokenUsage(TokenUsage.of(input, output));
+            response.tokenUsage(TokenUsage.of(input, output, Math.max(0L, cached)));
         }
         return response.build();
     }

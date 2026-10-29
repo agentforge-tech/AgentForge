@@ -13,37 +13,47 @@
     <nav class="af-sidebar__scroll">
       <el-menu
         class="af-menu"
+        router
         :default-active="activeIndex"
         :default-openeds="defaultOpeneds"
-        @select="onSelect"
       >
         <el-submenu index="resources">
           <template slot="title">
-            <i class="el-icon-folder-opened"></i>
-            <span>我的资源库</span>
+            <AppNavIcon name="components" />
+            <span>Agent组件</span>
           </template>
           <el-menu-item index="/">
-            <i class="el-icon-cpu"></i>
+            <AppNavIcon name="models" />
             <span slot="title">模型列表</span>
           </el-menu-item>
-          <el-menu-item index="/mcp">
-            <i class="el-icon-connection"></i>
-            <span slot="title">MCP 插件</span>
-          </el-menu-item>
-          <el-menu-item index="/http-plugins">
-            <i class="el-icon-link"></i>
-            <span slot="title">HTTP 插件</span>
-          </el-menu-item>
+          <el-submenu index="plugins">
+            <template slot="title">
+              <AppNavIcon name="plugins" />
+              <span>插件列表</span>
+            </template>
+            <el-menu-item index="/mcp">
+              <AppNavIcon name="mcp" />
+              <span slot="title">MCP 插件</span>
+            </el-menu-item>
+            <el-menu-item index="/http-plugins">
+              <AppNavIcon name="http" />
+              <span slot="title">HTTP 插件</span>
+            </el-menu-item>
+          </el-submenu>
         </el-submenu>
 
         <el-submenu index="agent">
           <template slot="title">
-            <i class="el-icon-s-platform"></i>
+            <AppNavIcon name="cockpit" />
             <span>Agent 驾驶舱</span>
           </template>
           <el-menu-item index="/agents">
-            <i class="el-icon-s-custom"></i>
+            <AppNavIcon name="agents" />
             <span slot="title">Agent 列表</span>
+          </el-menu-item>
+          <el-menu-item index="/agent-trace">
+            <AppNavIcon name="trace" />
+            <span slot="title">Agent Trace 监控</span>
           </el-menu-item>
         </el-submenu>
       </el-menu>
@@ -55,22 +65,20 @@
 
 <script>
 import AppUserPanel from './AppUserPanel.vue'
-
-const ACTIVE_INDEX = { models: '/', mcp: '/mcp', http: '/http-plugins', agents: '/agents' }
+import AppNavIcon from './AppNavIcon.vue'
 
 export default {
   name: 'AppSidebar',
-  components: { AppUserPanel },
-  props: { active: { type: String, required: true, validator: (value) => ['agents', 'models', 'mcp', 'http'].includes(value) } },
-  data: () => ({ defaultOpeneds: ['resources', 'agent'] }),
+  components: { AppNavIcon, AppUserPanel },
+  data: () => ({ defaultOpeneds: ['resources', 'plugins', 'agent'] }),
   computed: {
-    activeIndex() { return ACTIVE_INDEX[this.active] || '/' }
-  },
-  methods: {
-    // 多页面（MPA）站点，导航直接跳转，不做前端路由
-    onSelect(index) {
-      if (!index || index === this.activeIndex) return
-      window.location.href = index
+    activeIndex() {
+      const path = this.$route.path
+      if (path.startsWith('/agents')) return '/agents'
+      if (path === '/mcp') return '/mcp'
+      if (path === '/http-plugins') return '/http-plugins'
+      if (path === '/agent-trace') return '/agent-trace'
+      return '/'
     }
   }
 }

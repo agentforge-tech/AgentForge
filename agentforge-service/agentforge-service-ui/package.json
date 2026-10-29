@@ -13,7 +13,8 @@
     "highlight.js": "^11.11.1",
     "katex": "^0.19.1",
     "markdown-it": "^14.1.0",
-    "vue": "^2.7.16"
+    "vue": "^2.7.16",
+    "vue-router": "^3.6.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue2": "^2.3.3",

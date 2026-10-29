@@ -24,9 +24,9 @@ async function request(base, url, body) {
   return text ? JSON.parse(text) : null
 }
 
-/** 普通历史会话（未置顶），按最近修改时间倒序 */
-export function fetchSessionList(aid, limit) {
-  return request(SESSION_BASE, '/sessionList', { aid, limit })
+/** 普通历史会话（未置顶），按最近修改时间倒序；debug 为空表示不区分调试/发布态 */
+export function fetchSessionList(aid, limit, debug) {
+  return request(SESSION_BASE, '/sessionList', { aid, limit, debug })
 }
 
 /** 置顶会话，按置顶序号倒序 */

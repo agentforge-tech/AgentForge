@@ -307,6 +307,8 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
         private int statusCode = -1;
         private FinishReason finishReason;
         private TokenUsage tokenUsage;
+        private long rawInputTokens;
+        private long cacheCreationTokens;
         private boolean terminated;
         private String pendingEvent;
 
@@ -507,15 +509,19 @@ public class AnthropicStreamingChatModel implements StreamingChatModel {
             if (usage == null) {
                 return;
             }
-            long input =
+            rawInputTokens = Json.longValue(usage.get("input_tokens"), rawInputTokens);
+            cacheCreationTokens =
+                    Json.longValue(usage.get("cache_creation_input_tokens"), cacheCreationTokens);
+            long cached =
                     Json.longValue(
-                            usage.get("input_tokens"),
-                            tokenUsage == null ? 0L : tokenUsage.inputTokens());
+                            usage.get("cache_read_input_tokens"),
+                            tokenUsage == null ? 0L : tokenUsage.cachedTokens());
             long output =
                     Json.longValue(
                             usage.get("output_tokens"),
                             tokenUsage == null ? 0L : tokenUsage.outputTokens());
-            tokenUsage = TokenUsage.of(input, output);
+            long input = rawInputTokens + Math.max(0L, cached) + cacheCreationTokens;
+            tokenUsage = TokenUsage.of(input, output, Math.max(0L, cached));
         }
 
         private static int index(Map<String, Object> root) {

@@ -205,7 +205,7 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         pojo.setAid(AidGeneratorUtil.getInstance().nextId());
         pojo.setPublish(0);
         pojo.setIsPublic(0);
-        pojo.setAvatar("");
+        pojo.setAvatar(normalizeAvatar(req.getAvatar()));
         pojo.setDescription(normalizeDescription(req.getDescription()));
         pojo.setIsDeleted(0);
         pojo.setCreateUserId(DEFAULT_USER_ID);
@@ -226,6 +226,9 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
             AgentConfigPojo pojo, AgentConfigUpsertReq req, Date modifyTime) {
         pojo.setName(req.getName().trim());
         pojo.setDescription(normalizeDescription(req.getDescription()));
+        if (req.getAvatar() != null) {
+            pojo.setAvatar(normalizeAvatar(req.getAvatar()));
+        }
         StandardAgentConfig oldConfig = parseAgentConfig(pojo.getAgentConfig());
         String prompt =
                 req.getSystemPrompt() == null ? oldConfig.getSystemPrompt() : req.getSystemPrompt();
@@ -374,6 +377,14 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
 
     private String normalizeDescription(String description) {
         return description == null ? "" : description.trim();
+    }
+
+    private String normalizeAvatar(String avatar) {
+        String normalized = avatar == null ? "" : avatar.trim();
+        if (normalized.length() > 255) {
+            throw new IllegalArgumentException("Agent 头像地址不能超过 255 个字符");
+        }
+        return normalized;
     }
 
     private String buildAgentConfig(
