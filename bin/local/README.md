@@ -6,16 +6,18 @@
 
 1. GPG 私钥已生成，公钥已上传到公钥服务器。
 2. Maven `settings.xml` 已配置 `<server id="central">` 的 Portal User Token。
-3. `settings.xml` 位于 `~/.m2/settings.xml`，或通过 `--settings` 传入绝对路径。
+3. `settings.xml` 统一放在 `bin/local/settings.xml`（已在 `.gitignore` 中忽略，不会提交到仓库）。
 4. 正式版本号尚未在 Maven Central 发布。
 
 ## 一键预演（推荐先执行）
+
+以下命令均在仓库根目录执行，`settings.xml` 固定使用 `bin/local/settings.xml`。
 
 构建并生成真实 GPG 签名，但不上传：
 
 ```bash
 bin/local/release.sh 1.0.0 \
-  --settings "/absolute/path/settings.xml" \
+  --settings bin/local/settings.xml \
   --dry-run
 ```
 
@@ -25,7 +27,7 @@ bin/local/release.sh 1.0.0 \
 
 ```bash
 bin/local/release.sh 1.0.0 \
-  --settings "/absolute/path/settings.xml"
+  --settings bin/local/settings.xml
 ```
 
 上传成功后，打开 <https://central.sonatype.com/publishing/deployments> 检查构件，然后手动点击 **Publish**。
@@ -36,7 +38,7 @@ bin/local/release.sh 1.0.0 \
 
 ```bash
 bin/local/release.sh 1.0.0 \
-  --settings "/absolute/path/settings.xml" \
+  --settings bin/local/settings.xml \
   --auto-publish
 ```
 
