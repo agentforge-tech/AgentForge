@@ -31,6 +31,9 @@ logs/
 .env
 .env.*
 
+# Local Maven settings (Central token / credentials, do not commit)
+bin/local/settings.xml
+
 # Live-endpoint credentials (do not commit)
 **/live-endpoint.properties
 

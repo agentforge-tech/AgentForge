@@ -21,6 +21,8 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 
 `AgentForge = Agent + Forge`: `Agent` stands for an entity that understands goals, reasons, calls tools, and completes tasks; `Forge` emphasizes shaping raw material through continuous processing, forming, and strengthening until it becomes a truly usable product.
 
+**Documentation**: <https://agentforge-tech.github.io/AgentForge/>
+
 **Highlights**
 
 - Provider-neutral model abstraction with OpenAI-compatible and Anthropic implementations
@@ -28,16 +30,6 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 - Out-of-the-box AgentForge Service: model config, Agent build / debug / version / publish, session history and plugin management
 - Unified SSE event protocol with MySQL-backed ChatMemory, replayable session events and dual debug / elegant rendering
 - Harness runtime and advanced observability are on the roadmap
-
-### Table of Contents
-
-- [Architecture](#architecture)
-- [AgentForge Service](#agentforge-service)
-- [Quick Start](#quick-start)
-- [Documentation](#documentation)
-- [Questions](#questions)
-- [Contribution](#contribution)
-- [License](#license)
 
 ---
 

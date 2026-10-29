@@ -23,6 +23,8 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 `AgentForge = Agent + Forge`：`Agent` 代表能理解目标、进行推理、调用工具并完成任务的智能体；`Forge`
 强调把原始材料经过持续加工、塑形、强化，最终打造为真正可用的产品。
 
+**文档站**：<https://agentforge-tech.github.io/AgentForge/>
+
 **核心特性**
 
 - Provider-neutral 的模型抽象，内置 OpenAI-compatible 与 Anthropic 实现
@@ -30,16 +32,6 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 - 开箱即用的 AgentForge Service：模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与插件管理
 - 统一 SSE 事件协议，MySQL 持久化 ChatMemory，会话事件可重放，调试与优雅双渲染模式
 - Harness 运行时与高级可观测能力在路线图中
-
-### 目录
-
-- [架构](#架构)
-- [AgentForge Service](#agentforge-service)
-- [快速开始](#快速开始)
-- [文档](#文档)
-- [问题反馈](#问题反馈)
-- [参与贡献](#参与贡献)
-- [许可证](#许可证)
 
 ---
 
