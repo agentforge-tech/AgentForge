@@ -1,0 +1,14 @@
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/ai交互模式设计/插件工具统一FunctionCall标准与思考字段注入设计.md
+  h_415c008e101ba5 1-409
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cec1eeaf1cb0a8a6841be99ade88eff3f2bc1170",
+  "prompts": {},
+  "humans": {
+    "h_415c008e101ba5": {
+      "author": "changlu <939974883@qq.com>"
+    }
+  }
+}
