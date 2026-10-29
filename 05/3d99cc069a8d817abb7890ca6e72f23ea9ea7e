@@ -1,0 +1,475 @@
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/trace/domain/AgentTraceSnapshot.java
+  s_15175dc7599b04::t_387ed843858fe5 11,33-34,37-38
+  s_5af0d7d516c07f::t_23bd9338c214e3 26
+  s_15175dc7599b04::t_fafe5498441b62 1-10,12-25,27-32,200
+  s_15175dc7599b04::t_74eb43086e3d6b 35-36,39-152,161-199
+  s_5af0d7d516c07f::t_0c28360a0b8d19 153-160
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/StandardReActAgentManager.java
+  s_15175dc7599b04::t_d31d60215aefdf 12,70-71
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent基础设施/agent链路追踪/Agent链路追踪设计实现（火焰图 & 流程图）.md"
+  s_15175dc7599b04::t_ea20b4ee0a2b02 967-977,979-984,986-987
+  s_15175dc7599b04::t_65819d544c8db3 240
+  s_15175dc7599b04::t_61a54fc312a2e2 985
+  s_15175dc7599b04::t_37803d3413cd1a 538,542,550-552,573,807,978
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/upload/config/LocalUploadProperties.java
+  s_15175dc7599b04::t_75f3b5694ba5e8 3-4,25-27
+  s_15175dc7599b04::t_416919542696c7 21,33-37,52-55,66-87
+  s_15175dc7599b04::t_6622e2a52c0b14 1-2,5-20,22,24,28-32,42-49,58-65,88-103
+  s_15175dc7599b04::t_075b69a68e869d 23,38-41,50-51,56-57
+agentforge-model/agentforge-model-anthropic/src/test/java/cloud/changlu/agentforge/model/anthropic/AnthropicStreamingToolUseTest.java
+  s_5af0d7d516c07f::t_4dda3aa0131d2f 44,80,82
+agentforge-service/agentforge-service-ui/src/api/agent.js
+  s_3c0469f92f5908::t_39e7f1b344209e 1-2,7,11,15,19,23,27,31,35,39,43,47
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/service/IAgentSessionService.java
+  s_5af0d7d516c07f::t_2f98259cfcfab3 21
+agentforge-service/agentforge-service-ui/src/pages/trace/AgentTraceFlowView.vue
+  s_5af0d7d516c07f::t_cedd6965809ae9 50,69,98-99
+  s_5af0d7d516c07f::t_f0bb52ea7aa96b 53-60,63-65,67-68,70,77,88-97,100-115
+  s_3c0469f92f5908::t_4d1f630031dba2 13
+  s_15175dc7599b04::t_a689c17e542cb3 1-4,14-16,38-43,47-49,51-52,66,71-73,76,116-120,127
+  s_3c0469f92f5908::t_998d5293771c69 74-75
+  s_15175dc7599b04::t_4bd18af50692ab 121-122,126
+  s_3c0469f92f5908::t_ef763d97fd4e6d 44-46
+  s_5af0d7d516c07f::t_13ec042259ea77 22,61-62
+  s_15175dc7599b04::t_b3fe401fb9f1c0 12
+  s_5af0d7d516c07f::t_5377c56c3722bf 17-20,27-31,33-37
+  s_15175dc7599b04::t_e321fff7069b32 5-11
+  s_5af0d7d516c07f::t_05c81d5a417584 21,23-26,78-87,123-125
+  s_5af0d7d516c07f::t_35704725db7a93 32
+agentforge-service/agentforge-service-web/src/test/java/cloud/changlu/agentforge/service/env/EnvironmentContextTest.java
+  s_15175dc7599b04::t_075b69a68e869d 19,28,32,41
+  s_15175dc7599b04::t_b4a7e855c1ee5d 1-16,20-27,33-37,42-43
+  s_15175dc7599b04::t_416919542696c7 17-18,29-31,38-40
+agentforge-service/agentforge-service-ui/src/pages/trace/AgentTraceGraphCanvas.vue
+  s_15175dc7599b04::t_4f931d218db11f 9,85
+  s_15175dc7599b04::t_c32b2914c4e4d2 1-7,10,12,15-21,26-27,46-50,69,72-82,84,87-93,95
+  s_3c0469f92f5908::t_e19788cf35dc7c 23
+  s_15175dc7599b04::t_b3fe401fb9f1c0 13-14,83
+  s_3c0469f92f5908::t_be178a6eb2905f 51,53-56,65-68,70-71
+  s_3c0469f92f5908::t_89d5130c9a96c6 31,37-41,52,57-64
+  s_3c0469f92f5908::t_ef763d97fd4e6d 22
+  s_3c0469f92f5908::t_e4f1493a1af859 86
+  s_5af0d7d516c07f::t_076720e7cb0178 24
+  s_3c0469f92f5908::t_9d280b324744e6 8,11
+  s_3c0469f92f5908::t_9a76a8172a7ecb 25,28-30,32-36,42-45
+  s_5af0d7d516c07f::t_10a8a76b8c1758 94
+agentforge-service/agentforge-service-ui/src/pages/trace/AgentTraceFlameView.vue
+  s_3c0469f92f5908::t_5abee3e4760eba 5
+  s_5af0d7d516c07f::t_fd88073984ac74 9-12,14
+  s_5af0d7d516c07f::t_1cd94adf9c8d57 35
+  s_3c0469f92f5908::t_74d32049631a58 47
+  s_5af0d7d516c07f::t_966ec89fdffa24 88
+  s_3c0469f92f5908::t_21eeeb8a42b822 40-41
+  s_3c0469f92f5908::t_94a4c75fab18d0 82
+  s_5af0d7d516c07f::t_51fa814d886e7a 50,63-64,70
+  s_3c0469f92f5908::t_4c2ca065ab1b42 74-75
+  s_15175dc7599b04::t_ca384651595260 1-3,6-8,13,15-31,33-34,36-39,42-46,48,61,76-81,86,92,94
+  s_3c0469f92f5908::t_1385f06d4d7c56 49,51-60,62,65-69,71-72
+  s_15175dc7599b04::t_b98c8bb6ed9603 4,73,84-85,89-91
+  s_15175dc7599b04::t_4bd18af50692ab 83,87,93
+  s_3c0469f92f5908::t_ef763d97fd4e6d 32
+agentforge-service/agentforge-service-ui/src/App.vue
+  s_3c0469f92f5908::t_7540493b27afa2 1-9
+agentforge-service/agentforge-service-ui/src/components/MarkdownView.vue
+  s_3c0469f92f5908::t_ee19246be5d926 13
+  s_663f560e6fedb9::t_40cad9c9d94ba0 72
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/upload/domain/vo/UploadFileVo.java
+  s_15175dc7599b04::t_6622e2a52c0b14 1-44
+agentforge-service/agentforge-service-ui/src/styles/admin/admin.scss
+  s_3c0469f92f5908::t_95abebe1685496 2,12
+agentforge-model/agentforge-model-openai/src/main/java/cloud/changlu/agentforge/model/openai/OpenAiChatModel.java
+  s_5af0d7d516c07f::t_7e42a28624e968 169-170,184-188
+  s_5af0d7d516c07f::t_c655704196c230 180-181
+  s_5af0d7d516c07f::t_b2e0b0f311c901 175-179,182-183
+  s_5af0d7d516c07f::t_64e96077aecd2b 189-190
+agentforge-model/agentforge-model-openai/src/test/java/cloud/changlu/agentforge/model/openai/OpenAiChatModelTest.java
+  s_5af0d7d516c07f::t_4dda3aa0131d2f 101,163
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/controller/AgentSessionController.java
+  s_5af0d7d516c07f::t_2f98259cfcfab3 34-35
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentsPage.vue
+  s_3c0469f92f5908::t_98e10da72ad7a1 4
+  s_3c0469f92f5908::t_ac58b7730d8666 195
+  s_3c0469f92f5908::t_5c5a569bca55df 153
+  s_15175dc7599b04::t_47b4044a687a3d 50-53,115-117,152,158,176,227,260,335
+  s_3c0469f92f5908::t_a67549199b63e8 154
+  s_3c0469f92f5908::t_58d7621cb46b3f 237
+  s_3c0469f92f5908::t_54a6c41cc8d465 336
+agentforge-service/agentforge-service-ui/package.json
+  s_3c0469f92f5908::t_f06655251acbd9 16-17
+agentforge-service/agentforge-service-ui/src/plugins/element.js
+  s_3c0469f92f5908::t_447875287fc47f 3
+agentforge-service/agentforge-service-ui/src/pages/mcp/McpPage.vue
+  s_fa7370dee9ab16::t_af603461f4ebc9 11
+  s_3c0469f92f5908::t_5c5a569bca55df 362
+  s_3c0469f92f5908::t_5a7e99df908e6b 488
+  s_15175dc7599b04::t_05970237c56bbe 217-218,347,373
+  s_3c0469f92f5908::t_94a4c75fab18d0 782
+  s_3c0469f92f5908::t_355f426bea1772 364-366
+  s_3c0469f92f5908::t_92fb695a1826cc 398,400-402,406-413,416,418,427
+  s_3c0469f92f5908::t_98e10da72ad7a1 5
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/AgentTraceAttributes.java
+  s_15175dc7599b04::t_d31d60215aefdf 1-10
+agentforge-service/agentforge-service-ui/vite.config.js
+  s_3c0469f92f5908::t_5a6af1c67a861f 5
+  s_3c0469f92f5908::t_9efa27ff501fe5 27
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/trace/mapper/AgentTraceSnapshotMapper.xml
+  s_15175dc7599b04::t_6ab9f99f0b28c9 25,27,30,34-37,40-43,46,51
+  s_5af0d7d516c07f::t_0ff53732acc5cd 54-74
+  s_5af0d7d516c07f::t_0aa491406a3373 19,24,28,32,39
+  s_15175dc7599b04::t_24c6a1e885ea64 1-14,16-18,20-23,26,29,33,44-45,47-50,52-53,75-76
+  s_5af0d7d516c07f::t_a3714dac3fcd93 15,31,38
+agentforge-service/agentforge-service-ui/src/pages/trace/AgentTracePage.vue
+  s_3c0469f92f5908::t_94a4c75fab18d0 167
+  s_5af0d7d516c07f::t_4965a09ff25d31 177-178
+  s_15175dc7599b04::t_89a3e58f610d99 1-3,5-20,35-44,50-60,62-66,68-72,86-87,90-98,104-106,109-110,125-129,131-133,140-143,162-166,168,174,176,185,187-193,195-198,200
+  s_5af0d7d516c07f::t_042e16230f0d6b 45
+  s_5af0d7d516c07f::t_895e124c757a44 48,157
+  s_5af0d7d516c07f::t_70dcc401d73e68 182-183
+  s_15175dc7599b04::t_8a8971410ac07f 21,23-24,30,32-34,134,136-137,171,173
+  s_5af0d7d516c07f::t_e83fccca9166f7 175
+  s_5af0d7d516c07f::t_c909c4148199fb 172
+  s_3c0469f92f5908::t_5c5a569bca55df 101-102
+  s_5af0d7d516c07f::t_cabd349bd164aa 180
+  s_5af0d7d516c07f::t_40e1e1feb0ef3e 108
+  s_5af0d7d516c07f::t_0eee74a0f2df1f 77-85
+  s_5af0d7d516c07f::t_3a30a26c9aae6c 67
+  s_5af0d7d516c07f::t_5e897c645fb37b 144-156
+  s_3c0469f92f5908::t_ef763d97fd4e6d 103
+  s_15175dc7599b04::t_f4606fb3ebd3be 22,31
+  s_15175dc7599b04::t_4bd18af50692ab 179,181,199
+  s_5af0d7d516c07f::t_f498a58d51d3dd 111-124
+  s_5af0d7d516c07f::t_027f4e5e40cadc 46-47,49
+  s_3c0469f92f5908::t_38feffc367f661 130
+  s_3c0469f92f5908::t_98e10da72ad7a1 4
+  s_15175dc7599b04::t_4dd2507c66a4a5 88-89,99-100,107,138
+  s_3c0469f92f5908::t_4c55ad692ff7cb 73
+  s_15175dc7599b04::t_11757d3ed86633 139
+  s_5af0d7d516c07f::t_e2a8c9e198a441 74-75
+  s_5af0d7d516c07f::t_c75219d5ca0fd1 76
+  s_5af0d7d516c07f::t_6213971171ea9a 61
+  s_5af0d7d516c07f::t_0bd763add155e8 25-29
+  s_5af0d7d516c07f::t_33e3b25d13fc7b 135
+  s_15175dc7599b04::t_b205d22925db3d 169-170,184,186,194
+  s_3c0469f92f5908::t_5b67cc6232cd35 158-161
+agentforge-service/agentforge-service-ui/src/main.js
+  s_3c0469f92f5908::t_94a4c75fab18d0 3-4
+  s_3c0469f92f5908::t_633e905668b051 6-7,10
+agentforge-service/agentforge-service-ui/src/components/AppNavIcon.vue
+  s_fa7370dee9ab16::t_d41cb0c545951d 1,4-10,14-30,35-39,46-56,58,79-80
+  s_fa7370dee9ab16::t_49cbcbfe360b5c 2-3,11-13,31-34,44-45,57,59-61,65-66,68-70
+  s_fa7370dee9ab16::t_a09f8f5999960c 62-64,71-72
+  s_15175dc7599b04::t_1903838945f60e 40-43
+  s_fa7370dee9ab16::t_a94e8515e4f0d5 67,73-78
+agentforge-service/sql/increment/1.0.x/20261029000000_v1.0.x.sql
+  s_5af0d7d516c07f::t_3329d7ab079d1b 10,12
+  s_15175dc7599b04::t_23f2dd7869e898 20
+  s_5af0d7d516c07f::t_57d090b1449ac4 16
+  s_15175dc7599b04::t_77b120768c1d65 1-9,11,13-15,17-19,21
+agentforge-service/README.md
+  s_3c0469f92f5908::t_94fc1ce480e47c 59
+  s_3c0469f92f5908::t_376c211af13711 57
+  s_3c0469f92f5908::t_4b47fd2683c42f 58
+agentforge-model/agentforge-model-api/src/main/java/cloud/changlu/agentforge/model/chat/response/TokenUsage.java
+  s_5af0d7d516c07f::t_c655704196c230 12-13
+  s_5af0d7d516c07f::t_fc00627be2b8b7 30,33-36,40,44-48,62-65
+  s_5af0d7d516c07f::t_8bd88bfa57aa22 3-11,14-24
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/upload/controller/FileController.java
+  s_15175dc7599b04::t_6622e2a52c0b14 1-19,22-28,36-37
+  s_15175dc7599b04::t_d20120fe68afd0 20-21,29-35
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/env/EnvironmentContext.java
+  s_15175dc7599b04::t_47b4c02e55017b 39
+  s_15175dc7599b04::t_75f3b5694ba5e8 1-4,6-20,24-38,40-45,65-75
+  s_15175dc7599b04::t_075b69a68e869d 5,23,58-64
+  s_15175dc7599b04::t_416919542696c7 21-22,46-55
+  s_15175dc7599b04::t_4708ea61268afe 56-57
+agentforge-model/agentforge-model-anthropic/src/main/java/cloud/changlu/agentforge/model/anthropic/AnthropicStreamingChatModel.java
+  s_5af0d7d516c07f::t_7b08249bc421f7 512-515,517-518,523
+  s_5af0d7d516c07f::t_5d46a0b554aca5 524
+  s_5af0d7d516c07f::t_56c97c9f7683e8 310-311
+agentforge-service/agentforge-service-ui/src/pages/http/HttpPluginPage.vue
+  s_fa7370dee9ab16::t_af603461f4ebc9 7
+  s_3c0469f92f5908::t_5c5a569bca55df 58
+  s_663f560e6fedb9::t_7767271b291d57 20
+  s_3c0469f92f5908::t_98e10da72ad7a1 4
+  s_15175dc7599b04::t_e6bd4b406cee2c 34,57,62,85
+  s_3c0469f92f5908::t_c3de9961f5b608 64-65,67
+  s_3c0469f92f5908::t_11bebd99891f95 75
+docs/dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/chatmodel/anthropic/Anthropic协议01、Anthropic底层协议快速理解.md
+  s_5af0d7d516c07f::t_8d124e13807e64 229-230
+  s_5af0d7d516c07f::t_587d0042cf15cd 529
+  s_5af0d7d516c07f::t_c97ad45c5ce458 547-548
+  s_5af0d7d516c07f::t_314d1d0f98085a 221
+  s_5af0d7d516c07f::t_fdd85a81d42391 160,162-192
+  s_5af0d7d516c07f::t_733b87dd33f5b3 225
+agentforge-service/agentforge-service-ui/src/utils/sessionApi.js
+  s_5af0d7d516c07f::t_0c399e8ef7ceac 27-29
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/基础规范/标准上传文件规范.md
+  s_15175dc7599b04::t_251c28410c8d59 135,145,198,210,248-249,272-273,276,288-289,309
+  s_15175dc7599b04::t_344093dd6138e5 102,320-322
+  s_15175dc7599b04::t_45ba8414d3acc8 31,37,45
+  s_15175dc7599b04::t_e2c440ceb1a4f2 21,51,54,79,84,110,114,123,129,140,144,191,199,326,330-331,342,373,390,394,426,429
+  s_15175dc7599b04::t_3fea245c8a94d7 1-20,22-24,26,28-30,32-36,38-44,46-50,52-53,55-78,80-83,85-101,103-109,111-113,115-122,124-128,130-134,136-139,141-143,146-190,192-197,200-209,211-240,242,282-284,286,294,298,304-308,310-319,323-325,327-329,332-341,343-372,374-389,391-393,395-425,427-428,431-432
+  s_15175dc7599b04::t_50d11a8790399d 241,243-247,251-259,266-271,274,277-281,291-293,296,303
+  s_15175dc7599b04::t_8835e5b1d72b33 250,260-265,275
+  s_15175dc7599b04::t_63c004f7f80e21 295,297,299-301
+  s_15175dc7599b04::t_fe5b9bbe198e43 302
+  s_15175dc7599b04::t_d4b49f3f1bf03d 430
+  s_15175dc7599b04::t_4ea27c383e3af2 287,290
+  s_15175dc7599b04::t_ef69471d63f15c 285
+  s_15175dc7599b04::t_2fa4475c561380 25,27
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/runtime/mode/react/ReActAgentFactory.java
+  s_15175dc7599b04::t_d196682178b785 22,40,50,58,91
+  s_15175dc7599b04::t_da717b449b6e27 49
+agentforge-service/agentforge-service-ui/src/utils/fileUpload.js
+  s_15175dc7599b04::t_0cb3dda86ba64d 1-11,13-17
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/service/AgentTraceQueryService.java
+  s_5af0d7d516c07f::t_2a99aa746f1f32 79-80
+  s_5af0d7d516c07f::t_22e17ea91c6ae8 82-83
+  s_5af0d7d516c07f::t_ac8b99ec1bd167 64-65,67
+  s_15175dc7599b04::t_74eb43086e3d6b 37-38,41-42
+  s_15175dc7599b04::t_6368ff76b6351e 1-36,39-40,43-63,66,68-78,81,84-93
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/controller/AgentTraceController.java
+  s_15175dc7599b04::t_6368ff76b6351e 1-27,29,31-37
+  s_5af0d7d516c07f::t_4989405df28e5d 28,30
+agentforge-service/agentforge-service-ui/src/components/ImageUploadField.vue
+  s_15175dc7599b04::t_d4b49f3f1bf03d 21,48-49
+  s_15175dc7599b04::t_4c206e85d0bdef 4-5
+  s_15175dc7599b04::t_0cb3dda86ba64d 1-3,6-20,22-47,50-85
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/domain/AgentTraceSnapshotPojo.java
+  s_5af0d7d516c07f::t_2eedebfcfa4a09 20,135-142
+  s_5af0d7d516c07f::t_b256a12085c52b 105-112
+  s_15175dc7599b04::t_74eb43086e3d6b 25-104,113-134,143-167
+  s_5af0d7d516c07f::t_23df925f32b5bc 16
+  s_15175dc7599b04::t_24c6a1e885ea64 1-15,17-19,21-24,168
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/session/mapper/AgentSessionMapper.xml
+  s_5af0d7d516c07f::t_c63a67e7a52d45 58-60
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/upload/config/UploadWebMvcConfiguration.java
+  s_15175dc7599b04::t_6622e2a52c0b14 1-2,5,7-9,12-25,35-36
+  s_15175dc7599b04::t_63c004f7f80e21 3-4,6,10-11,26-34
+agentforge-service/agentforge-service-ui/src/pages/trace/utils/traceGraphAdapter.js
+  s_3c0469f92f5908::t_ef763d97fd4e6d 1-44
+agentforge-service/agentforge-service-ui/src/api/httpPlugin.js
+  s_3c0469f92f5908::t_9868419f07f213 1-20
+agentforge-service/agentforge-service-ui/src/api/model.js
+  s_3c0469f92f5908::t_830aeaae4805b4 1,6,10,14,18,22,27,31
+agentforge-service/conf/application.yml.example
+  s_15175dc7599b04::t_416919542696c7 11-17
+agentforge-service/agentforge-service-web/pom.xml
+  s_15175dc7599b04::t_5633631426dd49 71-75
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/trace/domain/AgentTraceSnapshotStatus.java
+  s_15175dc7599b04::t_fafe5498441b62 1-9
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/service/MysqlAgentTraceCollector.java
+  s_15175dc7599b04::t_23f2dd7869e898 52-54
+  s_15175dc7599b04::t_6edfb4c7b60765 8
+  s_15175dc7599b04::t_387ed843858fe5 32,37,58,66
+  s_15175dc7599b04::t_1fd79188ab1ea5 7,38,77-83
+  s_15175dc7599b04::t_6368ff76b6351e 1-4,6,9-31,33-36,39-45,47-49,51,55-57,59-65,67-71,84,93
+  s_15175dc7599b04::t_d31d60215aefdf 5,72-76
+  s_5af0d7d516c07f::t_766c3ce456da64 85-92
+  s_5af0d7d516c07f::t_7e98c7a38ffe88 50
+  s_5af0d7d516c07f::t_455621b50385fc 46
+agentforge-service/agentforge-service-ui/src/router/index.js
+  s_3c0469f92f5908::t_b66a464cff7f5c 2,4-71
+agentforge-service/agentforge-service-ui/src/api/mcp.js
+  s_3c0469f92f5908::t_273cbd4d3027c8 1-3,11-12,16,20,24,28,32,36,42,46,50,54,58,62
+agentforge-model/agentforge-model-anthropic/src/main/java/cloud/changlu/agentforge/model/anthropic/AnthropicChatModel.java
+  s_5af0d7d516c07f::t_bd62212f363c9e 149-152
+  s_5af0d7d516c07f::t_a8559398c5394e 156-159
+  s_5af0d7d516c07f::t_f6a77e8cb4816d 155,161
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/agent基础设施/agent链路追踪/Agent Trace推理链路画布组件选型与设计方案.md"
+  s_15175dc7599b04::t_0507ef936a5b2c 23-24,39,47,56-60,69,79-80,122,150-151,194-195,230,260-261
+  s_15175dc7599b04::t_20745ca2061cd6 215-216
+  s_3c0469f92f5908::t_0ace062c27b085 103-105,251-253
+  s_3c0469f92f5908::t_59eb3430909cea 90
+  s_15175dc7599b04::t_53a7edd917eaf9 1-22,25-38,40-46,48-55,61-68,70-78,81-89,91-102,106-121,123-149,152-193,196-214,217-229,231-250,254-259,262-277
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/dao/AgentSessionMapper.java
+  s_5af0d7d516c07f::t_f987d3b04f4ac0 24,28
+docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/markdown渲染器设计实现/AI正文Markdown流式渲染方案调研与优化设计.md
+  s_663f560e6fedb9::t_08deb82d96863f 367-414
+  s_663f560e6fedb9::t_95daf5c4a01219 706
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/upload/service/FileUploadService.java
+  s_15175dc7599b04::t_d20120fe68afd0 11,14,16
+  s_15175dc7599b04::t_6622e2a52c0b14 1-10,12-13,15,17
+docs/dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/chatmodel/openai/OpenAI协议01、OpenAI底层协议快速理解.md
+  s_5af0d7d516c07f::t_928ad7561ae977 151-188
+  s_5af0d7d516c07f::t_b36de785c2511f 496
+  s_5af0d7d516c07f::t_ed2c71eb82f8e8 514-517
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/trace/domain/AgentTraceToolSnapshot.java
+  s_15175dc7599b04::t_74eb43086e3d6b 16-86
+  s_15175dc7599b04::t_fafe5498441b62 1-15,87
+agentforge-service/agentforge-service-web/src/test/java/cloud/changlu/agentforge/service/modules/upload/service/LocalFileUploadServiceImplTest.java
+  s_15175dc7599b04::t_75f3b5694ba5e8 4,12,77-80,82
+  s_15175dc7599b04::t_f3054fb06ac7fd 34,36,46,51,60
+  s_15175dc7599b04::t_4708ea61268afe 38
+  s_15175dc7599b04::t_6622e2a52c0b14 1-3,5-11,13-33,35,37,39-45,47,50,52-56,59,61-62,76,81,83-84
+  s_15175dc7599b04::t_1cb742976ac985 48-49,57-58
+  s_15175dc7599b04::t_fe5b9bbe198e43 63-67,72-75
+  s_15175dc7599b04::t_075b69a68e869d 68-71
+.gitignore
+  s_15175dc7599b04::t_6b6813fd06abc3 50-52
+agentforge-service/agentforge-service-ui/src/pages/trace/utils/traceGraphLayout.js
+  s_5af0d7d516c07f::t_076720e7cb0178 2-72
+  s_5af0d7d516c07f::t_5ec84ebae65197 1
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/service/impl/AgentConfigServiceImpl.java
+  s_15175dc7599b04::t_d20120fe68afd0 208,229-231
+  s_15175dc7599b04::t_f3054fb06ac7fd 382-389
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/trace/AgentTraceMiddleware.java
+  s_15175dc7599b04::t_387ed843858fe5 36,230,345
+  s_5af0d7d516c07f::t_a2cf64c2be38f6 194
+  s_5af0d7d516c07f::t_230198e21e0fd2 362
+  s_15175dc7599b04::t_495ae8c4b158d9 1-35,37-38,40-62,64-71,73-186,190-193,195-220,222-223,225-228,231-232,235-236,246,254-325,329-332,337-344,346-349,351-361,363-368
+  s_15175dc7599b04::t_d196682178b785 39,247-252
+  s_15175dc7599b04::t_1744e9a790e508 224
+  s_15175dc7599b04::t_d31d60215aefdf 233,253,350
+  s_15175dc7599b04::t_1fd79188ab1ea5 229,234,237-245
+  s_5af0d7d516c07f::t_7e55f990ead29c 72
+  s_5af0d7d516c07f::t_ecbebb1678c7ab 221
+  s_15175dc7599b04::t_74eb43086e3d6b 63,187-189,326-328,333-336
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/dao/AgentTraceSnapshotMapper.java
+  s_15175dc7599b04::t_24c6a1e885ea64 1-11,16,18,20,22
+  s_15175dc7599b04::t_23f2dd7869e898 12-14
+  s_5af0d7d516c07f::t_2a99aa746f1f32 21
+  s_15175dc7599b04::t_74eb43086e3d6b 15,17,19
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/service/impl/AgentSessionServiceImpl.java
+  s_5af0d7d516c07f::t_2f98259cfcfab3 104,106-113
+agentforge-service/agentforge-service-ui/src/pages/models/ModelsPage.vue
+  s_3c0469f92f5908::t_98e10da72ad7a1 5
+  s_3c0469f92f5908::t_5c5a569bca55df 209
+  s_fa7370dee9ab16::t_af603461f4ebc9 12
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/config/AgentConfiguration.java
+  s_15175dc7599b04::t_75f3b5694ba5e8 3,33-34
+agentforge-service/agentforge-service-ui/index.html
+  s_3c0469f92f5908::t_a220113739a727 7,10-11
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/middleware/AgentForgeTraceMiddleware.java
+  s_15175dc7599b04::t_573481597f1dd3 23
+  s_15175dc7599b04::t_d196682178b785 1-5,7,9-22,24-25,41-50
+  s_15175dc7599b04::t_1fd79188ab1ea5 6,8,26-40
+agentforge-service/agentforge-service-ui/src/pages/published/PublishedAgentChatPage.vue
+  s_3c0469f92f5908::t_78c62d83133989 253,255-261,263-265
+  s_3c0469f92f5908::t_c82494140b1e5e 191,197
+  s_3c0469f92f5908::t_ee4df16a6447c3 207-211,227-228
+  s_3c0469f92f5908::t_3ac91d386eee46 177-178,181,183
+  s_3c0469f92f5908::t_2decd52b7e829b 212-225
+  s_3c0469f92f5908::t_ed6c6a65aa43d9 182
+agentforge-service/agentforge-service-ui/src/pages/trace/AgentTraceTimelineAxis.vue
+  s_3c0469f92f5908::t_94a4c75fab18d0 25
+  s_15175dc7599b04::t_ca384651595260 1-24,26-27
+agentforge-model/agentforge-model-openai/src/main/java/cloud/changlu/agentforge/model/openai/OpenAiStreamingChatModel.java
+  s_5af0d7d516c07f::t_47e24b2a51eb24 160-166
+  s_5af0d7d516c07f::t_197ba05b4e77b9 151-155,158-159
+  s_5af0d7d516c07f::t_9388f270c5a647 390-391
+  s_5af0d7d516c07f::t_c655704196c230 156-157
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/agent/domain/req/AgentConfigUpsertReq.java
+  s_15175dc7599b04::t_d20120fe68afd0 12,53-59
+  s_15175dc7599b04::t_85284f95147db1 60
+agentforge-model/agentforge-model-anthropic/src/test/java/cloud/changlu/agentforge/model/anthropic/AnthropicChatModelTest.java
+  s_5af0d7d516c07f::t_4dda3aa0131d2f 38,98,100-101
+agentforge-model/agentforge-model-openai/src/test/java/cloud/changlu/agentforge/model/openai/OpenAiStreamingChatModelTest.java
+  s_5af0d7d516c07f::t_4dda3aa0131d2f 121,149
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/upload/service/impl/LocalFileUploadServiceImpl.java
+  s_15175dc7599b04::t_d20120fe68afd0 37,39,77-82
+  s_15175dc7599b04::t_d1630dd6015a1e 17
+  s_15175dc7599b04::t_32b5976d36937a 52
+  s_15175dc7599b04::t_fe5b9bbe198e43 70
+  s_15175dc7599b04::t_075b69a68e869d 71
+  s_15175dc7599b04::t_6622e2a52c0b14 1-15,18-36,38,40-42,46-51,53-69,74-76,83-110
+  s_15175dc7599b04::t_8835e5b1d72b33 72-73
+  s_15175dc7599b04::t_f3054fb06ac7fd 16,45
+  s_15175dc7599b04::t_1cb742976ac985 43-44
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentConfigPage.vue
+  s_663f560e6fedb9::t_502d11db5054d5 1062-1064
+  s_663f560e6fedb9::t_19e3c39596928a 1066
+  s_663f560e6fedb9::t_21076f5a088fba 1101-1111
+  s_663f560e6fedb9::t_78dfc0141d76fe 26
+  s_3c0469f92f5908::t_8a3a7fcae65562 616,618
+  s_3c0469f92f5908::t_5c5a569bca55df 507
+  s_15175dc7599b04::t_1523d239dbf84b 109-111,220,511,515,560,646
+  s_3c0469f92f5908::t_e29c7c4316b85e 640
+  s_663f560e6fedb9::t_2e0c4d77bf7050 179
+  s_3c0469f92f5908::t_74b2bfbcd07a34 575
+  s_663f560e6fedb9::t_4543a981de7d67 682-691
+  s_3c0469f92f5908::t_94a4c75fab18d0 996
+  s_663f560e6fedb9::t_4f845841e0afb3 1002
+  s_3c0469f92f5908::t_a67549199b63e8 508-509
+agentforge-service/agentforge-service-web/src/main/resources/cloud/changlu/agentforge/service/modules/agent/mapper/AgentConfigMapper.xml
+  s_15175dc7599b04::t_4c206e85d0bdef 80
+agentforge-service/agentforge-service-ui/src/components/AppSidebar.vue
+  s_3c0469f92f5908::t_e10aebcc8926a1 16
+  s_3c0469f92f5908::t_18df5f441ce713 75-81
+  s_fa7370dee9ab16::t_d41cb0c545951d 22,26,31,35,39,47,51,68,72
+  s_fa7370dee9ab16::t_af603461f4ebc9 23
+  s_fa7370dee9ab16::t_17c5857719b783 29-30,32-34,36-38,40-42,73
+  s_15175dc7599b04::t_1903838945f60e 54-57
+agentforge-service/agentforge-service-ui/src/utils/request.js
+  s_3c0469f92f5908::t_750162cc25b10a 1-17,19-20,24-35
+agentforge-service/agentforge-service-ui/src/api/trace.js
+  s_3c0469f92f5908::t_67a62b35444682 1-2,8-13
+  s_5af0d7d516c07f::t_aea7ae47120780 3-7
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/session/domain/req/SessionListReq.java
+  s_5af0d7d516c07f::t_c63a67e7a52d45 9-11,24-30
+  s_5af0d7d516c07f::t_8f36c30ef4c4be 31
+agentforge-service/agentforge-service-ui/src/pages/agents/AgentDebugPanel.vue
+  s_5af0d7d516c07f::t_245ca02af1e460 9-40
+  s_5af0d7d516c07f::t_ed3e161efb6b97 120,125-128,130-133
+  s_5af0d7d516c07f::t_b125913eb92b17 166-211
+  s_5af0d7d516c07f::t_de618920c20cbd 106-107
+  s_5af0d7d516c07f::t_430aafa029c41c 154
+agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/trace/AgentTraceCollector.java
+  s_15175dc7599b04::t_fafe5498441b62 1-9
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/trace/domain/AgentForgeTraceSnapshot.java
+  s_15175dc7599b04::t_1fd79188ab1ea5 1-26
+agentforge-service/agentforge-service-ui/package-lock.json
+  s_3c0469f92f5908::t_0818cde5efbd40 16-17,1749-1754
+agentforge-service/agentforge-service-ui/src/pages/trace/utils/traceFormat.js
+  s_3c0469f92f5908::t_a5dc079b4387f6 1-40
+agentforge-service/agentforge-service-ui/src/styles/admin/_base.scss
+  s_3c0469f92f5908::t_9790c2f9b240af 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "053d99cc069a8d817abb7890ca6e72f23ea9ea7e",
+  "prompts": {},
+  "sessions": {
+    "s_15175dc7599b04": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a185eb-3e93-75b1-b559-d516e4a1e751",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_3c0469f92f5908": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e79a0d938ffefxG7em4b2tAXRp",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_5af0d7d516c07f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e78d60fc5ffeIpZ33H5RJHB1SS",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_663f560e6fedb9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e78c2a8d2ffeEMrkeCXhmm6RIB",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_fa7370dee9ab16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a185ed-2d57-7272-89a4-e7d1c5c81c8b",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
