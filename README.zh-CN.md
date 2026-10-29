@@ -31,26 +31,12 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 - 统一 SSE 事件协议，MySQL 持久化 ChatMemory，会话事件可重放，调试与优雅双渲染模式
 - Harness 运行时与高级可观测能力在路线图中
 
-## 文档
-
-文档站是最佳的起点，提供简体中文与英文两个版本，涵盖整体架构、各模块设计原理与端到端使用指南。
-
-| 资源 | 链接 |
-| --- | --- |
-| 文档站 | <https://agentforge-tech.github.io/AgentForge/> |
-| AgentForge 介绍 | <https://agentforge-tech.github.io/AgentForge/docs/about/introduction> |
-| 快速开始 | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started> |
-| 贡献指南 | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/contributing> |
-| 博客 | <https://agentforge-tech.github.io/AgentForge/blog> |
-| 源码（GitHub） | <https://github.com/agentforge-tech/AgentForge> |
-| 镜像（Gitee） | <https://gitee.com/changluJava/agent-forge> |
-
 ### 目录
 
-- [文档](#文档)
 - [架构](#架构)
 - [AgentForge Service](#agentforge-service)
 - [快速开始](#快速开始)
+- [文档](#文档)
 - [问题反馈](#问题反馈)
 - [参与贡献](#参与贡献)
 - [许可证](#许可证)
@@ -150,18 +136,25 @@ agentforge-service-web
 
 ### 路线图
 
-| 阶段 | 状态 | 内容 |
-| --- | --- | --- |
-| Phase 1 — LLM Foundation | ✅ 已完成 | 模型契约与 OpenAI / Anthropic Provider，稳定 Message / Request / Response |
-| Phase 2 — LLM Capability | 🚧 进行中 | 流式、Tool Calling 已落地；Structured Output / Multimodal / Embedding / 更多 Provider 规划中 |
-| Phase 3 — Agent Foundation | ✅ 已完成 | `model-registry`、`agent-core`；ReAct 主循环、窗口记忆、工具调用、Middleware、重试 |
-| Phase 4 — Service Foundation | 🚧 当前 | 模型配置、Agent 配置 / 调试 / 版本 / 发布、会话与重放、MySQL ChatMemory、HTTP / MCP 插件、统一 SSE、双渲染模式 |
-| Phase 5 — Production Runtime | ⏳ 规划中 | Harness（权限 / 审批 / 沙箱 / 可恢复执行）、Agent Trace、Data Monitor、定时任务 |
-| Phase 6 — Multi-form | ⏳ 规划中 | Platform、CLI、Desktop 多形态分发 |
+路线图统一维护在 [Issue #1](https://github.com/agentforge-tech/AgentForge/issues/1)。
 
 ---
 
 ## 快速开始
+
+### 依赖引入
+
+在首个 Maven Central 版本发布前，请使用本地构建的 `1.0.0-SNAPSHOT` 产物：
+
+```xml
+<dependency>
+    <groupId>cloud.changlu.agentforge</groupId>
+    <artifactId>agentforge-agent-core</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+其他常用模块：`agentforge-model-openai`、`agentforge-model-anthropic`，或完整的 `agentforge-service`。
 
 ### 环境要求
 
@@ -208,7 +201,7 @@ ChatResult result = agent.run(AgentRequest.builder()
 流式执行通过 `agent.runStream(request)` 返回 `TokenStream`，可订阅文本 / 思考增量、工具执行与完成事件；
 `agent.cancel(memoryId)` 用于取消任务。模型、记忆、工具与中间件均通过 Builder 注入，详见文档站。
 
-### 构建与依赖
+### 源码构建
 
 ```bash
 git clone https://github.com/agentforge-tech/AgentForge.git
@@ -216,7 +209,7 @@ cd AgentForge
 mvn clean install -DskipTests
 ```
 
-构建会将 `1.0.0-SNAPSHOT` 产物安装到本地 Maven 仓库。按需引入模块，例如 `agentforge-agent-core`、`agentforge-model-openai`，或完整的 `agentforge-service`。
+构建会将 `1.0.0-SNAPSHOT` 产物安装到本地 Maven 仓库。
 
 ### 运行 AgentForge Service
 
@@ -242,6 +235,22 @@ mvn clean test
 ```
 
 单测默认不访问真实模型服务，通过可替换的 `HttpTransport` 与脚本化模型验证请求与响应，CI 无需配置 API Key。
+
+---
+
+## 文档
+
+文档站是最佳的起点，提供简体中文与英文两个版本，涵盖整体架构、各模块设计原理与端到端使用指南。
+
+| 资源 | 链接 |
+| --- | --- |
+| 文档站 | <https://agentforge-tech.github.io/AgentForge/> |
+| AgentForge 介绍 | <https://agentforge-tech.github.io/AgentForge/docs/about/introduction> |
+| 快速开始 | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/getting-started> |
+| 贡献指南 | <https://agentforge-tech.github.io/AgentForge/docs/quickstart/contributing> |
+| 博客 | <https://agentforge-tech.github.io/AgentForge/blog> |
+| 源码（GitHub） | <https://github.com/agentforge-tech/AgentForge> |
+| 镜像（Gitee） | <https://gitee.com/changluJava/agent-forge> |
 
 ---
 
