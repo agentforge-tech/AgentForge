@@ -60,7 +60,7 @@ mkdir -p agentforge && cd agentforge
 
 ```bash
 docker run -d \
-  --name agentforge \
+  --name agentforge-service \
   --restart unless-stopped \
   -p 18080:8080 \
   -v "$PWD/data":/opt/agentforge/data \
@@ -76,7 +76,7 @@ docker run -d \
 
 该命令首次启动时会将镜像内的默认配置导出到宿主机 `conf/` 目录，以后每次启动都会加载该目录中的 `application.yml` 和 `logback.xml`。随后执行幂等的 SQLite 增量迁移并启动 AgentForge。
 
-`conf`、`data`、`logs` 和 `upload` 目录会自动创建并持久化到宿主机。修改 `conf/` 下的配置后，执行 `docker restart agentforge` 即可生效。
+`conf`、`data`、`logs` 和 `upload` 目录会自动创建并持久化到宿主机。修改 `conf/` 下的配置后，执行 `docker restart agentforge-service` 即可生效。
 
 > 不要将空的宿主机 `conf/` 目录直接挂载到 `/opt/agentforge/conf`。这会遮蔽镜像内的默认配置和前端静态资源。上面的命令使用 `/opt/agentforge/host-conf` 作为中转目录，可避免该问题。
 
@@ -87,11 +87,11 @@ docker run -d \
 ## 常用运维命令
 
 ```bash
-docker ps --filter name=agentforge       # 查看状态
-docker logs -f agentforge                # 查看实时日志，Ctrl+C 退出
-docker restart agentforge                # 重启
-docker stop agentforge                   # 停止
-docker start agentforge                  # 启动
+docker ps --filter name=agentforge-service       # 查看状态
+docker logs -f agentforge-service                # 查看实时日志，Ctrl+C 退出
+docker restart agentforge-service                # 重启
+docker stop agentforge-service                   # 停止
+docker start agentforge-service                  # 启动
 ```
 
 ## 修改端口和对外地址

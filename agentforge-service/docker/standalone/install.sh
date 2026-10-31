@@ -33,7 +33,7 @@ chmod +x upgrade.sh
 mkdir -p conf data logs upload backups
 IMAGE="$(env_get IMAGE_REPO codercl/agentforge-service):$(env_get IMAGE_TAG latest)"
 log "拉取镜像 ${IMAGE}"
-docker compose pull agentforge
+docker compose pull agentforge-service
 
 log "导出默认配置"
 docker run --rm \
@@ -47,13 +47,13 @@ DB_TYPE="$(env_get AGENTFORGE_DB_TYPE sqlite)"
 case "$DB_TYPE" in
     sqlite|sqllite|sqlite3)
         log "初始化 SQLite 数据库"
-        docker compose run --rm --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge
+        docker compose run --rm --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge-service
         ;;
     *) log "当前使用 ${DB_TYPE}，跳过 SQLite 迁移" ;;
 esac
 
 log "启动 AgentForge"
-docker compose up -d agentforge
+docker compose up -d agentforge-service
 docker compose ps
 log "安装完成：http://127.0.0.1:$(env_get WEB_PORT 18080)"
 log "后续升级：./upgrade.sh [版本]"

@@ -28,7 +28,7 @@ docker compose version >/dev/null 2>&1 || die "Docker Compose v2 未安装"
 
 OLD_TAG="$(env_get IMAGE_TAG latest)"
 NEW_TAG="${1:-latest}"
-APP_NAME="$(env_get APP_NAME agentforge)"
+APP_NAME="$(env_get APP_NAME agentforge-service)"
 STOPPED=0
 
 rollback_on_error() {
@@ -44,12 +44,12 @@ trap rollback_on_error ERR
 
 env_set IMAGE_TAG "$NEW_TAG"
 log "拉取镜像 $(env_get IMAGE_REPO codercl/agentforge-service):${NEW_TAG}"
-if ! compose pull agentforge; then
+if ! compose pull agentforge-service; then
     env_set IMAGE_TAG "$OLD_TAG"
     die "镜像拉取失败，已保留原版本"
 fi
 
-compose stop agentforge
+compose stop agentforge-service
 STOPPED=1
 
 mkdir -p backups
@@ -63,12 +63,12 @@ DB_TYPE="$(env_get AGENTFORGE_DB_TYPE sqlite)"
 case "$DB_TYPE" in
     sqlite|sqllite|sqlite3)
         log "执行 SQLite 增量迁移"
-        compose run --rm --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge
+        compose run --rm --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge-service
         ;;
     *) log "当前使用 ${DB_TYPE}，跳过 SQLite 迁移" ;;
 esac
 
-compose up -d --force-recreate agentforge
+compose up -d --force-recreate agentforge-service
 STOPPED=0
 trap - ERR
 compose ps
