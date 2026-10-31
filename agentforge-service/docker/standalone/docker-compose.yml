@@ -1,9 +1,9 @@
-name: ${COMPOSE_PROJECT_NAME:-agentforge}
+name: ${COMPOSE_PROJECT_NAME:-agentforge-service}
 
 services:
-  agentforge:
+  agentforge-service:
     image: ${IMAGE_REPO:-codercl/agentforge-service}:${IMAGE_TAG:-latest}
-    container_name: ${APP_NAME:-agentforge}
+    container_name: ${APP_NAME:-agentforge-service}
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Asia/Shanghai}
