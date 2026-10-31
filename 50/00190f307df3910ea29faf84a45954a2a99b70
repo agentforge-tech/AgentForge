@@ -1,0 +1,27 @@
+agentforge-service/docker/QUICK_DEPLOY.md
+  s_167291194df912::t_57d20876e08f5a 63,79,90-94
+agentforge-service/docker/standalone/docker-compose.yml
+  s_167291194df912::t_57d20876e08f5a 1,4,6
+agentforge-service/docker/standalone/install.sh
+  s_167291194df912::t_57d20876e08f5a 36,50,56
+agentforge-service/docker/standalone/upgrade.sh
+  s_167291194df912::t_57d20876e08f5a 31,47,52,66,71
+agentforge-service/docker/standalone/env.example
+  s_167291194df912::t_57d20876e08f5a 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5000190f307df3910ea29faf84a45954a2a99b70",
+  "prompts": {},
+  "sessions": {
+    "s_167291194df912": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18d1b-b93a-7073-9715-d7df00f6cc10",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
