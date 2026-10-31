@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMapper">
+
+    <resultMap id="AgentSessionResult" type="cloud.changlu.agentforge.service.modules.session.domain.AgentSessionPojo">
+        <id property="id" column="id"/>
+        <result property="sessionId" column="session_id"/>
+        <result property="aid" column="aid"/>
+        <result property="title" column="title"/>
+        <result property="status" column="status"/>
+        <result property="isDebug" column="is_debug"/>
+        <result property="pinOrder" column="pin_order"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, session_id, aid, title, status, is_debug, pin_order,
+        create_user_id, is_deleted, create_time, modify_time
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into ai_agent_session
+            (session_id, aid, title, status, is_debug, pin_order, create_user_id, is_deleted)
+        values
+            (#{sessionId}, #{aid}, #{title}, #{status}, #{isDebug}, #{pinOrder}, #{createUserId}, 0)
+    </insert>
+
+    <select id="selectById" resultMap="AgentSessionResult">
+        select <include refid="columns"/> from ai_agent_session
+        where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectBySessionId" resultMap="AgentSessionResult">
+        select <include refid="columns"/> from ai_agent_session
+        where session_id = #{sessionId} and is_deleted = 0
+        limit 1
+    </select>
+
+    <select id="selectBySessionIdAndAid" resultMap="AgentSessionResult">
+        select <include refid="columns"/> from ai_agent_session
+        where session_id = #{sessionId} and aid = #{aid} and is_deleted = 0
+        limit 1
+    </select>
+
+    <select id="selectNormalList" resultMap="AgentSessionResult">
+        select <include refid="columns"/> from ai_agent_session
+        where is_deleted = 0
+          and create_user_id = #{createUserId}
+          and pin_order = 0
+        <if test="aid != null and aid != ''">
+            and aid = #{aid}
+        </if>
+        <if test="debug != null">
+            and is_debug = #{debug}
+        </if>
+        order by modify_time desc, id desc
+        limit #{limit}
+    </select>
+
+    <select id="selectTopList" resultMap="AgentSessionResult">
+        select <include refid="columns"/> from ai_agent_session
+        where is_deleted = 0
+          and create_user_id = #{createUserId}
+          and pin_order &gt; 0
+        <if test="aid != null and aid != ''">
+            and aid = #{aid}
+        </if>
+        order by pin_order desc, modify_time desc
+    </select>
+
+    <select id="selectMaxPinOrder" resultType="java.lang.Integer">
+        select max(pin_order) from ai_agent_session
+        where is_deleted = 0 and create_user_id = #{createUserId}
+    </select>
+
+    <update id="updateStatus">
+        update ai_agent_session
+        set status = #{status}, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="updateStatusBySessionId">
+        update ai_agent_session
+        set status = #{status}, modify_time = #{modifyTime}
+        where session_id = #{sessionId} and is_deleted = 0
+    </update>
+
+    <update id="updateTitle">
+        update ai_agent_session
+        set title = #{title}, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="updatePinOrder">
+        update ai_agent_session
+        set pin_order = #{pinOrder}, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="touch">
+        update ai_agent_session
+        set modify_time = #{modifyTime}
+        where session_id = #{sessionId} and is_deleted = 0
+    </update>
+
+    <update id="logicDelete">
+        update ai_agent_session
+        set is_deleted = 1, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+</mapper>

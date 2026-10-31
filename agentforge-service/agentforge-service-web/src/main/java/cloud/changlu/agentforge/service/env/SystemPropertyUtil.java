@@ -30,6 +30,7 @@ public final class SystemPropertyUtil {
     public static void setSystemUserDir() {
         setConfDir();
         setLogDir();
+        setDataDir();
         setLocalUploadFileDir();
         setTempFileDir();
     }
@@ -42,6 +43,11 @@ public final class SystemPropertyUtil {
     /** 日志目录。 */
     public static void setLogDir() {
         setCustomDir("logs");
+    }
+
+    /** 本地数据目录（SQLite 数据库文件等）。 */
+    public static void setDataDir() {
+        setCustomDir("data");
     }
 
     /** 本地文件上传目录。 */
@@ -57,6 +63,9 @@ public final class SystemPropertyUtil {
     /** 解析 {@code dirName} 目录并写入系统属性 {@code user.dir.<dirName>}（绝对路径，以 / 结尾）。 */
     public static void setCustomDir(String dirName) {
         File resolved = new File(serviceHome(), dirName);
+        if (!resolved.exists() && !resolved.mkdirs()) {
+            log.warn("Failed to create {} directory: {}", dirName, resolved.getAbsolutePath());
+        }
         String propertyName = "user.dir." + dirName;
         String path = resolved.getAbsolutePath() + File.separator;
         System.setProperty(propertyName, path);
@@ -95,11 +104,20 @@ public final class SystemPropertyUtil {
         return System.getProperty("user.dir.logs");
     }
 
+    public static String getDataDir() {
+        return System.getProperty("user.dir.data");
+    }
+
     public static String getTempDir() {
         return System.getProperty("user.dir.temp");
     }
 
     public static String getUploadDir() {
         return System.getProperty("user.dir.upload");
+    }
+
+    /** Service home directory that contains {@code conf}, {@code sql}, {@code data} and so on. */
+    public static File getServiceHome() {
+        return serviceHome();
     }
 }

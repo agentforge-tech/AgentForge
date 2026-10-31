@@ -28,7 +28,7 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 - Provider-neutral model abstraction with OpenAI-compatible and Anthropic implementations
 - ReAct agent runtime with streaming, ChatMemory, local / HTTP / MCP tools, middleware, retry and cancellation
 - Out-of-the-box AgentForge Service: model config, Agent build / debug / version / publish, session history and plugin management
-- Unified SSE event protocol with MySQL-backed ChatMemory, replayable session events and dual debug / elegant rendering
+- Unified SSE event protocol with SQLite/MySQL-backed ChatMemory, replayable session events and dual debug / elegant rendering
 - Harness runtime and advanced observability are on the roadmap
 
 ---
@@ -82,7 +82,7 @@ AgentForge
 | `agentforge-model-registry` | `LlmFactory` builds ChatModel / StreamingChatModel per provider |
 | `agentforge-agent-core` | ReAct main loop (sync / streaming), pluggable `ChatMemory` / `ChatMemoryStore`, window memory, local / HTTP / MCP tools, tool-calling rounds, Middleware chain, retry & cancellation |
 | `agentforge-harness-agent` | Harness runtime on top of the core Agent (design phase): permission, tool approval, human-in-the-loop, sandbox, trace, resumable execution |
-| `agentforge-service` | Runnable Agent workbench: model config, Agent config / debug / version / publish, sessions & replay, MySQL ChatMemory, HTTP / MCP plugins, unified SSE (Vue frontend + Spring Boot backend) |
+| `agentforge-service` | Runnable Agent workbench: model config, Agent config / debug / version / publish, sessions & replay, SQLite / MySQL persistence, HTTP / MCP plugins, unified SSE (Vue frontend + Spring Boot backend) |
 
 ### AgentForge Service
 
@@ -100,7 +100,7 @@ Model config → Agent config → Debug → Version → Publish → Chat & sessi
 | Version history | `ai_agent_config_version` snapshots, editable version remarks, version switching and side-by-side diff |
 | Publish snapshots | `ai_agent_config_published` isolates the live configuration from ongoing edits; publish / unpublish invalidates runtime caches |
 | Sessions & replay | `ai_agent_session` / `ai_agent_session_message` persist titles, pinning, messages and the SSE event snapshots used for history replay |
-| ChatMemory | `ai_agent_memrory` persists the model context through a pluggable `ChatMemoryStore` (in-memory by default, MySQL in the service) |
+| ChatMemory | `ai_agent_memrory` persists the model context through a pluggable `ChatMemoryStore` (in-memory by default; the service uses SQLite by default and can switch to MySQL) |
 | HTTP plugins | HTTP plugin / method / parameter model, curl and JSON import, online test-run, namespaced tools (`{alias}__{method}`) |
 | MCP plugins | MCP plugin / server management, one-click `mcpServers` import / export, tool discovery, multi-server aggregation with per-server failure isolation |
 | Streaming UX | Unified SSE events (`session` / `think` / `resp` / `tool_call` / `resp_end` / `error`), streaming Markdown and `__thought` tool intent |
@@ -207,12 +207,20 @@ cp agentforge-service/conf/application.yml.example agentforge-service/conf/appli
 export AGENTFORGE_MODEL_API_KEY=your-api-key
 mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
 cd agentforge-service
+./bin/local/upgrate-sqlite.sh
 java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 
 # Frontend (Vue 2 + Vite, default 5173, proxies /api to 8080)
 cd agentforge-service/agentforge-service-ui
 npm install && npm run dev
+
+# All-in-one Docker (backend + frontend + SQLite, default 18080)
+cd agentforge-service/docker && ./scripts/deploy.sh
 ```
+
+The service uses SQLite by default (`agentforge-service/data/agentforge.db`); set
+`AGENTFORGE_DB_TYPE=mysql` to switch to MySQL. The service does not create tables at startup, so run
+the SQLite migration script once before the first start.
 
 The UI ships pages for model management (`/`), Agents (`/agents`), HTTP plugins (`/http-plugins`), MCP plugins (`/mcp`) and the published chat page (`/agent/published/{aid}`). See [agentforge-service/README.md](agentforge-service/README.md) for details.
 

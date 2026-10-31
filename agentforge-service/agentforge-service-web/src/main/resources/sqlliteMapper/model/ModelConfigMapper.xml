@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.model.dao.ModelConfigMapper">
+
+    <resultMap id="ModelConfigResult" type="cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="provider" column="provider"/>
+        <result property="modelType" column="model_type"/>
+        <result property="modelname" column="modelname"/>
+        <result property="url" column="url"/>
+        <result property="apiKey" column="api_key"/>
+        <result property="createType" column="create_type"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="selectModelConfigVo">
+        select id, name, provider, model_type, modelname, url, api_key,
+               create_type, create_user_id, is_deleted, create_time, modify_time
+        from ai_model_config
+    </sql>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="ModelConfigResult">
+        <include refid="selectModelConfigVo"/>
+        where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectList"
+            parameterType="cloud.changlu.agentforge.service.modules.model.domain.req.ModelConfigQueryReq"
+            resultMap="ModelConfigResult">
+        <include refid="selectModelConfigVo"/>
+        <where>
+            is_deleted = 0
+            <if test="id != null">and id = #{id}</if>
+            <if test="name != null and name != ''">and name like '%' || #{name} || '%'</if>
+            <if test="provider != null">and provider = #{provider}</if>
+            <if test="modelType != null">and model_type = #{modelType}</if>
+            <if test="createType != null">and create_type = #{createType}</if>
+            <if test="createUserId != null">and create_user_id = #{createUserId}</if>
+        </where>
+        order by modify_time desc
+    </select>
+
+    <sql id="queryConditions">
+        <where>
+            is_deleted = 0
+            <if test="id != null">and id = #{id}</if>
+            <if test="name != null and name != ''">and name like '%' || #{name} || '%'</if>
+            <if test="provider != null">and provider = #{provider}</if>
+            <if test="modelType != null">and model_type = #{modelType}</if>
+            <if test="createType != null">and create_type = #{createType}</if>
+            <if test="createUserId != null">and create_user_id = #{createUserId}</if>
+            <if test="keyword != null and keyword != ''">
+                and (name like '%' || #{keyword} || '%'
+                    or modelname like '%' || #{keyword} || '%'
+                    or url like '%' || #{keyword} || '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectCount"
+            parameterType="cloud.changlu.agentforge.service.modules.model.domain.req.ModelConfigQueryReq"
+            resultType="long">
+        select count(1) from ai_model_config
+        <include refid="queryConditions"/>
+    </select>
+
+    <select id="selectPage"
+            parameterType="cloud.changlu.agentforge.service.modules.model.domain.req.ModelConfigQueryReq"
+            resultMap="ModelConfigResult">
+        <include refid="selectModelConfigVo"/>
+        <include refid="queryConditions"/>
+        order by modify_time desc
+        limit #{pageSize} offset #{start}
+    </select>
+
+    <insert id="insert"
+            parameterType="cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into ai_model_config
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="provider != null">provider,</if>
+            <if test="modelType != null">model_type,</if>
+            <if test="modelname != null and modelname != ''">modelname,</if>
+            <if test="url != null">url,</if>
+            <if test="apiKey != null">api_key,</if>
+            <if test="createType != null">create_type,</if>
+            <if test="createUserId != null">create_user_id,</if>
+            <if test="isDeleted != null">is_deleted,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="modifyTime != null">modify_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="provider != null">#{provider},</if>
+            <if test="modelType != null">#{modelType},</if>
+            <if test="modelname != null and modelname != ''">#{modelname},</if>
+            <if test="url != null">#{url},</if>
+            <if test="apiKey != null">#{apiKey},</if>
+            <if test="createType != null">#{createType},</if>
+            <if test="createUserId != null">#{createUserId},</if>
+            <if test="isDeleted != null">#{isDeleted},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="modifyTime != null">#{modifyTime},</if>
+        </trim>
+    </insert>
+
+    <update id="update"
+            parameterType="cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo">
+        update ai_model_config
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="provider != null">provider = #{provider},</if>
+            <if test="modelType != null">model_type = #{modelType},</if>
+            <if test="modelname != null and modelname != ''">modelname = #{modelname},</if>
+            <if test="url != null">url = #{url},</if>
+            <if test="apiKey != null">api_key = #{apiKey},</if>
+            <if test="createType != null">create_type = #{createType},</if>
+            <if test="createUserId != null">create_user_id = #{createUserId},</if>
+            <if test="isDeleted != null">is_deleted = #{isDeleted},</if>
+            <if test="modifyTime != null">modify_time = #{modifyTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="deleteById" parameterType="java.lang.Long">
+        update ai_model_config set is_deleted = 1 where id = #{id}
+    </update>
+
+</mapper>

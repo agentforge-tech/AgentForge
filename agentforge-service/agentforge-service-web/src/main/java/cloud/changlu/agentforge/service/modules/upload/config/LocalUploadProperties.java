@@ -34,7 +34,7 @@ public class LocalUploadProperties {
                 buildVisitBaseUrl(
                         environmentContext.getFileLocalVisitProtocol(),
                         environmentContext.getFileLocalVisitHost(),
-                        environmentContext.getServerPort());
+                        environmentContext.getFileLocalVisitPort());
         this.maxFileSize = environmentContext.getFileUploadMaxSize();
         if (maxFileSize <= 0) {
             throw new IllegalArgumentException("Upload max file size must be greater than zero");

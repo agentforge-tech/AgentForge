@@ -2,6 +2,7 @@ package cloud.changlu.agentforge.service.env;
 
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -57,6 +58,11 @@ public class EnvironmentContext {
                 "agentforge.file.local.visit-host", DEFAULT_UPLOAD_VISIT_HOST);
     }
 
+    /** External port used to build the complete public URL returned after a local upload. */
+    public String getFileLocalVisitPort() {
+        return environment.getProperty("agentforge.file.local.visit-port", getServerPort());
+    }
+
     /** Maximum size accepted by the standard upload service, in bytes. */
     public long getFileUploadMaxSize() {
         String configured =
@@ -71,5 +77,21 @@ public class EnvironmentContext {
 
     public String getServerPort() {
         return environment.getProperty("server.port", DEFAULT_SERVER_PORT);
+    }
+
+    /**
+     * External directory that contains the built frontend ({@code index.html}, {@code assets/}).
+     */
+    public String getWebStaticLocation() {
+        String defaultLocation = "file:" + getUserDirConf() + "static/";
+        return environment.getProperty("agentforge.web.static-location", defaultLocation);
+    }
+
+    private String getUserDirConf() {
+        String dir = environment.getProperty("user.dir.conf");
+        if (!StringUtils.hasText(dir)) {
+            return "./conf/";
+        }
+        return dir.endsWith("/") || dir.endsWith("\\") ? dir : dir + "/";
     }
 }

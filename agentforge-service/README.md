@@ -1,5 +1,44 @@
 # AgentForge Service
 
+## Database modes
+
+The service starts on **SQLite by default**; no external database is required:
+
+```text
+agentforge-service/data/agentforge.db
+```
+
+The service does **not** create tables at startup. Run the migration script once before the first
+start (and after each SQL change):
+
+```bash
+cd agentforge-service
+./bin/local/upgrate-sqlite.sh
+```
+
+Switch to MySQL without changing code:
+
+```bash
+# SQLite (default)
+AGENTFORGE_DB_TYPE=sqlite
+
+# MySQL
+AGENTFORGE_DB_TYPE=mysql
+AGENTFORGE_DB_URL='jdbc:mysql://127.0.0.1:3306/agentforge?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true'
+AGENTFORGE_DB_USERNAME=root
+AGENTFORGE_DB_PASSWORD=123456
+```
+
+Mapper XMLs are maintained per dialect:
+
+| Database | Mapper location | Incremental SQL |
+| --- | --- | --- |
+| SQLite | `src/main/resources/sqlliteMapper/<业务>/*.xml` | `sql/sqllite/<version>/*.sql` (`bin/local/upgrate-sqlite.sh`) |
+| MySQL | `src/main/resources/mapper/<业务>/*.xml` | `sql/increment/<version>/*.sql` (`bin/local/upgrate-sql.sh`) |
+
+SQLite applied scripts are recorded in `agentforge_schema_history`. The service does **not** migrate
+at startup; local runs and Docker deploy/upgrade execute the SQLite migration script explicitly.
+
 ## Start backend
 
 配置与日志统一放在 `agentforge-service/conf/` 目录（由 `SystemPropertyUtil` 在启动时解析）：
@@ -13,6 +52,7 @@ cp agentforge-service/conf/application.yml.example \
 export AGENTFORGE_MODEL_API_KEY=your-api-key
 mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
 cd agentforge-service
+./bin/local/upgrate-sqlite.sh
 java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 ```
 
@@ -25,6 +65,12 @@ The default [OI]-compatible endpoint is `https://tokenrhythm.studio/v1` and the 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `SERVER_PORT` | `8080` | Backend HTTP port |
+| `AGENTFORGE_DB_TYPE` | `sqlite` | Database mode: `sqlite` or `mysql` |
+| `AGENTFORGE_SQLITE_PATH` | `data/agentforge.db` | SQLite database file |
+| `AGENTFORGE_SQLITE_INCREMENT_DIR` | `sql/sqllite` | SQLite incremental SQL directory |
+| `AGENTFORGE_DB_URL` | local MySQL URL | MySQL JDBC URL |
+| `AGENTFORGE_DB_USERNAME` | `root` | MySQL username |
+| `AGENTFORGE_DB_PASSWORD` | `123456` | MySQL password |
 | `AGENTFORGE_MODEL_BASE_URL` | `https://tokenrhythm.studio/v1` | OpenAI-compatible endpoint |
 | `AGENTFORGE_MODEL_API_KEY` | *(empty)* | API key, required at call time |
 | `AGENTFORGE_MODEL_NAME` | `deepseek-flash` | Model name |
@@ -45,6 +91,22 @@ local `@Tool` methods scanned by `LocalToolFactory`:
 
 Live tests hit the real service by default; skip with `-Dagentforge.openreach.live=false`, or point
 elsewhere with `-Dagentforge.openreach.base-url=<url>`.
+
+## Docker (all-in-one)
+
+The image contains the backend, frontend and SQLite. Runtime data stays under `docker/data/`:
+
+```bash
+cd agentforge-service/docker
+cp .env.example .env
+./scripts/deploy.sh        # build + migrate + start on http://127.0.0.1:18080
+./scripts/upgrade.sh 1.0.1 # backup + migrate + recreate with the new tag
+./scripts/upgrade-sql.sh   # only execute SQLite incremental SQL
+./scripts/package.sh 1.0.0 # export an offline image tar
+```
+
+`docker/conf/application.yml` and `docker/conf/logback.xml` are generated on first run and mounted
+into the container, so they can be edited without rebuilding. See `docker/README.md` for details.
 
 ## Start frontend
 

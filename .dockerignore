@@ -1,0 +1,37 @@
+# Git / IDE
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+
+# Build outputs
+**/target
+**/node_modules
+**/dist
+target
+
+# Runtime data (never bake local databases, logs or uploads into the image)
+agentforge-service/data
+agentforge-service/logs
+agentforge-service/upload
+agentforge-service/temp
+agentforge-service/sql/local
+agentforge-service/bin/local/deploy.conf
+agentforge-service/docker/.env
+agentforge-service/docker/backups
+agentforge-service/docker/conf
+agentforge-service/docker/dist
+agentforge-service/docker/data
+agentforge-service/docker/logs
+agentforge-service/docker/upload
+
+# Content not needed by the build
+docs
+website
+codes
+assets
+scripts
+run
+**/*.md
+!agentforge-service/agentforge-service-web/src/main/resources/**/*.md
