@@ -17,5 +17,5 @@ esac
 
 log "running SQLite migration inside a one-off container"
 compose stop agentforge >/dev/null 2>&1 || true
-compose run --rm --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge
+compose run --rm -T --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge
 log "SQLite migration finished"
