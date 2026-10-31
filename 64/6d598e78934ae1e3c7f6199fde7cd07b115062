@@ -1,0 +1,19 @@
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/config/WebStaticConfiguration.java
+  s_167291194df912::t_1d311dd1f86029 53-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "646d598e78934ae1e3c7f6199fde7cd07b115062",
+  "prompts": {},
+  "sessions": {
+    "s_167291194df912": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18d1b-b93a-7073-9715-d7df00f6cc10",
+        "model": "unknown"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
