@@ -50,6 +50,8 @@ public class WebStaticConfiguration implements WebMvcConfigurer {
         }
         log.info("Serving frontend static resources from {}", staticRoot.getAbsolutePath());
         registry.addResourceHandler("/assets/**").addResourceLocations(location + "assets/");
+        registry.addResourceHandler("/model-logos/**")
+                .addResourceLocations(location + "model-logos/");
         registry.addResourceHandler("/index.html", "/favicon.ico", "/logo.png")
                 .addResourceLocations(location);
     }
