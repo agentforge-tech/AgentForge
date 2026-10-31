@@ -19,6 +19,7 @@ import cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo;
 import cloud.changlu.agentforge.service.modules.model.domain.transfer.ModelConfigTransfer;
 import cloud.changlu.agentforge.service.modules.plugins.http.component.agent.HttpAgentToolLoader;
 import cloud.changlu.agentforge.service.modules.plugins.mcp.component.agent.McpAgentToolLoader;
+import cloud.changlu.agentforge.service.modules.trace.middleware.AgentForgeTraceMiddleware;
 import cloud.changlu.agentforge.service.plugins.openreach.OpenReachTools;
 
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ public class ReActAgentFactory {
     private final ChatMemoryProviderFactory chatMemoryProviderFactory;
     private final McpAgentToolLoader mcpAgentToolLoader;
     private final HttpAgentToolLoader httpAgentToolLoader;
+    private final AgentForgeTraceMiddleware agentTraceMiddleware;
 
     public ReActAgentFactory(
             ModelConfigMapper modelConfigMapper,
@@ -44,7 +46,8 @@ public class ReActAgentFactory {
             SessionLifecycleMiddleware sessionLifecycleMiddleware,
             ChatMemoryProviderFactory chatMemoryProviderFactory,
             McpAgentToolLoader mcpAgentToolLoader,
-            HttpAgentToolLoader httpAgentToolLoader) {
+            HttpAgentToolLoader httpAgentToolLoader,
+            AgentForgeTraceMiddleware agentTraceMiddleware) {
         this.modelConfigMapper = modelConfigMapper;
         this.openReachTools = openReachTools;
         this.streamingMiddleware = streamingMiddleware;
@@ -52,6 +55,7 @@ public class ReActAgentFactory {
         this.chatMemoryProviderFactory = chatMemoryProviderFactory;
         this.mcpAgentToolLoader = mcpAgentToolLoader;
         this.httpAgentToolLoader = httpAgentToolLoader;
+        this.agentTraceMiddleware = agentTraceMiddleware;
     }
 
     public ReActAgent createReActAgent(StandardAgentConfig standardAgentConfig) {
@@ -84,6 +88,7 @@ public class ReActAgentFactory {
                         .middleware(new LoggingIAgentMiddleware())
                         .middleware(sessionLifecycleMiddleware)
                         .middleware(streamingMiddleware)
+                        .middleware(agentTraceMiddleware)
                         .toolService(buildToolService(standardAgentConfig));
         return builder.build();
     }

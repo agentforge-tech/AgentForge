@@ -148,6 +148,22 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
         return FinishReason.OTHER;
     }
 
+    /**
+     * 读取缓存命中的输入 token：流式 usage 与 Chat Completions 一致，取自 {@code
+     * usage.prompt_tokens_details.cached_tokens}，兼容 DeepSeek 的 {@code
+     * usage.prompt_cache_hit_tokens}。
+     *
+     * @see <a href="https://platform.openai.com/docs/guides/prompt-caching">OpenAI Prompt
+     *     caching</a>
+     * @see <a href="https://api-docs.deepseek.com/guides/kv_cache">DeepSeek Context Caching</a>
+     */
+    private static long cachedTokens(Map<String, Object> usage) {
+        Map<String, Object> details = Json.object(usage.get("prompt_tokens_details"));
+        long cached = details == null ? 0L : Json.longValue(details.get("cached_tokens"), 0L);
+        if (cached <= 0L) cached = Json.longValue(usage.get("prompt_cache_hit_tokens"), 0L);
+        return Math.max(0L, cached);
+    }
+
     private static HttpRequest copyWithHeader(HttpRequest source, String name, String value) {
         return HttpRequest.builder()
                 .url(source.url())
@@ -371,7 +387,8 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
                 long input = Json.longValue(usage.get("prompt_tokens"), 0L);
                 long output = Json.longValue(usage.get("completion_tokens"), 0L);
                 long total = Json.longValue(usage.get("total_tokens"), input + output);
-                tokenUsage = new TokenUsage(input, output, total);
+                long cached = cachedTokens(usage);
+                tokenUsage = new TokenUsage(input, output, total, cached);
             }
 
             List<Object> choices = Json.array(root.get("choices"));

@@ -30,7 +30,7 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 - Provider-neutral 的模型抽象，内置 OpenAI-compatible 与 Anthropic 实现
 - ReAct Agent 运行时：流式输出、ChatMemory、本地 / HTTP / MCP 工具、Middleware、重试与取消
 - 开箱即用的 AgentForge Service：模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与插件管理
-- 统一 SSE 事件协议，MySQL 持久化 ChatMemory，会话事件可重放，调试与优雅双渲染模式
+- 统一 SSE 事件协议，SQLite / MySQL 持久化 ChatMemory，会话事件可重放，调试与优雅双渲染模式
 - Harness 运行时与高级可观测能力在路线图中
 
 ---
@@ -84,7 +84,7 @@ AgentForge
 | `agentforge-model-registry` | `LlmFactory` 按 provider 构建 ChatModel / StreamingChatModel |
 | `agentforge-agent-core` | ReAct 主循环（同步 / 流式）、可插拔 `ChatMemory` / `ChatMemoryStore`、窗口记忆、本地 / HTTP / MCP 工具、工具调用回合、Middleware 链路、重试与取消 |
 | `agentforge-harness-agent` | 基于核心 Agent 的 Harness 运行时（设计阶段）：权限、工具审批、Human-in-the-loop、沙箱、Trace、可恢复执行 |
-| `agentforge-service` | 可运行的 Agent 工作台：模型配置、Agent 配置 / 调试 / 版本 / 发布、会话与重放、MySQL ChatMemory、HTTP / MCP 插件、统一 SSE（Vue 前端 + Spring Boot 后端） |
+| `agentforge-service` | 可运行的 Agent 工作台：模型配置、Agent 配置 / 调试 / 版本 / 发布、会话与重放、SQLite / MySQL 持久化、HTTP / MCP 插件、统一 SSE（Vue 前端 + Spring Boot 后端） |
 
 ### AgentForge Service
 
@@ -102,7 +102,7 @@ AgentForge
 | 版本历史 | `ai_agent_config_version` 版本快照、可编辑版本备注、历史版本切换与左右对比 |
 | 发布快照 | `ai_agent_config_published` 隔离线上配置与编辑中配置；发布 / 取消发布会失效运行时实例缓存 |
 | 会话与重放 | `ai_agent_session` / `ai_agent_session_message` 保存会话标题、置顶、消息与 SSE 事件快照，支持历史重放 |
-| ChatMemory | `ai_agent_memrory` 通过可插拔 `ChatMemoryStore` 持久化模型上下文（默认内存实现，Service 使用 MySQL） |
+| ChatMemory | `ai_agent_memrory` 通过可插拔 `ChatMemoryStore` 持久化模型上下文（默认内存实现，Service 默认 SQLite，可切 MySQL） |
 | HTTP 插件 | HTTP 插件 / 方法 / 参数三层模型，支持 curl 与 JSON 导入、在线试运行、工具名 `{alias}__{method}` |
 | MCP 插件 | MCP 插件 / Server 管理、`mcpServers` 一键导入导出、工具探测、多 Server 聚合与单 Server 失败隔离 |
 | 流式交互 | 统一 SSE 事件（`session` / `think` / `resp` / `tool_call` / `resp_end` / `error`）、Markdown 流式渲染与 `__thought` 工具意图 |
@@ -211,12 +211,19 @@ cp agentforge-service/conf/application.yml.example agentforge-service/conf/appli
 export AGENTFORGE_MODEL_API_KEY=your-api-key
 mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
 cd agentforge-service
+./bin/local/upgrate-sqlite.sh
 java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 
 # 前端（Vue 2 + Vite，默认 5173，代理 /api 到 8080）
 cd agentforge-service/agentforge-service-ui
 npm install && npm run dev
+
+# 一体化 Docker（后端 + 前端 + SQLite，默认 18080）
+cd agentforge-service/docker && ./scripts/deploy.sh
 ```
+
+服务默认使用 SQLite（`agentforge-service/data/agentforge.db`），设置 `AGENTFORGE_DB_TYPE=mysql`
+可切换 MySQL。服务启动不会自动建表，首次启动前需执行一次 SQLite 迁移脚本。
 
 前端页面包括模型管理（`/`）、Agent（`/agents`）、HTTP 插件（`/http-plugins`）、MCP 插件（`/mcp`）与发布对话页（`/agent/published/{aid}`）。详见 [agentforge-service/README.md](agentforge-service/README.md)。
 

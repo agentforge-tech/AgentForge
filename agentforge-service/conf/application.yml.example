@@ -3,37 +3,84 @@
 #   cp conf/application.yml.example conf/application.yml
 # Then adjust the values below (or override them with environment variables).
 # The service reads this file from ${user.dir.conf}/application.yml at startup.
+#
+# Database switch:
+#   AGENTFORGE_DB_TYPE=sqlite   # default, file stored in data/agentforge.db
+#   AGENTFORGE_DB_TYPE=mysql    # use the MySQL settings in the "mysql" profile below
 
 server:
   port: ${SERVER_PORT:8080}
 
 agentforge:
-  model:
-    # [OI]-compatible endpoint (also works for DashScope / Ollama / Xinference, etc.)
-    base-url: ${AGENTFORGE_MODEL_BASE_URL:https://tokenrhythm.studio/v1}
-    # Required at call time; leave empty and pass AGENTFORGE_MODEL_API_KEY via environment.
-    api-key: ${AGENTFORGE_MODEL_API_KEY:}
-    name: ${AGENTFORGE_MODEL_NAME:deepseek-flash}
-    temperature: ${AGENTFORGE_MODEL_TEMPERATURE:0.3}
+  file:
+    max-size: ${AGENTFORGE_FILE_MAX_SIZE:10MB}
+    local:
+      # Upload responses use these values to build a directly accessible visitUrl.
+      storage-path: ${AGENTFORGE_FILE_STORAGE_PATH:${user.dir.upload}}
+      visit-protocol: ${AGENTFORGE_FILE_VISIT_PROTOCOL:http}
+      visit-host: ${AGENTFORGE_FILE_VISIT_HOST:127.0.0.1}
+      visit-port: ${AGENTFORGE_FILE_VISIT_PORT:${server.port}}
+      visit-path: ${AGENTFORGE_FILE_VISIT_PATH:/upload}
   # OpenReach web tools (webSearch / webImageSearch / webRead / webCurl).
   # Leave empty to disable the web tools.
   openreach:
     base-url: ${OPENREACH_BASE_URL:http://openreach.changlu.cloud}
+  web:
+    # Built frontend files are served from this directory in the all-in-one image.
+    static-location: ${AGENTFORGE_STATIC_LOCATION:file:${user.dir.conf}static/}
 
 spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    # Local MySQL by default; override with environment variables when needed.
-    url: ${AGENTFORGE_DB_URL:jdbc:mysql://localhost:3306/agentforge?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
-    username: ${AGENTFORGE_DB_USERNAME:root}
-    password: ${AGENTFORGE_DB_PASSWORD:root}
+  profiles:
+    active: ${AGENTFORGE_DB_TYPE:sqlite}
+    group:
+      # Accept the common misspelling used by older deployment docs.
+      sqllite: sqlite
   mvc:
     async:
       request-timeout: 0
 
 mybatis:
-  # Mapper XML files live next to their module package (see modules/model/mapper).
-  mapper-locations: classpath*:cloud/changlu/agentforge/service/modules/**/mapper/*.xml
+  # Mapper XML files are grouped by dialect at the resources root:
+  #   mapper/<business>/*.xml         -> MySQL
+  #   sqlliteMapper/<business>/*.xml  -> SQLite
+  # The active profile below picks one group, so switching only needs AGENTFORGE_DB_TYPE.
   type-aliases-package: cloud.changlu.agentforge.service.modules.model.domain
   configuration:
     map-underscore-to-camel-case: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: sqlite
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    # Local file database. Parent directory is created by SystemPropertyUtil.
+    url: "${AGENTFORGE_SQLITE_URL:jdbc:sqlite:${AGENTFORGE_SQLITE_PATH:${user.dir.data}agentforge.db}?busy_timeout=5000&journal_mode=WAL&synchronous=NORMAL&foreign_keys=on}"
+    username: ""
+    password: ""
+    hikari:
+      # SQLite allows one writer; a single connection avoids SQLITE_BUSY under load.
+      maximum-pool-size: ${AGENTFORGE_DB_POOL_SIZE:1}
+      minimum-idle: 1
+      connection-test-query: SELECT 1
+      pool-name: agentforge-sqlite
+mybatis:
+  mapper-locations: classpath*:sqlliteMapper/**/*.xml
+
+---
+spring:
+  config:
+    activate:
+      on-profile: mysql
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # Local MySQL by default; override with environment variables when needed.
+    url: ${AGENTFORGE_DB_URL:jdbc:mysql://localhost:3306/agentforge?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${AGENTFORGE_DB_USERNAME:root}
+    password: ${AGENTFORGE_DB_PASSWORD:123456}
+    hikari:
+      maximum-pool-size: ${AGENTFORGE_DB_POOL_SIZE:10}
+      pool-name: agentforge-mysql
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml

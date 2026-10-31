@@ -157,9 +157,39 @@ server tool blocks
 
 <br/>
 
-## 3.3、usage
+## 3.3、usage 与缓存命中（Token 统计口径）
 
-`input_tokens` / `output_tokens`；官方还可能返回 cache token、server tool usage 等扩展字段。
+Anthropic 把**输入 Token 拆成三段**，这是与 OpenAI 最大的差异：
+
+```json
+{
+  "usage": {
+    "input_tokens": 50,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 200000,
+    "output_tokens": 320
+  }
+}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `input_tokens` | **最后一个缓存断点之后**、既未命中缓存也未写入缓存的输入 Token（不是全部输入） |
+| `cache_read_input_tokens` | 命中缓存并读取的输入 Token（即缓存命中量） |
+| `cache_creation_input_tokens` | 本次写入缓存的输入 Token（等于 `cache_creation` 下 5 分钟 / 1 小时明细之和） |
+| `output_tokens` | 输出 Token |
+
+### Token 计算步骤
+
+1. **总输入 Token** = `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`。
+2. **输出 Token** = `output_tokens`。
+3. **总 Token** = 总输入 Token + `output_tokens`。
+4. **缓存命中 Token** = `cache_read_input_tokens`；`cache_creation_input_tokens` 是缓存**写入**，不能计入命中。
+5. **缓存命中率** = `cache_read_input_tokens / 总输入 Token`。
+
+> 官方示例：缓存 200k 文档 + 50 Token 提问时，`input_tokens` 只有 50，而总输入是 200,050。若直接把 `input_tokens` 当输入总量，命中缓存时会被严重低估。
+
+> AgentForge 的映射：`TokenUsage.inputTokens` 存**总输入 Token**（三段之和）、`cachedTokens` 存 `cache_read_input_tokens`，命中率统一按 `cachedTokens / inputTokens` 计算，与 OpenAI 口径保持一致。
 
 ---
 
@@ -188,13 +218,15 @@ data: {"type":"message_stop"}
 
 | 事件 | 含义 |
 |---|---|
-| `message_start` | 开始，携带 message 元信息与 `usage.input_tokens` |
+| `message_start` | 开始，携带 message 元信息与 `usage.input_tokens` / `cache_read_input_tokens` / `cache_creation_input_tokens` |
 | `content_block_start` | 开始一个 content block（含 `tool_use` 的 `id` / `name` / 初始 `input`） |
 | `content_block_delta` | 增量：`text_delta` 或 `input_json_delta` |
 | `content_block_stop` | 块结束 |
-| `message_delta` | 携带 `delta.stop_reason` 与 `usage.output_tokens` |
+| `message_delta` | 携带 `delta.stop_reason` 与**累计** `usage.output_tokens` |
 | `message_stop` | 消息结束 |
 | `error` | 错误事件 |
+
+> **流式 usage 合并规则**：输入侧三段（`input_tokens` / `cache_read_input_tokens` / `cache_creation_input_tokens`）来自 `message_start`，输出侧 `output_tokens` 来自 `message_delta` 且为累计值。合并时逐字段覆盖、缺失字段保留前值，最后再按 3.3 的步骤计算总输入与缓存命中率，不能用单个事件的 `usage` 直接覆盖整体。
 
 <br/>
 
@@ -494,7 +526,7 @@ bash docs/dev/backend/AgentForge核心模块设计原理/01、model模型协议�
 2. **system**：顶层字段，不是 role message。
 3. **content**：block 数组（`text` / `tool_use` / `tool_result` / …）。
 4. **请求**：`model` + 必填 `max_tokens` + 采样/工具参数。
-5. **响应**：`content[]` + `stop_reason` + `usage`。
+5. **响应**：`content[]` + `stop_reason` + `usage`；总输入 = `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`，命中量取 `cache_read_input_tokens`。
 6. **流式**：带事件名的 SSE；工具参数按 block `index` 聚合 `input_json_delta`。
 7. **工具**：`tool_use`（`input` 为对象）→ `tool_result`（以 `user` 角色回填）。
 
@@ -511,6 +543,8 @@ bash docs/dev/backend/AgentForge核心模块设计原理/01、model模型协议�
 [3]. [Server-Sent Events（MDN）](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
 
 [4]. 相关内部文档：[AgentForge Anthropic 接入核心实践](Anthropic%E5%8D%8F%E8%AE%AE02%E3%80%81AgentForge%20Anthropic%E6%8E%A5%E5%85%A5%E6%A0%B8%E5%BF%83%E5%AE%9E%E8%B7%B5.md)
+
+[5]. [Anthropic Prompt caching（Tracking cache performance）](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#tracking-cache-performance)
 
 <br/>
 

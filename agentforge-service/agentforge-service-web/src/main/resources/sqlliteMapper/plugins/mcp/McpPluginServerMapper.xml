@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.plugins.mcp.dao.McpPluginServerMapper">
+
+    <resultMap id="McpPluginServerResult"
+               type="cloud.changlu.agentforge.service.modules.plugins.mcp.domain.pojo.McpPluginServerPojo">
+        <id property="id" column="id"/>
+        <result property="pluginId" column="plugin_id"/>
+        <result property="serverName" column="server_name"/>
+        <result property="serverUrl" column="server_url"/>
+        <result property="transportType" column="transport_type"/>
+        <result property="headers" column="headers"/>
+        <result property="status" column="status"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="selectMcpPluginServerVo">
+        select id, plugin_id, server_name, server_url, transport_type, headers, status,
+               create_user_id, is_deleted, create_time, modify_time
+        from ai_plugin_mcp_server
+    </sql>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="McpPluginServerResult">
+        <include refid="selectMcpPluginServerVo"/>
+        where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectByPluginId" resultMap="McpPluginServerResult">
+        <include refid="selectMcpPluginServerVo"/>
+        where plugin_id = #{pluginId} and is_deleted = 0
+        <if test="onlyEnabled">and status = 1</if>
+        order by id asc
+    </select>
+
+    <select id="selectByPluginIds" resultMap="McpPluginServerResult">
+        <include refid="selectMcpPluginServerVo"/>
+        where is_deleted = 0
+        <if test="onlyEnabled">and status = 1</if>
+        and plugin_id in
+        <foreach collection="pluginIds" item="pluginId" open="(" separator="," close=")">
+            #{pluginId}
+        </foreach>
+        order by id asc
+    </select>
+
+    <select id="selectByIds" resultMap="McpPluginServerResult">
+        <include refid="selectMcpPluginServerVo"/>
+        where is_deleted = 0 and id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by id asc
+    </select>
+
+    <sql id="pageConditions">
+        <where>
+            s.is_deleted = 0
+            <if test="query.pluginId != null">and s.plugin_id = #{query.pluginId}</if>
+            <if test="query.serverName != null and query.serverName != ''">
+                and s.server_name like '%' || #{query.serverName} || '%'
+            </if>
+            <if test="query.transportType != null">
+                and s.transport_type = #{query.transportType}
+            </if>
+            <if test="query.status != null">and s.status = #{query.status}</if>
+            <if test="pluginIds != null">
+                and s.plugin_id in
+                <foreach collection="pluginIds" item="pluginId" open="(" separator="," close=")">
+                    #{pluginId}
+                </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectCount" resultType="long">
+        select count(1) from ai_plugin_mcp_server s
+        <include refid="pageConditions"/>
+    </select>
+
+    <select id="selectPage" resultMap="McpPluginServerResult">
+        select s.id, s.plugin_id, s.server_name, s.server_url, s.transport_type, s.headers,
+               s.status, s.create_user_id, s.is_deleted, s.create_time, s.modify_time
+        from ai_plugin_mcp_server s
+        <include refid="pageConditions"/>
+        order by s.modify_time desc, s.id desc
+        limit #{query.pageSize} offset #{query.start}
+    </select>
+
+    <select id="countByServerName" resultType="long">
+        select count(1)
+        from ai_plugin_mcp_server
+        where is_deleted = 0
+          and plugin_id = #{pluginId}
+          and server_name = #{serverName}
+        <if test="excludeId != null">and id != #{excludeId}</if>
+    </select>
+
+    <insert id="insert"
+            parameterType="cloud.changlu.agentforge.service.modules.plugins.mcp.domain.pojo.McpPluginServerPojo"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into ai_plugin_mcp_server
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="pluginId != null">plugin_id,</if>
+            <if test="serverName != null and serverName != ''">server_name,</if>
+            <if test="serverUrl != null and serverUrl != ''">server_url,</if>
+            <if test="transportType != null">transport_type,</if>
+            <if test="headers != null">headers,</if>
+            <if test="status != null">status,</if>
+            <if test="createUserId != null">create_user_id,</if>
+            <if test="isDeleted != null">is_deleted,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="modifyTime != null">modify_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="pluginId != null">#{pluginId},</if>
+            <if test="serverName != null and serverName != ''">#{serverName},</if>
+            <if test="serverUrl != null and serverUrl != ''">#{serverUrl},</if>
+            <if test="transportType != null">#{transportType},</if>
+            <if test="headers != null">#{headers},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createUserId != null">#{createUserId},</if>
+            <if test="isDeleted != null">#{isDeleted},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="modifyTime != null">#{modifyTime},</if>
+        </trim>
+    </insert>
+
+    <update id="update"
+            parameterType="cloud.changlu.agentforge.service.modules.plugins.mcp.domain.pojo.McpPluginServerPojo">
+        update ai_plugin_mcp_server
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="serverName != null and serverName != ''">server_name = #{serverName},</if>
+            <if test="serverUrl != null and serverUrl != ''">server_url = #{serverUrl},</if>
+            <if test="transportType != null">
+                transport_type = #{transportType},
+            </if>
+            <if test="headers != null">headers = #{headers},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="modifyTime != null">modify_time = #{modifyTime},</if>
+        </trim>
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="updateStatus">
+        update ai_plugin_mcp_server
+        set status = #{status}, modify_time = current_timestamp
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="deleteById">
+        update ai_plugin_mcp_server
+        set is_deleted = 1, modify_time = current_timestamp
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="deleteByPluginId">
+        update ai_plugin_mcp_server
+        set is_deleted = 1, modify_time = current_timestamp
+        where plugin_id = #{pluginId} and is_deleted = 0
+    </update>
+
+</mapper>

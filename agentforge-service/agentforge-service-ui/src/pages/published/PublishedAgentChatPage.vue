@@ -174,15 +174,13 @@ import { replaySessionMessages } from '../../utils/sessionReplay'
 /** 输入框最大高度（px），超过后内部滚动，不再继续撑高 */
 const COMPOSER_MAX_HEIGHT = 120
 
-function resolveSessionId() {
-  return new URLSearchParams(window.location.search).get('sessionId') || ''
+function resolveSessionId(route) {
+  return route.query.sessionId || ''
 }
 
-function resolveAid() {
-  const queryAid = new URLSearchParams(window.location.search).get('aid')
-  if (queryAid) return queryAid
-  const match = window.location.pathname.match(/^\/agent\/published\/([^/]+)\/?$/)
-  return match ? decodeURIComponent(match[1]) : ''
+function resolveAid(route) {
+  if (route.params && route.params.aid) return route.params.aid
+  return route.query.aid || ''
 }
 
 export default {
@@ -190,13 +188,13 @@ export default {
   components: { AgentMessageContent, AppUserPanel },
   mixins: [chatAutoScroll],
   data: () => ({
-    aid: resolveAid(), agentBasic: null, agentLoading: false, agentError: '',
+    aid: '', agentBasic: null, agentLoading: false, agentError: '',
     draft: '', focused: false, running: false, sessionId: '', controller: null, messages: [],
     composing: false,
     topSessions: [], normalSessions: [], sessionLoading: false,
     activeSessionId: null, sessionTitle: '',
     // 支持通过 ?sessionId= 直接恢复到某个历史会话（刷新/分享链接场景）
-    pendingSessionId: resolveSessionId()
+    pendingSessionId: ''
   }),
   computed: {
     title() {
@@ -206,12 +204,29 @@ export default {
     agentAvatar() { return this.agentBasic?.avatar || '/logo.png' },
     canChat() { return Boolean(this.aid && this.agentBasic && !this.agentError) }
   },
-  created() {
-    this.loadAgentBasic().then(() => this.loadSessions())
-    window.addEventListener('popstate', this.handlePopState)
+  watch: {
+    '$route.query.sessionId'(value) {
+      this.handleRouteSession(value || '')
+    }
   },
-  beforeDestroy() {
-    window.removeEventListener('popstate', this.handlePopState)
+  beforeRouteUpdate(to, from, next) {
+    const aid = resolveAid(to)
+    if (aid !== this.aid) {
+      this.aid = aid
+      this.agentBasic = null
+      this.agentError = ''
+      this.messages = []
+      this.sessionId = ''
+      this.sessionTitle = ''
+      this.activeSessionId = null
+      this.loadAgentBasic().then(() => this.loadSessions())
+    }
+    next()
+  },
+  created() {
+    this.aid = resolveAid(this.$route)
+    this.pendingSessionId = resolveSessionId(this.$route)
+    this.loadAgentBasic().then(() => this.loadSessions())
   },
   methods: {
     async loadAgentBasic() {
@@ -235,20 +250,19 @@ export default {
       this.activeSessionId = null
       this.syncSessionToUrl('', { replace: false })
     },
-    /** 把当前会话 ID 同步到地址栏：?sessionId=xxx，便于刷新、分享和前进后退 */
+    /** 把当前会话 ID 同步到路由：?sessionId=xxx，便于刷新、分享和前进后退 */
     syncSessionToUrl(sessionId, { replace = true } = {}) {
-      const url = new URL(window.location.href)
-      if (sessionId) url.searchParams.set('sessionId', sessionId)
-      else url.searchParams.delete('sessionId')
-      const next = url.pathname + url.search
-      if (next === window.location.pathname + window.location.search) return
-      if (replace) window.history.replaceState({ sessionId: sessionId || '' }, '', next)
-      else window.history.pushState({ sessionId: sessionId || '' }, '', next)
+      const query = { ...this.$route.query }
+      if (sessionId) query.sessionId = sessionId
+      else delete query.sessionId
+      if (JSON.stringify(query) === JSON.stringify(this.$route.query)) return
+      const location = { path: this.$route.path, query }
+      const navigate = replace ? this.$router.replace(location) : this.$router.push(location)
+      navigate.catch(() => {})
     },
-    /** 浏览器前进/后退时按地址栏 sessionId 切换会话 */
-    async handlePopState() {
-      if (this.running) return
-      const wanted = resolveSessionId()
+    /** 路由中的 sessionId 变化时切换会话（浏览器前进/后退、直接访问链接） */
+    async handleRouteSession(wanted) {
+      if (this.running || wanted === this.sessionId) return
       if (!wanted) {
         this.messages = []
         this.sessionId = ''

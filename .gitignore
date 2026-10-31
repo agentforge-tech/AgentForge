@@ -44,7 +44,23 @@ bin/local/settings.xml
 # Local SQL upgrade execution records
 agentforge-service/sql/local/
 
+# Local SQLite database files
+agentforge-service/data/*.db
+agentforge-service/data/*.db-*
+
+# Docker runtime data
+agentforge-service/docker/.env
+agentforge-service/docker/backups/
+agentforge-service/docker/conf/
+agentforge-service/docker/dist/
+agentforge-service/docker/data/
+agentforge-service/docker/logs/
+agentforge-service/docker/upload/
+
 # Local database upgrade credentials
 agentforge-service/bin/local/deploy.conf
+
+# Runtime uploaded files
+agentforge-service/upload/
 
 codes/
