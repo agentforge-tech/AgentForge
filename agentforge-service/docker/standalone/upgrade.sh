@@ -63,7 +63,7 @@ DB_TYPE="$(env_get AGENTFORGE_DB_TYPE sqlite)"
 case "$DB_TYPE" in
     sqlite|sqllite|sqlite3)
         log "执行 SQLite 增量迁移"
-        compose run --rm -T --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge-service
+        compose run --rm -T --interactive=false --no-deps --entrypoint /opt/agentforge/bin/upgrade-sql.sh agentforge-service
         ;;
     *) log "当前使用 ${DB_TYPE}，跳过 SQLite 迁移" ;;
 esac
