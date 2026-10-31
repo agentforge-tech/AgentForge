@@ -6,6 +6,38 @@
         <el-select v-model="mode" size="mini" class="agent-debug-mode" aria-label="调试展示模式">
           <el-option v-for="item in renderModes" :key="item.key" :label="item.label" :value="item.key" />
         </el-select>
+        <div ref="history" class="agent-debug-history">
+          <button
+            class="agent-debug-clear-btn agent-debug-history-btn"
+            :class="{ 'is-active': historyOpen }"
+            type="button"
+            title="历史调试会话"
+            aria-label="历史调试会话"
+            @click.stop="toggleHistory"
+          >
+            <i class="el-icon-time"></i>
+          </button>
+          <div v-if="historyOpen" class="agent-debug-history-panel" @click.stop>
+            <header><b>历史调试会话</b><button type="button" aria-label="关闭" @click="closeHistory">×</button></header>
+            <div class="agent-debug-history-list">
+              <div v-if="historyLoading" class="agent-debug-history-tip">加载中...</div>
+              <template v-else>
+                <button
+                  v-for="item in historySessions"
+                  :key="item.id"
+                  type="button"
+                  :class="['agent-debug-history-item', { 'is-active': item.sessionId === sessionId }]"
+                  :title="item.title"
+                  @click="openSession(item)"
+                >
+                  <span class="agent-debug-history-title">{{ item.title || '未命名会话' }}</span>
+                  <span class="agent-debug-history-time">{{ formatSessionTime(item) }}</span>
+                </button>
+                <div v-if="!historySessions.length" class="agent-debug-history-tip">暂无历史调试会话</div>
+              </template>
+            </div>
+          </div>
+        </div>
         <button class="agent-debug-clear-btn" type="button" title="清空当前会话" aria-label="清空当前会话" @click="newSession">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20 7v5h-5" />
@@ -71,6 +103,8 @@
 import { RENDER_MODES, DEFAULT_RENDER_MODE } from '../../modes'
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
 import chatAutoScroll from '../../utils/chatAutoScroll'
+import { fetchSessionList, fetchSessionMessages } from '../../utils/sessionApi'
+import { replaySessionMessages } from '../../utils/sessionReplay'
 import { postSse } from '../../utils/sse'
 
 const MODE_KEY = 'agentforge.render.mode'
@@ -83,14 +117,20 @@ export default {
     agentName: { type: String, default: '' },
     agentAvatar: { type: String, default: '/logo.png' }
   },
-  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', composing: false, running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [] } },
+  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', composing: false, running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [], historyOpen: false, historyLoading: false, historySessions: [] } },
   computed: {
     renderModes() { return RENDER_MODES },
     displayAgentName() { return this.agentName || 'AgentForge' }
   },
-  watch: { mode(value) { localStorage.setItem(MODE_KEY, value) } },
+  watch: {
+    mode(value) { localStorage.setItem(MODE_KEY, value) },
+    aid() { this.closeHistory() }
+  },
   created() { localStorage.setItem(MODE_KEY, this.mode) },
-  beforeDestroy() { if (this.controller) this.controller.abort() },
+  beforeDestroy() {
+    if (this.controller) this.controller.abort()
+    document.removeEventListener('click', this.onDocumentClick)
+  },
   methods: {
     onEnter(event) {
       // 中文等输入法正在组词时，Enter 只用于确认候选词，不发送消息。
@@ -111,6 +151,7 @@ export default {
       } finally {
         if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
         if (requestVersion === this.requestVersion) { this.running = false; this.controller = null; this.scroll() }
+        if (this.historyOpen) this.loadHistory()
       }
     },
     createSessionId() { return 'agent-debug-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) },
@@ -121,6 +162,52 @@ export default {
       if (this.running && oldSessionId) fetch(`/api/chat/stop?sessionId=${encodeURIComponent(oldSessionId)}`, { method: 'POST' }).catch(() => {})
       this.controller = null; this.running = false; this.messages = []; this.draft = ''; this.sessionId = this.createSessionId(); this.resetScrollFollow()
       this.$message.success('已新建会话')
+    },
+    toggleHistory() {
+      if (this.historyOpen) { this.closeHistory(); return }
+      this.historyOpen = true
+      this.loadHistory()
+      document.addEventListener('click', this.onDocumentClick)
+    },
+    closeHistory() {
+      this.historyOpen = false
+      document.removeEventListener('click', this.onDocumentClick)
+    },
+    onDocumentClick(event) {
+      const root = this.$refs.history
+      if (!root || !root.contains(event.target)) this.closeHistory()
+    },
+    async loadHistory() {
+      if (!this.aid) { this.historySessions = []; return }
+      this.historyLoading = true
+      try {
+        const list = await fetchSessionList(this.aid, 20, true)
+        this.historySessions = (list || []).filter((item) => item.isDebug === 1)
+      } catch (e) {
+        this.$message.error(e.message || '历史会话加载失败')
+      } finally {
+        this.historyLoading = false
+      }
+    },
+    async openSession(item) {
+      if (!item || this.running) return
+      ++this.requestVersion
+      this.closeHistory()
+      this.sessionId = item.sessionId
+      try {
+        const records = await fetchSessionMessages(item.id)
+        this.messages = replaySessionMessages(records)
+        this.resetScrollFollow()
+        this.scroll()
+      } catch (e) {
+        this.$message.error(e.message || '会话加载失败')
+      }
+    },
+    formatSessionTime(item) {
+      const raw = item.lastMessageAt || item.modifyTime || item.createTime
+      if (!raw) return ''
+      const text = String(raw).replace('T', ' ').replace(/\..*$/, '').replace(/[+-]\d{2}:?\d{2}$/, '')
+      return text.slice(0, 16)
     },
     handleEvent(answer, event) {
       switch (event.event) {

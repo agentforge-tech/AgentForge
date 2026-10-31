@@ -1,0 +1,37 @@
+name: ${COMPOSE_PROJECT_NAME:-agentforge}
+
+services:
+  agentforge:
+    image: ${IMAGE_REPO:-codercl/agentforge-service}:${IMAGE_TAG:-latest}
+    container_name: ${APP_NAME:-agentforge}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      SERVER_PORT: "8080"
+      AGENTFORGE_DB_TYPE: ${AGENTFORGE_DB_TYPE:-sqlite}
+      AGENTFORGE_SQLITE_PATH: ${AGENTFORGE_SQLITE_PATH:-/opt/agentforge/data/agentforge.db}
+      AGENTFORGE_SQLITE_INCREMENT_DIR: ${AGENTFORGE_SQLITE_INCREMENT_DIR:-/opt/agentforge/sql/sqllite}
+      AGENTFORGE_DB_URL: ${AGENTFORGE_DB_URL:-}
+      AGENTFORGE_DB_USERNAME: ${AGENTFORGE_DB_USERNAME:-}
+      AGENTFORGE_DB_PASSWORD: ${AGENTFORGE_DB_PASSWORD:-}
+      AGENTFORGE_DB_POOL_SIZE: ${AGENTFORGE_DB_POOL_SIZE:-10}
+      OPENREACH_BASE_URL: ${OPENREACH_BASE_URL:-}
+      AGENTFORGE_FILE_VISIT_PROTOCOL: ${AGENTFORGE_FILE_VISIT_PROTOCOL:-http}
+      AGENTFORGE_FILE_VISIT_HOST: ${AGENTFORGE_FILE_VISIT_HOST:-127.0.0.1}
+      AGENTFORGE_FILE_VISIT_PORT: ${AGENTFORGE_FILE_VISIT_PORT:-18080}
+      AGENTFORGE_FILE_VISIT_PATH: ${AGENTFORGE_FILE_VISIT_PATH:-/upload}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
+    ports:
+      - "${WEB_PORT:-18080}:8080"
+    volumes:
+      - ./conf/application.yml:/opt/agentforge/conf/application.yml:ro
+      - ./conf/logback.xml:/opt/agentforge/conf/logback.xml:ro
+      - ./data:/opt/agentforge/data
+      - ./logs:/opt/agentforge/logs
+      - ./upload:/opt/agentforge/upload
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/model-config/options"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s

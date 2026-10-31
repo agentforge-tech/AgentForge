@@ -31,7 +31,8 @@ public class AgentSessionController {
     @PostMapping("/sessionList")
     public List<SessionVo> sessionList(@RequestBody(required = false) SessionListReq req) {
         SessionListReq query = req == null ? new SessionListReq() : req;
-        return agentSessionService.listNormal(query.getAid(), currentUserId(), query.getLimit());
+        return agentSessionService.listNormal(
+                query.getAid(), currentUserId(), query.getDebug(), query.getLimit());
     }
 
     @PostMapping("/topList")

@@ -2,14 +2,14 @@
   <div class="af-models" :class="{ 'af-models--nav-open': navOpen }">
     <div v-if="navOpen" class="af-sidebar-backdrop" @click="navOpen = false"></div>
 
-    <AppSidebar active="models" />
+    <AppSidebar />
 
     <!-- ------------------------------ 主工作区 ------------------------------ -->
     <main class="af-workspace">
       <header class="af-topbar">
         <div class="af-crumb">
           <el-button class="af-mobile-menu" type="text" icon="el-icon-s-fold" aria-label="打开导航菜单" @click="navOpen = true" />
-          <span>我的资源库</span>
+          <span>Agent组件</span>
           <span class="af-crumb__sep">/</span>
           <span class="af-crumb__current">模型列表</span>
         </div>
@@ -206,7 +206,7 @@ import {
   deleteModel,
   testConnectivity,
   testFunctionCall
-} from './api'
+} from '../../api/model'
 
 const PROVIDER_COLORS = {
   1: '#10a37f',

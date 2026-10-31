@@ -23,7 +23,7 @@
           rel="noopener"
           :title="'最新发布 ' + lastPublishTimeText"
         >
-          <i class="el-icon-link"></i>访问发布页面
+          <i class="el-icon-link"></i>打开发布链接<i class="el-icon-top-right agent-config-visit__external"></i>
         </a>
 
         <el-button
@@ -106,6 +106,9 @@
 
           <el-form :model="form" label-width="112px" class="agent-config-form" @submit.native.prevent>
             <!-- Agent 描述统一在「Agent 列表」卡片编辑弹窗维护，这里不再重复 -->
+            <el-form-item label="Agent 头像">
+              <ImageUploadField v-model="form.avatar" round placeholder-icon="el-icon-user" />
+            </el-form-item>
             <el-form-item label="Agent 名称">
               <el-input v-model.trim="form.name" placeholder="请输入 Agent 名称" />
             </el-form-item>
@@ -173,7 +176,7 @@
                     </div>
                   </template>
                   <ul class="agent-mcp-servers">
-                    <li v-for="method in boundHttpMethods(item)" :key="method.id"><i class="el-icon-link"></i><span>{{ method.displayName || method.methodName }}</span><code>{{ method.toolName }}</code></li>
+                    <li v-for="method in boundHttpMethods(item)" :key="method.id" :title="method.toolName"><i class="el-icon-link"></i><span class="agent-mcp-servers__name">{{ method.displayName || method.methodName }}</span><code class="agent-mcp-servers__code">{{ method.toolName }}</code><el-button type="text" class="af-text-danger agent-mcp-servers__remove" title="移除该工具" @click.stop="removeHttpMethod(item.pluginId, method.id)"><i class="el-icon-close"></i></el-button></li>
                   </ul>
                 </el-collapse-item>
               </el-collapse>
@@ -214,7 +217,7 @@
         v-if="!loading"
         :aid="detail.aid"
         :agent-name="form.name"
-        :agent-avatar="detail.avatar || '/logo.png'"
+        :agent-avatar="form.avatar || '/logo.png'"
       />
       <aside v-else class="agent-config-panel agent-debug agent-debug-skeleton">
         <div class="agent-config-panel__head">
@@ -501,14 +504,15 @@
 </template>
 
 <script>
-import { fetchAgentVersions, fetchChatModels, getAgent, getAgentVersion, switchAgentVersion, updateAgentPublish, updateAgentVersionRemark, upsertAgent } from './api'
-import { fetchMcpPlugins } from '../mcp/api'
-import { fetchHttpPluginOptions } from '../http/api'
+import { fetchAgentVersions, fetchChatModels, getAgent, getAgentVersion, switchAgentVersion, updateAgentPublish, updateAgentVersionRemark, upsertAgent } from '../../api/agent'
+import { fetchMcpPlugins } from '../../api/mcp'
+import { fetchHttpPluginOptions } from '../../api/httpPlugin'
 import AgentDebugPanel from './AgentDebugPanel.vue'
+import ImageUploadField from '../../components/ImageUploadField.vue'
 
 export default {
   name: 'AgentConfigPage',
-  components: { AgentDebugPanel },
+  components: { AgentDebugPanel, ImageUploadField },
   data() {
     return {
       loading: true,
@@ -553,6 +557,7 @@ export default {
       form: {
         id: null,
         name: '',
+        avatar: '',
         description: '',
         modelId: null,
         systemPrompt: '',
@@ -567,7 +572,7 @@ export default {
   computed: {
     isPublished() { return Number(this.detail.publish) === 1 },
     isDirty() { return Boolean(this.baseline) && JSON.stringify(this.form) !== this.baseline },
-    publishedChatUrl() { return '/agent/published/' + encodeURIComponent(this.detail.aid || '') },
+    publishedChatUrl() { return this.$router.resolve({ name: 'published-agent', params: { aid: this.detail.aid || '' } }).href },
     lastPublishTimeText() { return this.formatTime(this.detail.lastPublishTime) },
     httpFilteredPlugins() {
       const kw = this.httpKeyword.trim().toLowerCase()
@@ -608,9 +613,9 @@ export default {
     mcpPageSize() { this.mcpPage = 1 }
   },
   async created() {
-    const id = new URLSearchParams(window.location.search).get('id')
+    const id = this.$route.query.id
     if (!id) {
-      window.location.href = '/agents'
+      this.$router.replace('/agents')
       return
     }
     try {
@@ -632,12 +637,13 @@ export default {
     }
   },
   methods: {
-    backToList() { window.location.href = '/agents' },
+    backToList() { this.$router.push('/agents') },
     applyDetail(detail) {
       this.detail = detail
       this.form = {
         id: detail.id,
         name: detail.name,
+        avatar: detail.avatar || '',
         description: detail.description || '',
         modelId: detail.modelId,
         systemPrompt: detail.systemPrompt || '',
@@ -673,6 +679,16 @@ export default {
     httpPluginName(pluginId) { const plugin = this.httpPlugins.find((item) => Number(item.id) === Number(pluginId)); return plugin ? plugin.name : '插件 #' + pluginId },
     boundHttpMethods(item) { const plugin = this.httpPlugins.find((entry) => Number(entry.id) === Number(item.pluginId)); const methods = (plugin && plugin.methods) || []; const ids = (item.pluginMethodIds || []).map(Number); return ids.length ? methods.filter((method) => ids.includes(Number(method.id))) : methods },
     removeHttpPlugin(pluginId) { this.form.httpPlugins = this.form.httpPlugins.filter((item) => Number(item.pluginId) !== Number(pluginId)) },
+    removeHttpMethod(pluginId, methodId) {
+      const item = this.form.httpPlugins.find((entry) => Number(entry.pluginId) === Number(pluginId))
+      if (!item) return
+      if (!(item.pluginMethodIds || []).length) {
+        const plugin = this.httpPlugins.find((entry) => Number(entry.id) === Number(pluginId))
+        item.pluginMethodIds = ((plugin && plugin.methods) || []).map((method) => method.id)
+      }
+      item.pluginMethodIds = item.pluginMethodIds.filter((id) => Number(id) !== Number(methodId))
+      if (!item.pluginMethodIds.length) this.removeHttpPlugin(pluginId)
+    },
     // ---------- MCP 选择 ----------
     async openMcpPicker() {
       this.mcpPickerVisible = true
@@ -977,13 +993,13 @@ export default {
 </script>
 
 <style lang="scss">
-@use '../models/styles/tokens' as *;
+@use '../../styles/admin/tokens' as *;
 .agent-config-page { min-height: 100vh; background: #f5f7fa; color: $color-text; }
 .agent-config-head { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 20px 0 24px; border-bottom: 1px solid $color-border; background: #fff; }
 .agent-config-head__main { display: flex; min-width: 0; align-items: center; gap: 10px; }
 .agent-config-head__main > .el-button + * { margin-left: 0; }
 .agent-config-back { padding: 0 2px; color: $color-text-secondary; font-size: 13px; &:hover, &:focus { color: $color-brand; } }
-.agent-config-visit { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; padding-right: 4px; color: $color-brand-dark; font-size: 13px; text-decoration: none; transition: color .15s; i { font-size: 14px; } &:hover { color: $color-brand; text-decoration: underline; } }
+.agent-config-visit { display: inline-flex; height: 28px; align-items: center; gap: 4px; margin-left: 4px; padding: 0 11px; border: 1px solid rgba(64, 128, 255, .38); border-radius: 6px; background: rgba(64, 128, 255, .09); color: $color-brand-dark; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s, border-color .15s, color .15s; i { font-size: 14px; } &__external { margin-left: 1px; font-size: 12px; opacity: .75; } &:hover { border-color: $color-brand; background: $color-brand; color: #fff; text-decoration: none; } }
 .agent-config-head-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
 .agent-config-head-actions > .el-button + .el-button { margin-left: 0; }
 .agent-config-head-actions .el-button-group > .el-button + .el-button { margin-left: -1px; }
@@ -1043,8 +1059,11 @@ export default {
 .agent-mcp-collapse { border: 1px solid $color-border; border-radius: 9px; overflow: hidden; .el-collapse-item__header { height: 46px; padding: 0 12px; border-bottom-color: $color-border; background: $color-sidebar; font-size: 12.5px; } .el-collapse-item__wrap { border-bottom-color: $color-border; background: #fff; } .el-collapse-item:last-child .el-collapse-item__header, .el-collapse-item:last-child .el-collapse-item__wrap { border-bottom: 0; } .el-collapse-item__content { padding-bottom: 0; } }
 .agent-mcp-item__title { display: flex; width: 100%; min-width: 0; align-items: center; gap: 8px; b { flex: 0 1 auto; min-width: 0; overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; } }
 .agent-mcp-item__remove { margin-left: auto; padding: 0 2px; font-size: 12px; }
-.agent-mcp-servers { margin: 0; padding: 8px 12px 10px 26px; list-style: none; display: flex; flex-direction: column; gap: 4px; li { display: flex; align-items: center; gap: 6px; color: $color-text-secondary; font-size: 12.5px; line-height: 1.6; i { color: $color-text-muted; font-size: 13px; } } }
+.agent-mcp-servers { margin: 0; padding: 8px 12px 10px 26px; list-style: none; display: flex; flex-direction: column; gap: 4px; li { display: flex; align-items: center; gap: 6px; min-width: 0; color: $color-text-secondary; font-size: 12.5px; line-height: 1.6; i { flex: 0 0 auto; color: $color-text-muted; font-size: 13px; } } }
+.agent-mcp-servers__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-mcp-servers__code { flex: 0 1 auto; min-width: 0; max-width: 48%; overflow: hidden; color: $color-text-muted; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .agent-mcp-servers__empty { padding: 2px 0; color: $color-text-muted; font-size: 12px; }
+.agent-mcp-servers__remove { margin-left: auto; padding: 0 2px; font-size: 12px; line-height: 1; }
 .agent-mcp-icon { position: relative; display: inline-flex; width: 38px; height: 38px; flex: 0 0 38px; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #dbe6f3; border-radius: 10px; background: linear-gradient(145deg, #edf5ff, #f8fbff); color: $color-brand; font-size: 15px; font-weight: 700; box-shadow: 0 2px 7px rgba(51, 91, 140, .08); img { position: absolute; inset: 0; width: 100%; height: 100%; background: #fff; object-fit: cover; } &--compact { width: 28px; height: 28px; flex-basis: 28px; border-radius: 7px; font-size: 12px; box-shadow: none; } }
 .agent-mcp-picker-dialog { .el-dialog__body { padding-top: 16px; padding-bottom: 12px; } .el-dialog__footer { padding-top: 12px; border-top: 1px solid $color-border; } }
 .agent-mcp-picker__body { height: 430px; margin-top: 14px; overflow-y: auto; padding: 3px 6px 3px 2px; border-radius: 10px; scrollbar-gutter: stable; }
@@ -1079,6 +1098,17 @@ export default {
 .agent-compare-details .agent-memory-config { margin-top: 12px; padding: 12px; border-radius: 8px; background: $color-sidebar; }
 .agent-debug-head { gap: 10px; }
 .agent-debug-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.agent-debug-history { position: relative; }
+.agent-debug-history-btn { font-size: 16px; }
+.agent-debug-history-btn.is-active { border-color: #8eb3e5; background: #edf4fd; color: #3b6fb6; }
+.agent-debug-history-panel { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; display: flex; width: 300px; max-width: calc(100vw - 40px); max-height: 360px; flex-direction: column; overflow: hidden; border: 1px solid $color-border; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(31, 56, 88, .16); }
+.agent-debug-history-panel header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid $color-border; b { color: $color-text; font-size: 12.5px; } button { padding: 0 4px; border: 0; background: transparent; color: $color-text-muted; cursor: pointer; font-size: 16px; line-height: 1; &:hover { color: $color-brand; } } }
+.agent-debug-history-list { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; padding: 6px; }
+.agent-debug-history-item { display: grid; gap: 3px; width: 100%; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; cursor: pointer; text-align: left; transition: background .15s; &:hover { background: $color-sidebar; } &.is-active { background: $color-brand-soft; } }
+.agent-debug-history-title { overflow: hidden; color: $color-text-secondary; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.agent-debug-history-item.is-active .agent-debug-history-title { color: $color-brand-dark; font-weight: 600; }
+.agent-debug-history-time { color: $color-text-muted; font-size: 11px; }
+.agent-debug-history-tip { padding: 18px 10px; color: $color-text-muted; font-size: 12px; text-align: center; }
 .agent-debug-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0; border: 1px solid #cbd8e9; border-radius: 5px; background: #f6f9fd; color: #657791; cursor: pointer; box-shadow: 0 1px 2px rgba(59, 111, 182, .06); transition: all .15s; svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; } &:hover { border-color: #8eb3e5; background: #edf4fd; color: #3b6fb6; box-shadow: 0 2px 6px rgba(59, 111, 182, .14); transform: translateY(-1px); } &:active { transform: translateY(0); box-shadow: none; } }
 .agent-debug { position: relative; }
 .agent-debug-feed { flex: 1; overflow-y: auto; padding: 16px 32px; }

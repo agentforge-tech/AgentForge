@@ -35,7 +35,7 @@ public class AnthropicChatModelTest {
                                 200,
                                 "{\"id\":\"msg_1\",\"type\":\"message\",\"model\":\"claude-test\","
                                         + "\"content\":[{\"type\":\"text\",\"text\":\"Hello\"},{\"type\":\"text\",\"text\":\" world\"}],"
-                                        + "\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":5,\"output_tokens\":3}}"));
+                                        + "\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":5,\"cache_read_input_tokens\":7,\"cache_creation_input_tokens\":2,\"output_tokens\":3}}"));
 
         AnthropicChatModel model =
                 AnthropicChatModel.builder()
@@ -95,9 +95,10 @@ public class AnthropicChatModelTest {
 
         assertEquals("Hello world", response.aiMessage().text());
         assertEquals(FinishReason.STOP, response.finishReason());
-        assertEquals(5L, response.tokenUsage().inputTokens());
+        assertEquals(14L, response.tokenUsage().inputTokens());
         assertEquals(3L, response.tokenUsage().outputTokens());
-        assertEquals(8L, response.tokenUsage().totalTokens());
+        assertEquals(17L, response.tokenUsage().totalTokens());
+        assertEquals(7L, response.tokenUsage().cachedTokens());
         assertEquals("msg_1", response.metadata().get("id"));
         assertEquals("claude-test", response.metadata().get("model"));
     }

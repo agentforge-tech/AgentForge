@@ -101,9 +101,16 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
     }
 
     @Override
-    public List<SessionVo> listNormal(String aid, Long createUserId, Integer limit) {
+    public List<SessionVo> listNormal(String aid, Long createUserId, Boolean debug, Integer limit) {
         int size = limit == null || limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
-        return toVoList(agentSessionMapper.selectNormalList(aid, userId(createUserId), size));
+        Integer debugFilter =
+                debug == null
+                        ? null
+                        : (debug
+                                ? SessionDebugEnum.DEBUG.getCode()
+                                : SessionDebugEnum.FORMAL.getCode());
+        return toVoList(
+                agentSessionMapper.selectNormalList(aid, userId(createUserId), debugFilter, size));
     }
 
     @Override

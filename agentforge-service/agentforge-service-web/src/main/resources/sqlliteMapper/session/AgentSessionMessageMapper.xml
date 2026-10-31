@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMessageMapper">
+
+    <resultMap id="AgentSessionMessageResult" type="cloud.changlu.agentforge.service.modules.session.domain.AgentSessionMessagePojo">
+        <id property="id" column="id"/>
+        <result property="sessionId" column="session_id"/>
+        <result property="seqNum" column="seq_num"/>
+        <result property="roleType" column="role_type"/>
+        <result property="status" column="status"/>
+        <result property="startedAt" column="started_at"/>
+        <result property="finishedAt" column="finished_at"/>
+        <result property="elapsedMs" column="elapsed_ms"/>
+        <result property="content" column="content"/>
+        <result property="events" column="events"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, session_id, seq_num, role_type, status, started_at, finished_at,
+        elapsed_ms, content, events, create_user_id, is_deleted, create_time, modify_time
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into ai_agent_session_message
+            (session_id, seq_num, role_type, status, started_at, finished_at,
+             elapsed_ms, content, events, create_user_id, is_deleted)
+        values
+            (#{sessionId}, #{seqNum}, #{roleType}, #{status}, #{startedAt}, #{finishedAt},
+             #{elapsedMs}, #{content}, #{events}, #{createUserId}, 0)
+    </insert>
+
+    <select id="selectById" resultMap="AgentSessionMessageResult">
+        select <include refid="columns"/> from ai_agent_session_message
+        where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectBySessionId" resultMap="AgentSessionMessageResult">
+        select <include refid="columns"/> from ai_agent_session_message
+        where session_id = #{sessionId} and is_deleted = 0
+        order by seq_num asc, id asc
+    </select>
+
+    <select id="selectMaxSeqNum" resultType="java.lang.Integer">
+        select max(seq_num) from ai_agent_session_message
+        where session_id = #{sessionId} and is_deleted = 0
+    </select>
+
+    <update id="updateStatus">
+        update ai_agent_session_message
+        set status = #{status}, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="updateStarted">
+        update ai_agent_session_message
+        set status = #{status}, started_at = #{startedAt}, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="finish">
+        update ai_agent_session_message
+        set status = #{status},
+        <if test="content != null">content = #{content},</if>
+        <if test="events != null">events = #{events},</if>
+        <if test="elapsedMs != null">elapsed_ms = #{elapsedMs},</if>
+        finished_at = #{finishedAt},
+        modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="logicDeleteBySessionId">
+        update ai_agent_session_message
+        set is_deleted = 1, modify_time = #{modifyTime}
+        where session_id = #{sessionId} and is_deleted = 0
+    </update>
+
+    <select id="countBySessionId" resultType="java.lang.Integer">
+        select count(1) from ai_agent_session_message
+        where session_id = #{sessionId} and is_deleted = 0
+    </select>
+
+    <select id="selectLastMessageTime" resultType="java.util.Date">
+        select max(modify_time) from ai_agent_session_message
+        where session_id = #{sessionId} and is_deleted = 0
+    </select>
+</mapper>

@@ -1,7 +1,7 @@
 <template>
   <div class="af-models" :class="{ 'af-models--nav-open': navOpen }">
     <div v-if="navOpen" class="af-sidebar-backdrop" @click="navOpen = false"></div>
-    <AppSidebar active="agents" />
+    <AppSidebar />
 
     <main class="af-workspace">
       <header class="af-topbar">
@@ -47,7 +47,10 @@
               @focusin="schedulePrefetch(agent)"
             >
               <div class="af-model-card__head">
-                <span class="af-model-card__avatar">{{ initial(agent.name) }}</span>
+                <span class="af-model-card__avatar agent-card-avatar">
+                  <img v-if="agent.avatar" :src="agent.avatar" alt="" />
+                  <template v-else>{{ initial(agent.name) }}</template>
+                </span>
                 <div class="af-model-card__heading">
                   <div class="af-model-card__title">
                     <span class="af-model-card__name">{{ agent.name }}</span>
@@ -109,6 +112,9 @@
       :show-close="!saving"
     >
       <el-form :model="form" label-width="96px" @submit.native.prevent>
+        <el-form-item label="Agent 头像">
+          <ImageUploadField v-model="form.avatar" round placeholder-icon="el-icon-user" />
+        </el-form-item>
         <el-form-item label="Agent 名称" required>
           <el-input v-model.trim="form.name" placeholder="例如：智能数据助手" />
         </el-form-item>
@@ -143,12 +149,13 @@
 
 <script>
 import AppSidebar from '../../components/AppSidebar.vue'
-import { fetchAgents, fetchChatModels, getAgent, upsertAgent, deleteAgent } from './api'
-import { fetchMcpPlugins } from '../mcp/api'
+import ImageUploadField from '../../components/ImageUploadField.vue'
+import { fetchAgents, fetchChatModels, getAgent, upsertAgent, deleteAgent } from '../../api/agent'
+import { fetchMcpPlugins } from '../../api/mcp'
 
 export default {
   name: 'AgentsPage',
-  components: { AppSidebar },
+  components: { AppSidebar, ImageUploadField },
   data() {
     return {
       navOpen: false,
@@ -166,8 +173,7 @@ export default {
       openingId: null,
       prefetchedIds: [],
       prefetchTimer: null,
-      documentPrefetched: false,
-      form: { id: null, name: '', type: 1, description: '', modelId: null }
+      form: { id: null, name: '', type: 1, avatar: '', description: '', modelId: null }
     }
   },
   watch: {
@@ -182,12 +188,11 @@ export default {
   created() {
     this.loadAgents()
     this.loadModels()
-    // 空闲时预热配置文件，缩短跳转首屏等待
-    setTimeout(() => this.prefetchConfigDocument(), 400)
   },
   beforeDestroy() {
     clearTimeout(this.searchTimer)
     clearTimeout(this.prefetchTimer)
+    document.body.style.cursor = ''
   },
   methods: {
     async loadAgents() {
@@ -219,7 +224,7 @@ export default {
       }
     },
     openCreate() {
-      this.form = { id: null, name: '', type: 1, description: '', modelId: null }
+      this.form = { id: null, name: '', type: 1, avatar: '', description: '', modelId: null }
       this.dialogVisible = true
     },
     openConfig(agent) {
@@ -229,7 +234,7 @@ export default {
       clearTimeout(this.prefetchTimer)
       // 兜底预热：即使没有 hover，也在跳转前把接口数据发出去
       this.prefetchAgent(agent)
-      window.location.href = '/agents/config?id=' + agent.id
+      this.$router.push({ path: '/agents/config', query: { id: agent.id } })
     },
     /** 悬停 140ms 后才预热，避免鼠标快速掠过时发起无意义的请求 */
     schedulePrefetch(agent) {
@@ -245,16 +250,6 @@ export default {
       fetchChatModels().catch(() => {})
       fetchMcpPlugins('', true).catch(() => {})
     },
-    /** 预热 /agents/config 文档，减少整页导航的等待 */
-    prefetchConfigDocument() {
-      if (this.documentPrefetched) return
-      this.documentPrefetched = true
-      const link = document.createElement('link')
-      link.rel = 'prefetch'
-      link.as = 'document'
-      link.href = '/agents/config'
-      document.head.appendChild(link)
-    },
     async openEdit(agent) {
       try {
         const detail = await getAgent(agent.id)
@@ -262,6 +257,7 @@ export default {
           id: detail.id,
           name: detail.name,
           type: detail.type || 1,
+          avatar: detail.avatar || '',
           description: detail.description || '',
           modelId: detail.modelId
         }
@@ -335,6 +331,8 @@ export default {
 .af-agent-card {
   position: relative;
 }
+
+.agent-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .af-agent-card--opening {
   cursor: progress;

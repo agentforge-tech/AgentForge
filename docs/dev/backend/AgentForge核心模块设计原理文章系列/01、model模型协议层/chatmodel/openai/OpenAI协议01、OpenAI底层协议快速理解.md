@@ -148,6 +148,44 @@ Authorization: Bearer ${apiKey}
 | `function_call` | 旧字段（deprecated） |
 | `content_filter` | 内容被过滤 |
 
+<br/>
+
+## 3.3、usage 与缓存命中（Token 统计口径）
+
+`usage` 是唯一的 Token 计量来源：非流式响应位于顶层，流式响应在 `stream_options.include_usage:true` 时随最后一个 chunk 单独下发（此时 `choices` 为空数组），必须与最终响应合并，不能丢弃。
+
+```json
+{
+  "usage": {
+    "prompt_tokens": 2000,
+    "completion_tokens": 300,
+    "total_tokens": 2300,
+    "prompt_tokens_details": { "cached_tokens": 1536, "audio_tokens": 0 }
+  }
+}
+```
+
+| 字段 | 含义 | 统计口径 |
+|---|---|---|
+| `prompt_tokens` | 输入 Token | **已包含**缓存命中的 Token |
+| `completion_tokens` | 输出 Token | 生成内容 Token |
+| `total_tokens` | 总 Token | 通常等于 `prompt_tokens + completion_tokens` |
+| `prompt_tokens_details.cached_tokens` | 命中提示缓存的输入 Token | 是 `prompt_tokens` 的**子集**，不能再叠加 |
+
+### Token 计算步骤
+
+1. 取 `prompt_tokens` 作为**输入 Token**；缓存命中部分已包含在内，不要重复相加。
+2. 取 `completion_tokens` 作为**输出 Token**。
+3. 取 `total_tokens` 作为**总 Token**；字段缺失时回退 `prompt_tokens + completion_tokens`。
+4. 取 `prompt_tokens_details.cached_tokens` 作为**缓存命中 Token**；字段缺失按 0 处理。
+5. **缓存命中率** = `cached_tokens / prompt_tokens`（官方口径：总缓存 Token / 总输入 Token）。
+
+> **Responses API** 字段名为 `input_tokens` / `output_tokens` / `input_tokens_details.cached_tokens`，另有 `input_tokens_details.cache_write_tokens` 表示缓存写入；语义与 Chat Completions 一致，命中率同样按 `cached_tokens / input_tokens` 计算。
+>
+> **DeepSeek 等 OpenAI-compatible 实现**使用 `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens`，且 `prompt_tokens = prompt_cache_hit_tokens + prompt_cache_miss_tokens`，可直接把 `prompt_cache_hit_tokens` 映射为缓存命中 Token。
+
+> AgentForge 的映射：`prompt_tokens → TokenUsage.inputTokens`、`completion_tokens → outputTokens`、`total_tokens → totalTokens`、`prompt_tokens_details.cached_tokens → cachedTokens`，命中率由上层按 `cachedTokens / inputTokens` 计算。
+
 ---
 
 # 四、流式协议（SSE）
@@ -455,7 +493,7 @@ bash docs/dev/backend/AgentForge核心模块设计原理/01、model模型协议�
 
 1. **Endpoint**：`POST {baseUrl}/chat/completions`，`Authorization: Bearer` 鉴权。
 2. **请求**：`messages`（system / user / assistant / tool）+ 采样参数 + `tools` / `tool_choice`。
-3. **响应**：`choices[0].message`（`content` 或 `tool_calls`）+ `usage` + `finish_reason`。
+3. **响应**：`choices[0].message`（`content` 或 `tool_calls`）+ `usage` + `finish_reason`；`usage` 中 `prompt_tokens` 已含缓存命中，命中量取 `prompt_tokens_details.cached_tokens`。
 4. **流式**：SSE `data:` chunk；`delta.content` 文本、`delta.tool_calls` 按 `index` 聚合；`[DONE]` 结束。
 5. **工具**：`assistant.tool_calls`（`arguments` 为字符串）→ `tool` role 按 `tool_call_id` 回填。
 
@@ -472,6 +510,10 @@ bash docs/dev/backend/AgentForge核心模块设计原理/01、model模型协议�
 [3]. [Server-Sent Events（MDN）](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
 
 [4]. 相关内部文档：[AgentForge OpenAI 接入核心实践](OpenAI%E5%8D%8F%E8%AE%AE02%E3%80%81AgentForge%20OpenAI%E6%8E%A5%E5%85%A5%E6%A0%B8%E5%BF%83%E5%AE%9E%E8%B7%B5.md)
+
+[5]. [OpenAI Prompt caching（缓存命中与计费口径）](https://platform.openai.com/docs/guides/prompt-caching)
+
+[6]. [DeepSeek Context Caching（prompt_cache_hit_tokens）](https://api-docs.deepseek.com/guides/kv_cache)
 
 <br/>
 

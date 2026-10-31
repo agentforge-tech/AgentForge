@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper">
+
+    <resultMap id="AgentConfigResult" type="cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="agentConfig" column="agent_config"/>
+        <result property="experConfig" column="exper_config"/>
+        <result property="publish" column="publish"/>
+        <result property="lastPublishTime" column="last_publish_time"/>
+        <result property="aid" column="aid"/>
+        <result property="isPublic" column="is_public"/>
+        <result property="avatar" column="avatar"/>
+        <result property="description" column="description"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="createUserId" column="create_user_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, name, type, agent_config, exper_config, publish, last_publish_time,
+        aid, is_public, avatar, description, is_deleted, create_user_id, create_time, modify_time
+    </sql>
+
+    <sql id="conditions">
+        <where>
+            is_deleted = 0
+            <if test="keyword != null and keyword != ''">
+                and (name like '%' || #{keyword} || '%' or aid like '%' || #{keyword} || '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectById" resultMap="AgentConfigResult">
+        select <include refid="columns"/> from ai_agent_config
+        where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectByIdForUpdate" resultMap="AgentConfigResult">
+        select <include refid="columns"/> from ai_agent_config
+        where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectByAid" resultMap="AgentConfigResult">
+        select <include refid="columns"/> from ai_agent_config
+        where aid = #{aid} and is_deleted = 0
+    </select>
+
+    <select id="selectCount" resultType="long">
+        select count(1) from ai_agent_config
+        <include refid="conditions"/>
+    </select>
+
+    <select id="selectPage" resultMap="AgentConfigResult">
+        select <include refid="columns"/> from ai_agent_config
+        <include refid="conditions"/>
+        order by modify_time desc
+        limit #{pageSize} offset #{start}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into ai_agent_config
+            (name, type, agent_config, exper_config, publish, aid, is_public, avatar,
+             description, is_deleted, create_user_id, create_time, modify_time)
+        values
+            (#{name}, #{type}, #{agentConfig}, #{experConfig}, #{publish}, #{aid}, #{isPublic},
+             #{avatar}, #{description}, #{isDeleted}, #{createUserId}, #{createTime}, #{modifyTime})
+    </insert>
+
+    <update id="update">
+        update ai_agent_config
+        set name = #{name},
+            agent_config = #{agentConfig},
+            avatar = #{avatar},
+            description = #{description},
+            modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="updatePublishStatus">
+        update ai_agent_config
+        set publish = #{publish},
+            last_publish_time = case when #{publish} = 1 then #{modifyTime} else last_publish_time end,
+            modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
+    <update id="deleteById">
+        update ai_agent_config set is_deleted = 1, modify_time = CURRENT_TIMESTAMP
+        where id = #{id} and is_deleted = 0
+    </update>
+</mapper>

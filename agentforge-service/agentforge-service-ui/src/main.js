@@ -1,9 +1,10 @@
 import Vue from 'vue'
 import './plugins/element'
-import 'highlight.js/styles/github.css'
-import './styles.css'
+import './styles/admin/admin.scss'
+import './styles/chat.css'
 import './styles/chat-scroll-button.css'
-import PublishedAgentChatPage from './pages/published/PublishedAgentChatPage.vue'
+import App from './App.vue'
+import router from './router'
 
 Vue.config.productionTip = false
-new Vue({ render: (h) => h(PublishedAgentChatPage) }).$mount('#app')
+new Vue({ router, render: (h) => h(App) }).$mount('#app')

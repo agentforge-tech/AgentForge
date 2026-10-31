@@ -2,13 +2,13 @@
   <div class="af-models" :class="{ 'af-models--nav-open': navOpen }">
     <div v-if="navOpen" class="af-sidebar-backdrop" @click="navOpen = false"></div>
 
-    <AppSidebar active="mcp" />
+    <AppSidebar />
 
     <main class="af-workspace">
       <header class="af-topbar">
         <div class="af-crumb">
           <el-button class="af-mobile-menu" type="text" icon="el-icon-s-fold" aria-label="打开导航菜单" @click="navOpen = true" />
-          <span>我的资源库</span>
+          <span>Agent组件</span>
           <span class="af-crumb__sep">/</span>
           <template v-if="view === 'detail'">
             <a class="af-crumb__link" href="/mcp" @click.prevent="backToList">MCP 插件</a>
@@ -214,8 +214,8 @@
         <el-form-item label="插件名称" required>
           <el-input v-model.trim="pluginDialog.form.name" maxlength="128" placeholder="例如：地图服务" />
         </el-form-item>
-        <el-form-item label="图标地址">
-          <el-input v-model.trim="pluginDialog.form.icon" placeholder="https://...（选填）" />
+        <el-form-item label="插件图标">
+          <ImageUploadField v-model="pluginDialog.form.icon" />
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model.trim="pluginDialog.form.description" type="textarea" :rows="3" maxlength="1024" placeholder="简单介绍插件用途（选填）" />
@@ -344,6 +344,7 @@
 
 <script>
 import AppSidebar from '../../components/AppSidebar.vue'
+import ImageUploadField from '../../components/ImageUploadField.vue'
 import {
   deleteMcpPlugin,
   deleteMcpServer,
@@ -358,18 +359,18 @@ import {
   updateMcpServerStatus,
   upsertMcpPlugin,
   upsertMcpServer
-} from './api'
+} from '../../api/mcp'
 
-/** 从地址栏读取插件 id，支持 /mcp?id=12 直接进入详情 */
-function resolvePluginId() {
-  const raw = new URLSearchParams(window.location.search).get('id')
+/** 从路由参数读取插件 id，支持 /mcp?id=12 直接进入详情 */
+function resolvePluginId(value) {
+  const raw = Array.isArray(value) ? value[0] : value
   const id = Number(raw)
   return raw && !Number.isNaN(id) ? id : null
 }
 
 export default {
   name: 'McpPage',
-  components: { AppSidebar },
+  components: { AppSidebar, ImageUploadField },
   data() {
     return {
       navOpen: false,
@@ -394,47 +395,42 @@ export default {
     }
   },
   async created() {
-    this.pluginId = resolvePluginId()
-    if (this.pluginId) await this.openDetail(this.pluginId, { push: false })
-    else await this.loadPlugins()
-    window.addEventListener('popstate', this.handlePopState)
+    await this.applyRoute(this.$route)
   },
-  beforeDestroy() {
-    window.removeEventListener('popstate', this.handlePopState)
+  beforeRouteUpdate(to, from, next) {
+    this.applyRoute(to)
+    next()
   },
   methods: {
     // ---------- 视图切换 ----------
+    async applyRoute(route) {
+      const id = resolvePluginId(route.query.id)
+      if (id) await this.openDetail(id)
+      else {
+        this.resetDetail()
+        await this.loadPlugins()
+      }
+    },
     async enterPlugin(item) {
       if (!item) return
-      await this.openDetail(item.id)
+      this.$router.push({ path: '/mcp', query: { id: item.id } })
     },
-    async openDetail(id, { push = true } = {}) {
+    async openDetail(id) {
       this.view = 'detail'
       this.pluginId = id
       this.page = { ...this.page, page: 1, total: 0, totalPage: 0 }
       this.serverQuery = { serverName: '', transportType: '', status: '' }
       this.servers = []
-      if (push) window.history.pushState({ id }, '', '/mcp?id=' + id)
       await Promise.all([this.loadPlugin(id), this.loadServers()])
     },
     backToList() {
-      window.history.pushState({}, '', '/mcp')
-      this.resetDetail()
-      this.loadPlugins()
+      this.$router.push('/mcp')
     },
     resetDetail() {
       this.view = 'list'
       this.pluginId = null
       this.plugin = null
       this.servers = []
-    },
-    async handlePopState() {
-      const id = resolvePluginId()
-      if (id) await this.openDetail(id, { push: false })
-      else {
-        this.resetDetail()
-        await this.loadPlugins()
-      }
     },
     // ---------- 插件 ----------
     async loadPlugins() {
@@ -489,7 +485,7 @@ export default {
         this.toast('MCP 插件已保存')
         if (this.view === 'detail') {
           if (!form.id && saved && saved.id) {
-            await this.openDetail(saved.id)
+            await this.$router.push({ path: '/mcp', query: { id: saved.id } })
           } else {
             await this.loadPlugin(this.pluginId)
           }
@@ -783,7 +779,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@use '../models/styles/tokens' as *;
+@use '../../styles/admin/tokens' as *;
 
 .mcp-count {
   color: $color-text-muted;

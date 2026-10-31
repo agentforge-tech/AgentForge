@@ -98,7 +98,7 @@ AgentForge
 
 #### 场景功能扩展（middlware）
 
-- [ ] 日志middlware（支持快速本地调试、记录message内容UA情况）
+- [x] 日志middlware（支持快速本地调试）：
 - [ ] 上下文压缩middlware（支持策略来设计上下文压缩）
 - [ ] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）
 

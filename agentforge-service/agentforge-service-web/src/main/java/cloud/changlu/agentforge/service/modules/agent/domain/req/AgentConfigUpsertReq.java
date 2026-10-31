@@ -9,6 +9,7 @@ public class AgentConfigUpsertReq {
     private String name;
     private Integer type;
     private String description;
+    private String avatar;
     private Long modelId;
     private String systemPrompt;
     private Integer chatMemoryType;
@@ -47,6 +48,14 @@ public class AgentConfigUpsertReq {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 
     public Long getModelId() {

@@ -10,6 +10,7 @@ import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import DOMPurify from 'dompurify'
 import katex from 'katex'
+import 'highlight.js/styles/github.css'
 import 'katex/dist/katex.min.css'
 
 export const MARKDOWN_STREAM_MODES = Object.freeze({ INSTANT: 'instant', TYPEWRITER: 'typewriter', TYPEWRITER_BLUR: 'typewriter-blur' })
@@ -68,7 +69,7 @@ function createMarkdown(highlightCode) {
 
 const streamingMd = createMarkdown(false)
 const finalMd = createMarkdown(true)
-const sanitize = (html) => DOMPurify.sanitize(html, { USE_PROFILES: { html: true, svg: true, mathMl: true } })
+const sanitize = (html) => DOMPurify.sanitize(html, { USE_PROFILES: { html: true, svg: true, mathMl: true }, ADD_ATTR: ['target'] })
 
 function splitBlocks(text) {
   const matches = [...text.matchAll(/\n{2,}/g)]

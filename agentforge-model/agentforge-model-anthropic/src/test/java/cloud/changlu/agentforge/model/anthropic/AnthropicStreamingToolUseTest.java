@@ -41,7 +41,7 @@ public class AnthropicStreamingToolUseTest {
                         sse(
                                 "message_start",
                                 "{\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\","
-                                        + "\"model\":\"claude-test\",\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}"),
+                                        + "\"model\":\"claude-test\",\"usage\":{\"input_tokens\":10,\"cache_read_input_tokens\":6,\"cache_creation_input_tokens\":1,\"output_tokens\":0}}}"),
                         sse(
                                 "content_block_start",
                                 "{\"type\":\"content_block_start\",\"index\":0,\"content_block\":"
@@ -77,8 +77,9 @@ public class AnthropicStreamingToolUseTest {
         assertEquals("toolu_1", request.id());
         assertEquals("get_weather", request.name());
         assertEquals("{\"city\":\"hangzhou\"}", request.arguments());
-        assertEquals(10L, response.tokenUsage().inputTokens());
+        assertEquals(17L, response.tokenUsage().inputTokens());
         assertEquals(7L, response.tokenUsage().outputTokens());
+        assertEquals(6L, response.tokenUsage().cachedTokens());
         assertEquals("msg_1", response.metadata().get("id"));
     }
 

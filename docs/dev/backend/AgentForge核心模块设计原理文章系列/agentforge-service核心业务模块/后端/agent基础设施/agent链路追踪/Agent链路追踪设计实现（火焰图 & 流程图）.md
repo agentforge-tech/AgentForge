@@ -237,7 +237,7 @@ AgentTraceSnapshot 建议字段如下：
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| sessionId | String | 来自 AgentChatContext.memoryId |
+| memoryId | String | 来自 AgentChatContext.memoryId，Service 持久化时映射到 session_id |
 | questionRound | Integer | 来自 AgentRequest.extensions 的业务轮次 |
 | step | Integer | 当前 ReAct Loop，从 1 开始 |
 | snapshotKind | STEP / ROUND_FINAL | 普通 step 或问答汇总 |
@@ -528,25 +528,18 @@ CREATE TABLE IF NOT EXISTS ai_agent_trace_snapshot (
     aid                 VARCHAR(64)  NOT NULL COMMENT 'Agent唯一标识',
     question_round      INT          NOT NULL COMMENT '当前会话第几次用户提问，从1开始',
     step                INT          NOT NULL COMMENT '当前ReAct Loop，从1开始',
-    snapshot_kind       TINYINT      NOT NULL COMMENT '快照类型：0-STEP，1-ROUND_FINAL',
     started_at          DATETIME(3)  DEFAULT NULL COMMENT '快照开始时间',
     finished_at         DATETIME(3)  DEFAULT NULL COMMENT '快照结束时间',
     duration_ms         BIGINT       DEFAULT NULL COMMENT '快照耗时，单位毫秒',
-    model_duration_ms   BIGINT       DEFAULT NULL COMMENT '模型调用耗时，单位毫秒',
-    tool_duration_ms    BIGINT       DEFAULT NULL COMMENT '工具执行耗时，单位毫秒',
     input_tokens        BIGINT       DEFAULT NULL COMMENT '输入token数',
     output_tokens       BIGINT       DEFAULT NULL COMMENT '输出token数',
     total_tokens        BIGINT       DEFAULT NULL COMMENT '总token数',
-    cached_tokens       BIGINT       DEFAULT NULL COMMENT '缓存命中token数，暂不支持时为空',
     finished            TINYINT      NOT NULL DEFAULT 0 COMMENT '是否为问答汇总快照',
-    status              TINYINT      NOT NULL COMMENT 'Trace状态：0-continue 1-normal 2-cancel 3-error 4-max_steps',
+    status              VARCHAR(16)  NOT NULL COMMENT 'Trace状态',
     snapshot_json       LONGTEXT     NOT NULL COMMENT 'AgentTraceSnapshot序列化JSON',
     create_time         DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     modify_time         DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '修改时间',
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_trace_round_step_kind (session_id, question_round, step, snapshot_kind),
-    KEY idx_trace_session_round (session_id, question_round),
-    KEY idx_trace_session_finished (session_id, finished)
+    PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='AgentForge Agent链路追踪快照表';
 ~~~
 
@@ -554,10 +547,9 @@ CREATE TABLE IF NOT EXISTS ai_agent_trace_snapshot (
 
 1. session_id 使用对外字符串，不直接耦合 ai_agent_session.id。
 2. aid 便于跨会话运维检索和权限校验。
-3. snapshot_kind 防止最终汇总快照覆盖最后一个 STEP 快照。
-4. snapshot_json 保留完整协议，列字段用于快速列表查询和统计。
-5. duration_ms、model_duration_ms、tool_duration_ms 使用 BIGINT，避免长时间运行溢出。
-6. token 使用 BIGINT，避免多轮累计超过 INT。
+3. 快照类型、模型耗时和工具耗时保留在 snapshot_json，不重复拆列。
+4. 表索引只保留主键 id，首版以简化结构为主。
+5. duration_ms 和 token 使用 BIGINT，避免长时间或多轮累计溢出。
 
 ### 8.5 Collector 与 QueryService
 
@@ -578,7 +570,7 @@ MysqlAgentTraceCollector 职责：
 1. 接收 AgentTraceMiddleware 产生的 AgentTraceSnapshot。
 2. 校验 sessionId、aid 和 questionRound。
 3. 序列化 snapshot_json。
-4. 以 session_id + question_round + step + snapshot_kind 做幂等 upsert。
+4. 以 session_id + question_round + step + finished 在应用层先更新，未命中再插入。
 5. 不参与 questionRound 分配。
 
 AgentTraceQueryService 职责：
@@ -812,7 +804,7 @@ Trace 页面和 Debug 面板职责如下：
 AgentForge 的同步、流式和异常路径可能在停止阶段触发不同回调组合，因此必须：
 
 1. AgentTraceRuntime 使用 finished 原子标记保证最终快照只收口一次。
-2. Collector 使用 session_id + question_round + step + snapshot_kind 幂等。
+2. Collector 使用 session_id + question_round + step + finished 进行应用层幂等更新。
 3. ToolRuntime 使用 toolCallId 防止工具完成事件重复计算。
 4. 查询侧按 modify_time 选择最新版本，不依赖数据库返回顺序。
 
@@ -972,3 +964,24 @@ AgentForge 的链路追踪应理解为 Agent Runtime 的一条观测旁路：
 3. 业务只需决定 AgentTraceSnapshot 的存储、查询和展示方式。
 
 这套设计能够完整贴合 AgentForge 当前的 Agent、Middleware、ChatMemory、Session、SSE 和 Vue 页面结构，同时为后续多模型、多工具、异步 Collector 和更复杂的观测能力保留扩展空间。
+
+---
+
+## 15. 首版落地状态
+
+当前已完成可运行的初步闭环：
+
+1. Agent Core 新增 `AgentTraceMiddleware`、`AgentTraceCollector` 和统一快照协议。
+2. 默认 ReAct Agent 工厂已注入 Trace 中间件，同步和流式链路共用现有 Middleware 回调。
+3. 每个 ReAct Loop 生成一条 `STEP` 快照，停止时生成一条 `ROUND_FINAL` 快照。
+4. 快照包含模型耗时、工具耗时、Token、工具参数与结果摘要、状态和异常信息。
+5. `MysqlAgentTraceCollector` 以 `sessionId + questionRound + step + finished` 在应用层幂等写入 MySQL。
+6. 建表脚本位于 `agentforge-service/sql/increment/1.0.x/20261029000000_v1.0.x.sql`。
+7. 查询接口已落地：
+   - `GET /api/agent-trace/sessions`：查询近期 Trace 会话，可通过 `aid` 筛选；
+   - `GET /api/agent-trace/session/{sessionId}`：查询会话的全部 questionRound 和快照。
+8. Agent 驾驶舱中已在“Agent 列表”下新增“Agent Trace 监控”独立入口，路径为 `/agent-trace`。
+9. 监控页首版支持会话列表、AID 筛选、questionRound 切换、摘要指标、流程图、火焰图、节点详情和 1.5 秒实时刷新。
+10. `AgentTraceMiddleware` 提供 `enrichAttributes` 受保护扩展钩子；Service 通过 `AgentForgeTraceMiddleware` 继承它，将 aid、debug 等业务参数放入通用 `attributes`，Agent Core 不固化业务字段。
+
+首版为单用户环境，Trace 查询暂未增加额外的用户权限过滤；接入多用户后，查询层必须结合 Agent 和 Session 归属关系校验当前用户。

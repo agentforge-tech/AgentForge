@@ -21,10 +21,11 @@ public interface AgentSessionMapper {
     AgentSessionPojo selectBySessionIdAndAid(
             @Param("sessionId") String sessionId, @Param("aid") String aid);
 
-    /** 普通历史会话：未置顶，按最近修改时间倒序。 */
+    /** 普通历史会话：未置顶，按最近修改时间倒序；debug 为空表示不区分调试/发布态。 */
     List<AgentSessionPojo> selectNormalList(
             @Param("aid") String aid,
             @Param("createUserId") Long createUserId,
+            @Param("debug") Integer debug,
             @Param("limit") Integer limit);
 
     /** 置顶会话：按置顶序号倒序全量返回。 */
