@@ -1,0 +1,25 @@
+agentforge-service/docker/standalone/upgrade.sh
+  s_167291194df912::t_0d3a4e04ad0943 66
+agentforge-service/docker/QUICK_DEPLOY.md
+  s_167291194df912::t_0d3a4e04ad0943 38-39
+agentforge-service/docker/standalone/install.sh
+  s_167291194df912::t_0d3a4e04ad0943 21,31-37,49,55,63-72
+agentforge-service/docker/scripts/upgrade-sql.sh
+  s_167291194df912::t_0d3a4e04ad0943 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c8c131c5072e88172e5dff7af3b377ee23a7a2b1",
+  "prompts": {},
+  "sessions": {
+    "s_167291194df912": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18d1b-b93a-7073-9715-d7df00f6cc10",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
