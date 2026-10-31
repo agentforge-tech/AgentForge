@@ -23,7 +23,7 @@ fi
 
 log "下载部署文件"
 curl -fsSL "${BASE_URL}/docker-compose.yml" -o docker-compose.yml.tmp
-curl -fsSL "${BASE_URL}/.env.example" -o .env.tmp
+curl -fsSL "${BASE_URL}/env.example" -o .env.tmp
 curl -fsSL "${BASE_URL}/upgrade.sh" -o upgrade.sh.tmp
 mv docker-compose.yml.tmp docker-compose.yml
 mv .env.tmp .env
