@@ -17,18 +17,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        // 按依赖来源拆分公共包，提升缓存命中率、避免单页打包体积过大。
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return
-          if (id.includes('element-ui')) return 'vendor-element'
-          if (id.includes('/node_modules/vue') || id.includes('/node_modules/@vue')) return 'vendor-vue'
-          if (id.includes('highlight.js')) return 'vendor-highlight'
-          if (id.includes('markdown-it')) return 'vendor-markdown'
-        }
-      }
-    }
+    // 使用 Rollup 默认的模块图拆包，避免 Element UI 与 Vue 被强制分到
+    // 不同 vendor chunk 后产生循环依赖和初始化顺序问题。
+    emptyOutDir: true
   }
 })
