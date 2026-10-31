@@ -1,0 +1,21 @@
+agentforge-service/docker/standalone/install.sh
+  s_167291194df912::t_520fb5a0de8ffe 26
+agentforge-service/docker/standalone/env.example
+  s_167291194df912::t_520fb5a0de8ffe 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d31d439b700f3b6d0bbc20852a1fd229f6574c39",
+  "prompts": {},
+  "sessions": {
+    "s_167291194df912": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18d1b-b93a-7073-9715-d7df00f6cc10",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
