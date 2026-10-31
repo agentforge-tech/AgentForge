@@ -1,0 +1,255 @@
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/database/SqliteDateTypeHandler.java
+  s_bbfa25b496d85b::t_ccb083c16a8a6e 38-39
+  s_bbfa25b496d85b::t_c880b9f31fc6b7 1-37,40-86
+agentforge-service/docker/standalone/install.sh
+  s_167291194df912::t_e084e60d017a03 1-40,42-59
+  s_167291194df912::t_ac356734ae2daa 41
+agentforge-service/conf/application.yml.example
+  s_bbfa25b496d85b::t_e29a3ae5ef0202 6-9,16,19-21,23,28-30,33-37,50-67,70-84
+  s_bbfa25b496d85b::t_0ea1caf7da1c4e 69,86
+  s_bbfa25b496d85b::t_28cad93da30732 22
+  s_bbfa25b496d85b::t_122c5b2a6bee79 85
+  s_bbfa25b496d85b::t_2544bb09b977af 43-46
+  s_bbfa25b496d85b::t_111c9a4a3d053c 68
+agentforge-service/docker/docker-compose.yml
+  s_8e15f507b198f6::t_71649b06e246e2 5
+  s_bbfa25b496d85b::t_6e9fcc58dbb1a7 1-4,6-14,17-24,26-33,36-41
+  s_bbfa25b496d85b::t_f8b0a46e09eb13 25
+  s_bbfa25b496d85b::t_473dfb9c1f58ff 15-16
+  s_bbfa25b496d85b::t_b0b020db02e864 34-35
+agentforge-service/docker/scripts/common.sh
+  s_bbfa25b496d85b::t_3a70512f6c78ae 19-31
+  s_bbfa25b496d85b::t_f3d9b11d2bc9e7 32-39
+  s_bbfa25b496d85b::t_294c0bb7f9e8f1 43,45-48
+  s_bbfa25b496d85b::t_ce6d8588062bed 1-18,40-42,44,49-88
+agentforge-service/bin/local/README.md
+  s_bbfa25b496d85b::t_1840e786b1c37b 5-28
+agentforge-service/docker/scripts/upgrade-sql.sh
+  s_bbfa25b496d85b::t_72efa1fced1297 1-21
+agentforge-service/docker/scripts/deploy.sh
+  s_bbfa25b496d85b::t_67a1f7592ab7af 9
+  s_bbfa25b496d85b::t_ebefe46be17b60 1-8,10,15,17-21
+  s_bbfa25b496d85b::t_958f75b72be0d0 11-14,16
+.gitignore
+  s_bbfa25b496d85b::t_239496e70443df 55
+  s_bbfa25b496d85b::t_2d733e72bc80cd 54
+  s_bbfa25b496d85b::t_2f8554e435f490 47
+  s_bbfa25b496d85b::t_66ba35a36592fa 48-53,56-59
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/database/SqliteDateTypeHandlerConfiguration.java
+  s_bbfa25b496d85b::t_1a3411d3dbbcc2 1-27
+agentforge-service/docker/container/bin/start.sh
+  s_bbfa25b496d85b::t_77b37f66a166e6 12-17
+  s_bbfa25b496d85b::t_116884edccf8f7 1-11,18-22
+agentforge-service/README.md
+  s_bbfa25b496d85b::t_3c84fcdb061edd 68-69,71-73
+  s_bbfa25b496d85b::t_a9228d284b61f1 55
+  s_bbfa25b496d85b::t_d1c60b43dde606 37
+  s_bbfa25b496d85b::t_7f89bba54d9ea0 95-101,106-107,110
+  s_bbfa25b496d85b::t_f7e20fc2f3bcb4 70
+  s_bbfa25b496d85b::t_d36b39b00b9696 11-18
+  s_bbfa25b496d85b::t_9ad32644a20d25 102-105,108-109
+  s_bbfa25b496d85b::t_7fe02d5c7aa2d6 3-10,19-35,38,41
+  s_bbfa25b496d85b::t_835056925b3723 36,39-40
+agentforge-service/docker/standalone/docker-compose.yml
+  s_167291194df912::t_e084e60d017a03 1-37
+"docs/dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/运维/AgentForge SQLite 默认运行与一体化 Docker 部署设计.md"
+  s_bbfa25b496d85b::t_afea36a3875472 373-375
+  s_bbfa25b496d85b::t_66d84073e743ec 224
+  s_bbfa25b496d85b::t_74e78e79628aa0 480-680,683-746
+  s_bbfa25b496d85b::t_aefd7bdd13ed5e 37
+  s_bbfa25b496d85b::t_18d384bd334fb9 361-362
+  s_bbfa25b496d85b::t_193c07dea4963f 77-79,81,83
+  s_bbfa25b496d85b::t_852d9cf0cffb7d 444,446
+  s_bbfa25b496d85b::t_d648af22ca8c31 176-177
+  s_bbfa25b496d85b::t_f65445a91d9210 430
+  s_bbfa25b496d85b::t_1cece54bc540f1 441-442
+  s_bbfa25b496d85b::t_55cfd6b6fb2bc7 21
+  s_bbfa25b496d85b::t_23da3cfdc7a6cf 411
+  s_bbfa25b496d85b::t_b0c6a3fe65c93b 1-18,20,22-36,38-76,80,82,84-89,92-94,96-97,119-124,127,129-152,154,157-158,167-170,174,178-213,215-223,225-226,228-241,244-245,248-258,260-262,265-280,282-294,298,300-301,304-354,356-360,363-372,377-380,384-386,412-419,422-429,431-439,445,447-458,460-464,466-469,471,473-479
+  s_bbfa25b496d85b::t_ef0ca73d7f1afc 376
+  s_bbfa25b496d85b::t_1cde321c8e3c38 227
+  s_bbfa25b496d85b::t_1b8827364646eb 281
+  s_bbfa25b496d85b::t_040b4f23d6d595 153,155-156
+  s_bbfa25b496d85b::t_380fffb70bb1a1 440
+  s_bbfa25b496d85b::t_43455f3f0b9b44 443
+  s_bbfa25b496d85b::t_2fb7f043f9bce3 302-303
+  s_bbfa25b496d85b::t_9c5ea28389c0df 681-682
+  s_bbfa25b496d85b::t_c1fa313b22d903 214
+  s_bbfa25b496d85b::t_7f65cdf15ad571 299
+  s_bbfa25b496d85b::t_b92e945fbfb871 19
+  s_bbfa25b496d85b::t_5174b816dffd2d 420-421
+  s_bbfa25b496d85b::t_8d75ac96bd1a7e 459,465,470,472
+  s_bbfa25b496d85b::t_02d71f4ebfc5ca 90-91
+  s_bbfa25b496d85b::t_7d0837553fd92c 295-297
+  s_bbfa25b496d85b::t_45d5c8ca7bb847 242-243,246-247
+  s_bbfa25b496d85b::t_4ca7d6919fc5e0 355
+  s_bbfa25b496d85b::t_22847d95e250dc 159-166,171-173,175
+  s_bbfa25b496d85b::t_cf518c345f19c4 381-383,387,389,391,394-398,401-403,405-407
+  s_bbfa25b496d85b::t_03b8c7f5803d21 388,390,392-393,399-400,404,408-410
+  s_bbfa25b496d85b::t_927ed2c90462f1 259,263-264
+  s_bbfa25b496d85b::t_16b06b2167336d 95,98-118,125-126,128
+agentforge-service/docker/scripts/build.sh
+  s_bbfa25b496d85b::t_9239180e126af6 1-9,11-19
+  s_8e15f507b198f6::t_71649b06e246e2 10
+agentforge-service/docker/scripts/backup.sh
+  s_bbfa25b496d85b::t_c0b030013d72ad 1-36
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/modules/upload/config/LocalUploadProperties.java
+  s_bbfa25b496d85b::t_304c5c416d4604 37
+agentforge-service/docker/scripts/push.sh
+  s_8e15f507b198f6::t_71649b06e246e2 10,14-15
+  s_bbfa25b496d85b::t_79b9518ca57549 1-9,11-13,16-33
+agentforge-service/docker/QUICK_DEPLOY.md
+  s_167291194df912::t_a6e580fb658f7a 1-21,23-24,26-35,37-39,41-42,47-48,50-68,70-73,75-76,78,83,86-116,118-122
+  s_167291194df912::t_fc1c32ee24ecfc 44
+  s_167291194df912::t_aef9bedf2afc4f 69,74,77,80-82,117,123
+  s_167291194df912::t_5996d692275b57 79
+  s_167291194df912::t_0fc2f87b9dd489 84
+  s_167291194df912::t_b8cf02fb90249a 22,25,36,40,43,45-46,49,85
+.dockerignore
+  s_bbfa25b496d85b::t_a105b21b03a613 24
+  s_bbfa25b496d85b::t_08489e8bd57c75 1-22,25-35,37
+  s_bbfa25b496d85b::t_445ab637bf588b 23
+  s_bbfa25b496d85b::t_4df33ebe787ee5 36
+agentforge-service/docker/scripts/upgrade.sh
+  s_8e15f507b198f6::t_71649b06e246e2 16
+  s_bbfa25b496d85b::t_c95250b47b813d 19
+  s_bbfa25b496d85b::t_cd4d779a5e4722 1-15,17-18,20-29,31-33
+  s_bbfa25b496d85b::t_6916db1a545b58 30
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/env/EnvironmentContext.java
+  s_bbfa25b496d85b::t_dd914b93341cc8 92
+  s_bbfa25b496d85b::t_ccb083c16a8a6e 82-84
+  s_bbfa25b496d85b::t_cc0d56f067a77e 81
+  s_bbfa25b496d85b::t_9c89a97c16271e 61-65
+  s_bbfa25b496d85b::t_4dc47327cbeb7e 5
+  s_bbfa25b496d85b::t_ae08a2845498fe 85-91,93-96
+README.zh-CN.md
+  s_bbfa25b496d85b::t_b43b4894fc3746 214,220-222,225-226
+  s_bbfa25b496d85b::t_1a81b657cba798 87
+  s_bbfa25b496d85b::t_6d6878d5e9cb2c 33,105
+  s_bbfa25b496d85b::t_1c55332aa16222 227
+agentforge-service/docker/standalone/upgrade.sh
+  s_167291194df912::t_e084e60d017a03 1-75
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/env/SystemPropertyUtil.java
+  s_bbfa25b496d85b::t_8f8222e8b5c48d 118-122
+  s_bbfa25b496d85b::t_6093fc7996ddd1 48-52
+  s_bbfa25b496d85b::t_fdfdfc0dc5b0a1 107-110
+  s_bbfa25b496d85b::t_0145f38338115c 33
+  s_bbfa25b496d85b::t_19b00fa1fb8b0c 66-68
+agentforge-service/agentforge-service-web/pom.xml
+  s_bbfa25b496d85b::t_47556f928b20c7 20
+  s_bbfa25b496d85b::t_b058c79c0169ad 68-71
+  s_bbfa25b496d85b::t_e9afba1cbcb043 67
+agentforge-service/docker/README.md
+  s_bbfa25b496d85b::t_f6600690f2a47c 85
+  s_bbfa25b496d85b::t_71dd425b7595f5 34-36,43-45
+  s_8e15f507b198f6::t_dcfd3d7d32891a 51
+  s_167291194df912::t_ac356734ae2daa 24
+  s_bbfa25b496d85b::t_c242c63a310b62 128-144,146-151,155-157
+  s_bbfa25b496d85b::t_1fc3fa7a637399 59,63-65,69-70
+  s_8e15f507b198f6::t_71649b06e246e2 123,145,154
+  s_bbfa25b496d85b::t_1c405eef6efc50 163-164
+  s_bbfa25b496d85b::t_9ad1c3a35427ab 56-57
+  s_167291194df912::t_a6e580fb658f7a 47
+  s_bbfa25b496d85b::t_99d5b43d53e4d7 99-101,103,106-108
+  s_bbfa25b496d85b::t_9c5ea28389c0df 152-153
+  s_167291194df912::t_45bc64f331c8eb 6-7
+  s_bbfa25b496d85b::t_796ffd601831c2 166
+  s_bbfa25b496d85b::t_d16dde5109c27d 1-5,8-15,17,21,23,25,29-33,37-42,46,48-50,52-55,58,60-62,66-68,71-84,86-98,102,104-105,109-122,124-127,158-162,165,167
+  s_bbfa25b496d85b::t_e7a5b82dd562f1 22
+  s_167291194df912::t_15658be63d2bf9 16
+  s_bbfa25b496d85b::t_451bb95ad82dbe 18-20,26-28
+README.md
+  s_bbfa25b496d85b::t_52a4e6666c0910 210,216-218,221-223
+  s_bbfa25b496d85b::t_6d6878d5e9cb2c 31,85,103
+  s_bbfa25b496d85b::t_02c31a56f6d028 224
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/web/SpaForwardFilter.java
+  s_bbfa25b496d85b::t_ccb083c16a8a6e 15
+  s_bbfa25b496d85b::t_5c0da3d1c3bfff 1-14,16-86
+agentforge-service/docker/scripts/package.sh
+  s_bbfa25b496d85b::t_9257251943887c 1-9,11-22
+  s_8e15f507b198f6::t_71649b06e246e2 10
+agentforge-service/agentforge-service-web/src/main/java/cloud/changlu/agentforge/service/config/WebStaticConfiguration.java
+  s_bbfa25b496d85b::t_d5db322804df07 1-45,49-67
+  s_bbfa25b496d85b::t_ccb083c16a8a6e 46-48
+agentforge-service/docker/Dockerfile
+  s_bbfa25b496d85b::t_3fc31013a65457 37
+  s_bbfa25b496d85b::t_4ec8eaf25c9a89 1-4,12-36,38-39,41-42,44-53
+  s_bbfa25b496d85b::t_d11e673eb90163 40
+  s_8e15f507b198f6::t_47c1e4745fb09f 5-11
+  s_bbfa25b496d85b::t_bd7931a03cf7d7 43
+agentforge-service/bin/local/upgrate-sqlite.sh
+  s_bbfa25b496d85b::t_b2bcf982b12d69 1-148
+  s_bbfa25b496d85b::t_af1ea1d4f92c26 149
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/agent/AgentConfigMapper.xml
+  s_bbfa25b496d85b::t_977df8b858251c 1-97
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/agent/AgentConfigPublishedMapper.xml
+  s_bbfa25b496d85b::t_b30b58eae83de9 1-46
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/agent/AgentConfigVersionMapper.xml
+  s_bbfa25b496d85b::t_45d7f797448a71 1-62
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/agent/memory/AgentMemoryMapper.xml
+  s_bbfa25b496d85b::t_000c2e3c5417e3 1-37
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/model/ModelConfigMapper.xml
+  s_bbfa25b496d85b::t_9ae736a613b655 1-137
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/plugins/http/HttpPluginMapper.xml
+  s_bbfa25b496d85b::t_09f8ebda55b9b7 1-23
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/plugins/http/HttpPluginMethodMapper.xml
+  s_bbfa25b496d85b::t_51e6dc50b65dae 1-21
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/plugins/http/HttpPluginParameterMapper.xml
+  s_bbfa25b496d85b::t_06fdb7eb542d2c 1-17
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/plugins/mcp/McpPluginMapper.xml
+  s_bbfa25b496d85b::t_78da5e21dd35b3 1-118
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/plugins/mcp/McpPluginServerMapper.xml
+  s_bbfa25b496d85b::t_f4ebf124426820 1-168
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/session/AgentSessionMapper.xml
+  s_bbfa25b496d85b::t_a8856c84583801 1-116
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/session/AgentSessionMessageMapper.xml
+  s_bbfa25b496d85b::t_8ac8199f4ccf8f 1-92
+agentforge-service/agentforge-service-web/src/main/resources/sqlliteMapper/trace/AgentTraceSnapshotMapper.xml
+  s_bbfa25b496d85b::t_5876d1e667f7a8 1-76
+agentforge-service/sql/sqllite/1.0.x/20261014000000_v1.0.x.sql
+  s_bbfa25b496d85b::t_3dd7d775ac796b 1-35
+agentforge-service/sql/sqllite/1.0.x/20261025000000_v1.0.x.sql
+  s_bbfa25b496d85b::t_9e746223f45adf 1-9
+agentforge-service/sql/sqllite/1.0.x/20261025010000_v1.0.x.sql
+  s_bbfa25b496d85b::t_14b9c269c25765 1-32
+agentforge-service/sql/sqllite/1.0.x/20261027000000_v1.0.x.sql
+  s_bbfa25b496d85b::t_a6de19dba78bd6 1-69
+agentforge-service/sql/sqllite/1.0.x/20261027010000_v1.0.x.sql
+  s_bbfa25b496d85b::t_ec27b6c1e0b544 1-28
+agentforge-service/sql/sqllite/1.0.x/20261028000000_v1.0.x.sql
+  s_bbfa25b496d85b::t_ffd223494293f6 1-48
+agentforge-service/sql/sqllite/1.0.x/20261029000000_v1.0.x.sql
+  s_bbfa25b496d85b::t_65b1ab169bdd1a 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "edf56a40940977c6959c39dabaa6790a0f2b01bb",
+  "prompts": {},
+  "sessions": {
+    "s_167291194df912": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18d1b-b93a-7073-9715-d7df00f6cc10",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_8e15f507b198f6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18b61-1e5c-7ef2-a3b1-8519ed567224",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    },
+    "s_bbfa25b496d85b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e77a31b5affeblJMOHiZChWyER",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "changlu <939974883@qq.com>"
+    }
+  }
+}
