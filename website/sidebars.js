@@ -1,7 +1,34 @@
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
-const sidebars = {docs: [
-  {type: 'category', label: 'RoadMap', collapsed: false, items: ['roadmap/roadmap']},
-  {type: 'category', label: '关于 AgentForge', collapsed: false, items: ['about/introduction']},
-  {type: 'category', label: '快速开始', collapsed: false, items: ['quickstart/getting-started', 'quickstart/contributing']},
-]};
+const sidebars = {
+  sdkSidebar: [
+    {
+      type: 'category',
+      label: '开始使用',
+      collapsed: false,
+      items: ['about/introduction', 'quickstart/getting-started'],
+    },
+    {
+      type: 'category',
+      label: '核心组件',
+      collapsed: false,
+      items: [
+        'sdk/model',
+        'sdk/agent',
+        'sdk/message-event',
+        'sdk/middleware',
+        'sdk/tool',
+      ],
+    },
+  ],
+  serviceSidebar: [
+    {
+      type: 'category',
+      label: 'AgentForge Service',
+      collapsed: false,
+      items: ['service/introduction', 'service/quick-deploy'],
+    },
+  ],
+  roadmapSidebar: ['roadmap/roadmap'],
+};
+
 export default sidebars;

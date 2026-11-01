@@ -210,7 +210,7 @@ AgentForge
 ### Agent版本控制与发布
 
 - [x] 核心Agent版本设计与发布设计实现：[Agent版本设计与Agent发布方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/Agent版本设计与Agent发布方案.md)
-- [x] 核心Agent调试与发布对话设计与实现：[核心Agent调试与发布对话设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/核心Agent调试与发布对话设计与实现.md)
+- [ ] 核心Agent调试与发布对话设计与实现：[核心Agent调试与发布对话设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/核心Agent调试与发布对话设计与实现.md)
 
 
 
@@ -257,7 +257,7 @@ AgentForge
 
 ```text
                          +--------------------------------------+
-                         |              AgentForge              |
+                         |          agentforge-core             |
                          |                                      |
                          |          LLM Model Protocol          |
                          |                  |                   |

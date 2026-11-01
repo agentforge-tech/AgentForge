@@ -14,5 +14,23 @@
   "item.label.博客": {
     "message": "Blog",
     "description": "Navbar item with label 博客"
+  },
+  "item.label.Home": {
+    "message": "Home"
+  },
+  "item.label.RoadMap": {
+    "message": "RoadMap"
+  },
+  "item.label.SDK": {
+    "message": "SDK"
+  },
+  "item.label.Service": {
+    "message": "Service"
+  },
+  "item.label.Blog": {
+    "message": "Blog"
+  },
+  "item.label.Community": {
+    "message": "Community"
   }
 }

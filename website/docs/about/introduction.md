@@ -1,19 +1,51 @@
 ---
-title: AgentForge 介绍
-sidebar_label: AgentForge 介绍
-description: 了解 AgentForge 的定位、设计理念与模块结构
+title: 认识 AgentForge
+sidebar_label: 认识AgentForge
+description: 了解 AgentForge 的定位、分层设计、核心模块与最短上手路径
+sidebar_position: 1
+displayed_sidebar: sdkSidebar
 ---
-# AgentForge 介绍
 
-AgentForge 是一个面向 Java 开发者的开源 Agent Framework。它从 **LLM 底层协议与模型抽象** 出发，逐层构建工具调用、上下文、记忆、中间件、推理与 Agent Runtime，让应用可以在不绑定单一模型厂商的前提下，把模型能力转化为可执行的任务。
+# 认识 AgentForge
+
+AgentForge 是一个面向 Java 开发者的开源 Agent Framework。它从 **LLM 协议与模型抽象** 出发，逐层构建工具调用、会话记忆、中间件、推理循环与 Agent Runtime，让应用可以在不绑定单一模型厂商的前提下，把模型能力转化为可执行的任务。
 
 > **Forge Intelligence into Action. 将智能锻造成行动。**
 
-`AgentForge = Agent + Forge`：`Agent` 代表能理解目标、思考、调用工具并完成任务的智能体；`Forge` 强调通过工程化加工、组合和强化，把模型的原始智能锻造成可靠的应用能力。
+`AgentForge = Agent + Forge`：`Agent` 代表能够理解目标、思考、调用工具并完成任务的智能体；`Forge` 强调通过工程化加工、组合与强化，把模型的原始智能锻造成可靠的应用能力。
+
+## 最新依赖
+
+当前框架版本为 **1.0.0**。推荐通过 BOM 统一管理版本：
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>cloud.changlu.agentforge</groupId>
+            <artifactId>agentforge-ai-bom</artifactId>
+            <version>1.0.0</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
+随后按需引入模块，无需再写版本号：
+
+```xml
+<dependency>
+    <groupId>cloud.changlu.agentforge</groupId>
+    <artifactId>agentforge-agent-core</artifactId>
+</dependency>
+```
+
+如果只想快速跑一个例子，可以直接引入 `agentforge-agent-core`，它会传递引入 `agentforge-model-api` 与 `agentforge-model-core`。
 
 ## 为什么选择自底向上
 
-Agent 的记忆、工具、规划和执行循环，最终都会落到模型请求与响应上。AgentForge 先稳定 `ChatModel` 与 `StreamingChatModel` 等通用契约，再向上组合 Agent 能力，避免业务代码与特定厂商 SDK 紧密绑定。
+Agent 的记忆、工具、规划和执行循环，最终都会落到模型请求与响应上。AgentForge 先稳定 `ChatModel`、`StreamingChatModel`、`ChatMessage`、`ChatResponse` 等通用契约，再向上组合 Agent 能力，避免业务代码与特定厂商 SDK 紧密绑定。
 
 ```text
 LLM Provider
@@ -26,41 +58,90 @@ LLM Provider
 Real Action
 ```
 
-这种分层方式让开发者可以独立替换模型、传输实现、工具系统或 Agent 执行策略，不必重写整个应用。
+这种分层方式带来四个直接收益：
+
+1. **Provider-neutral**：上层 Agent 代码只依赖统一契约，换模型时不需要改主循环；
+2. **协议适配下沉**：OpenAI / Anthropic 的字段、Header、SSE、finish reason 差异全部封装在 Provider 模块；
+3. **可独立替换**：模型、传输、工具、记忆、中间件都可以按需替换；
+4. **开箱即用**：既可以直接写代码嵌入 Java 应用，也可以通过 AgentForge Service 一键启动完整工作台。
+
+## 工程结构
+
+```text
+AgentForge
+├── agentforge-ai-parent          # 统一依赖与插件版本管理
+├── agentforge-ai-bom             # 统一 BOM 坐标维护
+├── agentforge-model              # 模型层
+│   ├── agentforge-model-api      # Provider 无关的模型契约
+│   ├── agentforge-model-core     # 默认实现、HTTP 传输与 Tool 执行引擎
+│   ├── agentforge-model-openai   # OpenAI / OpenAI-compatible Provider
+│   ├── agentforge-model-anthropic# Anthropic Provider
+│   └── agentforge-model-registry # 开箱即用的 ChatModel 工厂
+├── agentforge-framework
+│   ├── agentforge-agent-core     # ReAct Agent 运行时
+│   └── agentforge-harness-agent  # Harness 运行时（规划中）
+├── agentforge-service            # Vue 前端 + Spring Boot 后端
+└── agentforge-examples           # 参考示例
+```
 
 ## 核心能力
 
-- **统一模型抽象**：统一消息、请求、响应、同步与流式调用契约。
-- **多模型协议适配**：提供 OpenAI / OpenAI-compatible 与 Anthropic 实现，上层代码保持厂商中立。
-- **Tool Calling**：支持 `@Tool` 反射注册、Function Calling 转换、工具执行与多轮闭环。
-- **ReAct Agent Runtime**：支持同步与流式执行、窗口记忆、中间件、重试与任务取消。
-- **Harness Runtime**：扩展权限、工具审批、沙箱、追踪与可恢复执行能力。
-- **开箱即用的服务层**：提供 Spring Boot 后端、Vue 前端与统一 SSE 流式事件协议。
+| 能力 | 说明 | 入口 |
+| --- | --- | --- |
+| 统一模型协议 | 一套 `ChatRequest` / `ChatResponse` 适配 OpenAI、Anthropic 与 OpenAI-compatible 服务 | [Model](../sdk/model) |
+| ReAct Agent | 同步与流式共用一套 think → act → 记忆写回内核 | [Agent 智能体](../sdk/agent) |
+| 消息与事件 | 统一 Message 模型、流式回调与工具执行事件 | [消息事件](../sdk/message-event) |
+| Middleware | 在模型调用、工具执行、Loop 生命周期挂载自定义逻辑 | [Middleware 设计](../sdk/middleware) |
+| Tool 扩展 | 本地 Java 方法、HTTP 插件、MCP 服务统一转换为 Function Call | [Tool 扩展设计](../sdk/tool) |
+| Service 工作台 | 模型配置、Agent 调试、版本发布、会话与链路追踪 | [Service](#service-工作台) |
 
-## 模块结构
+## 一次最小调用
 
-| 模块 | 主要职责 |
-| --- | --- |
-| `agentforge-model-api` | 模型、消息、请求、响应、工具与 Transport SPI 契约 |
-| `agentforge-model-core` | 默认实现、HTTP Transport、JSON、`@Tool` 执行与推理-工具循环 |
-| `agentforge-model-openai` | OpenAI Chat Completions、流式输出与 Function Calling |
-| `agentforge-model-anthropic` | Anthropic Messages API、流式输出与 Tool Use |
-| `agentforge-model-registry` | 模型配置、注册与 `LlmFactory` 工厂 |
-| `agentforge-agent-core` | ReAct Agent、Memory、Middleware、重试与取消 |
-| `agentforge-harness-agent` | 权限、审批、沙箱、追踪与可恢复执行 |
-| `agentforge-service` | Vue + Spring Boot 可运行服务与统一 SSE 协议 |
-| `agentforge-examples` | 模型、工具与 Agent 的参考示例 |
+```java
+ChatModel model = OpenAiChatModel.builder()
+        .apiKey(System.getenv("OPENAI_API_KEY"))
+        .modelName("gpt-4o-mini")
+        .build();
 
-## 设计原则
+String answer = model.chat("用一句话解释什么是 ReAct Agent。");
+System.out.println(answer);
+```
 
-1. **自底向上**：先稳定 LLM 与消息契约，再构建 Agent 上层能力。
-2. **厂商中立**：核心业务不与单一模型协议耦合。
-3. **模块化**：抽象、Provider、Agent Runtime 和服务层可独立演进。
-4. **轻量可嵌入**：控制底层依赖，可用于 Spring Boot、普通 Java 与桌面应用。
-5. **面向生产**：不只停留在 Demo，持续完善可控、可观测、可恢复的执行能力。
+需要工具与多轮推理时，再叠加 `ReActAgent`：
 
-## 适用场景
+```java
+ToolService toolService = new ToolService();
+toolService.tools(new WeatherTools());
 
-AgentForge 适合需要在 Java 技术栈中构建模型接入层、业务工具调用、ReAct Agent、企业内部 AI 助手或可控 Agent 平台的项目。如果你希望深入理解模型协议、掌控运行时行为，或按需替换底层组件，这种架构会尤其合适。
+ReActAgent agent = ReActAgent.builder()
+        .agentName("weather-agent")
+        .systemPrompt("你是一个天气助手，需要时调用工具。")
+        .chatModel(chatModel)
+        .streamingChatModel(streamingChatModel)
+        .chatMemoryProvider(new MessageWindowChatMemoryProvider(50))
+        .toolService(toolService)
+        .build();
 
-准备开始时，请继续阅读[**快速开始**](../quickstart/getting-started.md)；如果想了解底层设计与具体实现，可前往[**AgentForge 博客**](/blog)。
+ChatResult result = agent.run(AgentRequest.builder()
+        .memoryId("user-1")
+        .question("北京今天天气怎么样？")
+        .build());
+```
+
+## 选择你的阅读路径
+
+- **第一次接触**：从 [快速开始](../quickstart/getting-started) 跑通第一个 Agent；
+- **想理解模型层**：阅读 [Model 模型协议层](../sdk/model)；
+- **想搭建完整 Agent**：阅读 [Agent 智能体](../sdk/agent) 与 [Tool 扩展设计](../sdk/tool)；
+- **想做可观测与治理**：阅读 [Middleware 设计](../sdk/middleware) 与 [消息事件](../sdk/message-event)；
+- **想直接使用成品工作台**：访问 [AgentForge Service](../service/introduction)。
+
+## Service 工作台
+
+AgentForge Service 是框架之上的一套开箱即用工作台，打通了从模型配置到正式发布的完整闭环：
+
+```text
+模型配置 → Agent 配置 → 调试 → 版本 → 发布 → 对话与会话历史
+```
+
+它适合希望快速体验 AgentForge 能力、又不想从零搭建前后端的团队。详见 [Service 介绍](../service/introduction)。

@@ -16,8 +16,7 @@
     "description": "The label of footer link with label=介绍 linking to /docs/guides/introduction"
   },
   "link.item.label.快速开始": {
-    "message": "Quick Start",
-    "description": "The label of footer link with label=快速开始 linking to /docs/quickstart/install"
+    "message": "Quick Start"
   },
   "link.item.label.参与贡献": {
     "message": "Contributing",
@@ -42,5 +41,32 @@
   "copyright": {
     "message": "Copyright © 2026 AgentForge. Built with Docusaurus.",
     "description": "The footer copyright"
+  },
+  "link.title.Service": {
+    "message": "Service"
+  },
+  "link.title.Community": {
+    "message": "Community"
+  },
+  "link.item.label.2026 RoadMap": {
+    "message": "2026 RoadMap"
+  },
+  "link.item.label.AgentForge 介绍": {
+    "message": "Meet AgentForge"
+  },
+  "link.item.label.Model 模型协议层": {
+    "message": "Model Protocol Layer"
+  },
+  "link.item.label.Agent 智能体": {
+    "message": "Agent"
+  },
+  "link.item.label.Tool 扩展设计": {
+    "message": "Tool Extensions"
+  },
+  "link.item.label.Service 介绍": {
+    "message": "Service Introduction"
+  },
+  "link.item.label.快速部署": {
+    "message": "Quick Deploy"
   }
 }
