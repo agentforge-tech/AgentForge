@@ -16,6 +16,6 @@ log "starting AgentForge (SQLite by default)"
 compose up -d
 compose ps
 
-WEB_PORT="$(env_get WEB_PORT 18080)"
+WEB_PORT="$(env_get WEB_PORT 17080)"
 log "web: http://127.0.0.1:${WEB_PORT}"
 log "data: ${DOCKER_DIR}/data"
