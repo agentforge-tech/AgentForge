@@ -226,6 +226,10 @@ http://127.0.0.1:18080
 
 安装器只下载 Compose 文件、环境变量模板与升级脚本；`conf/`、`data/`、`logs/`、`upload/` 会持久化在当前目录。重复执行同一条命令是安全的，后续可通过 `./upgrade.sh [版本]` 升级。
 
+启动平台可见：
+
+![AgentForge Service 启动界面](assets/agentforge-service-ui.png)
+
 #### 源码模式启动
 
 需要先完成第一部分的源码构建：
