@@ -6,7 +6,7 @@
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://agentforge-tech.github.io/AgentForge/en/blog"/>
     <subtitle>AgentForge Blog</subtitle>
-    <icon>https://agentforge-tech.github.io/AgentForge/en/img/favicon.svg</icon>
+    <icon>https://agentforge-tech.github.io/AgentForge/en/img/agentforge-logo.png</icon>
     <entry>
         <title type="html"><![CDATA[Publishing the Open Source Project AgentForge to the Official Maven Central Repository in Practice: Namespace Selection and Automated Publishing]]></title>
         <id>https://agentforge-tech.github.io/AgentForge/en/blog/番外/工程化/开源项目之AgentForge发布到MavenCentral官方仓库实战</id>

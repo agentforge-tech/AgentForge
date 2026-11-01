@@ -6,7 +6,7 @@
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://agentforge-tech.github.io/AgentForge/blog"/>
     <subtitle>AgentForge Blog</subtitle>
-    <icon>https://agentforge-tech.github.io/AgentForge/img/favicon.svg</icon>
+    <icon>https://agentforge-tech.github.io/AgentForge/img/agentforge-logo.png</icon>
     <entry>
         <title type="html"><![CDATA[开源项目之 AgentForge 发布到 Maven Central 官方仓库实战：命名空间选择与自动化发布]]></title>
         <id>https://agentforge-tech.github.io/AgentForge/blog/番外/工程化/开源项目之AgentForge发布到MavenCentral官方仓库实战</id>
