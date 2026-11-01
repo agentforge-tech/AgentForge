@@ -53,7 +53,7 @@ cp .env.example .env          # 按需修改端口等配置
 ./scripts/deploy.sh
 ```
 
-访问 `http://127.0.0.1:18080`。首次执行脚本会生成 `docker/conf/application.yml` 与
+访问 `http://127.0.0.1:17080`。首次执行脚本会生成 `docker/conf/application.yml` 与
 `docker/conf/logback.xml`，可直接编辑，重启容器后生效。
 
 也可以直接使用 Docker Compose，但需要先执行迁移：
@@ -146,12 +146,12 @@ docker run --rm \
   agentforge-service:1.0.0
 # 2) 启动服务
 docker run -d --name agentforge --restart unless-stopped \
-  -p 18080:8080 \
+  -p 17080:8080 \
   -v "$PWD/data":/opt/agentforge/data \
   -v "$PWD/logs":/opt/agentforge/logs \
   -v "$PWD/upload":/opt/agentforge/upload \
   -e AGENTFORGE_FILE_VISIT_HOST=127.0.0.1 \
-  -e AGENTFORGE_FILE_VISIT_PORT=18080 \
+  -e AGENTFORGE_FILE_VISIT_PORT=17080 \
   agentforge-service:1.0.0
 ```
 
@@ -159,7 +159,7 @@ docker run -d --name agentforge --restart unless-stopped \
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `WEB_PORT` | `18080` | 宿主机访问端口 |
+| `WEB_PORT` | `17080` | 宿主机访问端口 |
 | `AGENTFORGE_DB_TYPE` | `sqlite` | `sqlite` 或 `mysql` |
 | `AGENTFORGE_SQLITE_PATH` | `/opt/agentforge/data/agentforge.db` | 容器内 SQLite 文件 |
 | `AGENTFORGE_SQLITE_INCREMENT_DIR` | `/opt/agentforge/sql/sqllite` | 容器内增量 SQL 目录 |

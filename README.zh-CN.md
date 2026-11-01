@@ -221,7 +221,7 @@ curl -fsSL https://raw.githubusercontent.com/agentforge-tech/AgentForge/master/a
 脚本会拉取一体化镜像（后端 + 前端 + SQLite）、初始化数据库并启动服务：
 
 ```text
-http://127.0.0.1:18080
+http://127.0.0.1:17080
 ```
 
 安装器只下载 Compose 文件、环境变量模板与升级脚本；`conf/`、`data/`、`logs/`、`upload/` 会持久化在当前目录。重复执行同一条命令是安全的，后续可通过 `./upgrade.sh [版本]` 升级。

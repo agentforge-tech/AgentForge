@@ -243,7 +243,7 @@ eclipse-temurin:17-jre-jammy  → 运行时
 services:
   agentforge:
     image: ${IMAGE_REPO:-agentforge}:${IMAGE_TAG:-1.0.0}
-    ports: ["${WEB_PORT:-18080}:8080"]
+    ports: ["${WEB_PORT:-17080}:8080"]
     volumes:
       - ./data:/opt/agentforge/data
       - ./logs:/opt/agentforge/logs
@@ -288,7 +288,7 @@ cd agentforge-service/docker
 ./scripts/deploy.sh
 ```
 
-访问 `http://127.0.0.1:18080`。`deploy.sh` 会构建镜像、执行 `upgrade-sql.sh` 完成首次迁移，再启动应用容器。
+访问 `http://127.0.0.1:17080`。`deploy.sh` 会构建镜像、执行 `upgrade-sql.sh` 完成首次迁移，再启动应用容器。
 
 ### 6.4 增量升级
 
@@ -368,7 +368,7 @@ MySQL 表结构继续使用 `sql/increment/1.0.x/*.sql` 和 `bin/local/upgrate-s
 | `AGENTFORGE_DB_USERNAME` | `root` | MySQL 用户名 |
 | `AGENTFORGE_DB_PASSWORD` | `123456` | MySQL 密码 |
 | `AGENTFORGE_DB_POOL_SIZE` | SQLite `1` / MySQL `10` | 连接池大小 |
-| `WEB_PORT` | `18080` | Docker 宿主机端口 |
+| `WEB_PORT` | `17080` | Docker 宿主机端口 |
 | `AGENTFORGE_FILE_VISIT_HOST` | `127.0.0.1` | 上传文件对外地址 |
 | `AGENTFORGE_FILE_VISIT_PORT` | `server.port` / Docker 下为 `WEB_PORT` | 上传文件对外端口 |
 | `AGENTFORGE_STATIC_LOCATION` | `file:${user.dir.conf}static/` | 前端静态资源目录 |
@@ -486,7 +486,7 @@ IMAGE_REPO=dockerhub-user/agentforge ./scripts/push.sh 1.0.0
 # 查看状态
 docker compose ps
 docker logs -f agentforge
-curl -I http://127.0.0.1:18080/
+curl -I http://127.0.0.1:17080/
 ```
 
 ---
@@ -560,7 +560,7 @@ compose build
 docker compose ps
 docker inspect -f '{{.State.Health.Status}}' agentforge
 docker logs agentforge | tail -30
-curl -sS http://127.0.0.1:18080/api/model-config/list
+curl -sS http://127.0.0.1:17080/api/model-config/list
 ```
 
 预期：
@@ -599,7 +599,7 @@ SKIP_PULL=1 ./scripts/upgrade.sh 1.0.1
 ```bash
 ls -lh backups/
 docker logs agentforge | grep -E "SQLite|Started"
-curl -sS http://127.0.0.1:18080/api/model-config/list
+curl -sS http://127.0.0.1:17080/api/model-config/list
 ```
 
 经验：
@@ -685,13 +685,13 @@ docker run --rm \
 
 # 再启动
 docker run -d --name agentforge --restart unless-stopped \
-  -p 18080:8080 \
+  -p 17080:8080 \
   -v "$PWD/data":/opt/agentforge/data \
   -v "$PWD/logs":/opt/agentforge/logs \
   -v "$PWD/upload":/opt/agentforge/upload \
   -e AGENTFORGE_MODEL_API_KEY=your-key \
   -e AGENTFORGE_FILE_VISIT_HOST=127.0.0.1 \
-  -e AGENTFORGE_FILE_VISIT_PORT=18080 \
+  -e AGENTFORGE_FILE_VISIT_PORT=17080 \
   agentforge:1.0.0
 ```
 

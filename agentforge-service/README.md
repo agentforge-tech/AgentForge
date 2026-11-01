@@ -102,7 +102,7 @@ The image contains the backend, frontend and SQLite. Runtime data stays under `d
 ```bash
 cd agentforge-service/docker
 cp .env.example .env
-./scripts/deploy.sh        # build + migrate + start on http://127.0.0.1:18080
+./scripts/deploy.sh        # build + migrate + start on http://127.0.0.1:17080
 ./scripts/upgrade.sh 1.0.1 # backup + migrate + recreate with the new tag
 ./scripts/upgrade-sql.sh   # only execute SQLite incremental SQL
 ./scripts/package.sh 1.0.0 # export an offline image tar

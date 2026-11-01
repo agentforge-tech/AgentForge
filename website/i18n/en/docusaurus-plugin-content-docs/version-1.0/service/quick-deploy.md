@@ -8,7 +8,7 @@ displayed_sidebar: serviceSidebar
 
 # Service Quick Deploy
 
-The AgentForge all-in-one image contains the backend, frontend, and SQLite. It is designed for a quick start on Linux or macOS. The default port is `18080`, and runtime data is stored in the deployment directory.
+The AgentForge all-in-one image contains the backend, frontend, and SQLite. It is designed for a quick start on Linux or macOS. The default port is `17080`, and runtime data is stored in the deployment directory.
 
 Local deployment supports two modes: **one-click installation deployment** and **Docker one-click deployment**. Choose either one for your scenario.
 
@@ -17,7 +17,7 @@ Local deployment supports two modes: **one-click installation deployment** and *
 - Docker 20.10+
 - Docker Compose v2 (`docker compose version` to check)
 - At least 1 GB of available memory
-- Firewall / security group allows port `18080`
+- Firewall / security group allows port `17080`
 
 ## 2. Local deployment
 
@@ -36,7 +36,7 @@ The script downloads deployment files, pulls the image, initializes configuratio
 Open:
 
 ```text
-http://127.0.0.1:18080
+http://127.0.0.1:17080
 ```
 
 For remote servers, replace `127.0.0.1` with the server IP or domain.
@@ -53,13 +53,13 @@ mkdir -p agentforge && cd agentforge
 docker run -d \
   --name agentforge-service \
   --restart unless-stopped \
-  -p 18080:8080 \
+  -p 17080:8080 \
   -v "$PWD/data":/opt/agentforge/data \
   -v "$PWD/logs":/opt/agentforge/logs \
   -v "$PWD/upload":/opt/agentforge/upload \
   -v "$PWD/conf":/opt/agentforge/host-conf \
   -e AGENTFORGE_FILE_VISIT_HOST=127.0.0.1 \
-  -e AGENTFORGE_FILE_VISIT_PORT=18080 \
+  -e AGENTFORGE_FILE_VISIT_PORT=17080 \
   -e AGENTFORGE_SQLITE_APPLIED_DIR=/opt/agentforge/data/sql-applied \
   --entrypoint /bin/bash \
   codercl/agentforge-service:1.0.0 \
