@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
 import Link from '@docusaurus/Link';
 import {useLocation} from '@docusaurus/router';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
@@ -10,10 +10,8 @@ import styles from './styles.module.css';
 
 const COPY = {
   'zh-Hans': {
-    title: 'AgentForge 核心模块专栏',
     model: '一、模型协议层',
     chatModel: 'ChatModel（LLM 对话协议）',
-    unified: '统一协议与 Function Calling',
     providers: '主流模型协议实现',
     react: '二、通用 ReAct Agent 层',
     functionCalling: 'Function Calling 工具扩展',
@@ -22,13 +20,11 @@ const COPY = {
     extras: '番外篇：工程化与生态',
     planned: '规划中',
     other: '其他文章',
-    aria: 'AgentForge 博客专栏导航',
+    aria: 'AgentForge 博客文章导航',
   },
   en: {
-    title: 'AgentForge Core Modules',
     model: 'I. Model Protocol Layer',
     chatModel: 'ChatModel (LLM Protocol)',
-    unified: 'Unified Protocol & Function Calling',
     providers: 'Model Provider Protocols',
     react: 'II. General ReAct Agent Layer',
     functionCalling: 'Function Calling Tool Extensions',
@@ -37,7 +33,7 @@ const COPY = {
     extras: 'Extras: Engineering & Ecosystem',
     planned: 'Planned',
     other: 'Other Posts',
-    aria: 'AgentForge blog series navigation',
+    aria: 'AgentForge blog navigation',
   },
 };
 
@@ -77,17 +73,12 @@ function buildTree(items, copy) {
     {
       label: copy.model,
       children: [
+        {label: copy.chatModel, items: buckets.unified},
         {
-          label: copy.chatModel,
+          label: copy.providers,
           children: [
-            {label: copy.unified, items: buckets.unified},
-            {
-              label: copy.providers,
-              children: [
-                {label: 'OpenAI', items: buckets.openai},
-                {label: 'Anthropic', items: buckets.anthropic},
-              ],
-            },
+            {label: 'OpenAI', items: buckets.openai},
+            {label: 'Anthropic', items: buckets.anthropic},
           ],
         },
       ],
@@ -117,62 +108,92 @@ function samePath(left, right) {
   return normalize(left) === normalize(right);
 }
 
+function hasActive(node, pathname) {
+  if (node.items?.some((item) => samePath(item.permalink, pathname))) {
+    return true;
+  }
+  return node.children?.some((child) => hasActive(child, pathname)) ?? false;
+}
+
 function ArticleList({items, pathname}) {
-  if (!items?.length) return null;
+  if (!items?.length) {
+    return null;
+  }
+  return items.map((item) => (
+    <li className="menu__list-item" key={item.permalink}>
+      <Link
+        to={item.permalink}
+        title={item.title}
+        className={clsx('menu__link', {
+          'menu__link--active': samePath(item.permalink, pathname),
+        })}>
+        {item.title}
+      </Link>
+    </li>
+  ));
+}
+
+function Category({node, pathname, depth, defaultOpen}) {
+  const active = hasActive(node, pathname);
+  const [open, setOpen] = useState(defaultOpen || active);
+
   return (
-    <ul className={styles.articleList}>
-      {items.map((item) => (
-        <li key={item.permalink}>
-          <Link
-            to={item.permalink}
-            title={item.title}
-            className={clsx(styles.articleLink, {
-              [styles.articleLinkActive]: samePath(item.permalink, pathname),
-            })}>
-            {item.title}
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <li className={clsx('menu__list-item', {'menu__list-item--collapsed': !open})}>
+      <div className="menu__list-item-collapsible">
+        <button
+          type="button"
+          className="clean-btn menu__link menu__link--sublist"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}>
+          {node.label}
+        </button>
+        <button
+          type="button"
+          className="clean-btn menu__caret"
+          aria-label={open ? 'Collapse category' : 'Expand category'}
+          onClick={() => setOpen(!open)}
+        />
+      </div>
+      {open && (
+        <ul className="menu__list">
+          <ArticleList items={node.items} pathname={pathname} />
+          {node.children?.map((child) => (
+            <TreeNode
+              key={child.label}
+              node={child}
+              pathname={pathname}
+              depth={depth + 1}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }
 
-function TreeNode({node, pathname, depth = 0, plannedLabel}) {
+function TreeNode({node, pathname, depth = 0}) {
   if (node.planned) {
     return (
-      <div className={clsx(styles.plannedNode, styles[`depth${Math.min(depth, 3)}`])}>
-        <span>{node.label}</span>
-        <span className={styles.badge}>{plannedLabel}</span>
-      </div>
+      <li className="menu__list-item">
+        <span className="menu__link" aria-disabled="true">
+          {node.label}
+        </span>
+      </li>
     );
   }
 
-  const hasActiveArticle = node.items?.some((item) =>
-    samePath(item.permalink, pathname),
-  );
-  const hasActiveChild = node.children?.some((child) =>
-    JSON.stringify(child).includes(decodeURI(pathname)),
-  );
+  if (node.children || node.items?.length) {
+    return (
+      <Category
+        node={node}
+        pathname={pathname}
+        depth={depth}
+        defaultOpen={depth === 0}
+      />
+    );
+  }
 
-  return (
-    <details className={styles.group} open={depth < 2 || hasActiveArticle || hasActiveChild}>
-      <summary className={clsx(styles.groupLabel, styles[`depth${Math.min(depth, 3)}`])}>
-        {node.label}
-      </summary>
-      <div className={styles.groupContent}>
-        <ArticleList items={node.items} pathname={pathname} />
-        {node.children?.map((child) => (
-          <TreeNode
-            key={child.label}
-            node={child}
-            pathname={pathname}
-            depth={depth + 1}
-            plannedLabel={plannedLabel}
-          />
-        ))}
-      </div>
-    </details>
-  );
+  return null;
 }
 
 function SidebarTree({sidebar, mobile = false}) {
@@ -184,21 +205,15 @@ function SidebarTree({sidebar, mobile = false}) {
 
   return (
     <nav
-      className={clsx(styles.sidebar, 'thin-scrollbar', {[styles.mobile]: mobile})}
+      className={clsx('theme-doc-sidebar-menu menu thin-scrollbar', styles.sidebar, {
+        [styles.mobile]: mobile,
+      })}
       aria-label={copy.aria}>
-      <Link className={styles.title} to="/blog">
-        {copy.title}
-      </Link>
-      <div className={styles.tree}>
+      <ul className="menu__list">
         {tree.map((node) => (
-          <TreeNode
-            key={node.label}
-            node={node}
-            pathname={pathname}
-            plannedLabel={copy.planned}
-          />
+          <TreeNode key={node.label} node={node} pathname={pathname} />
         ))}
-      </div>
+      </ul>
     </nav>
   );
 }
@@ -209,15 +224,13 @@ function MobileSidebar(props) {
 
 export default function BlogSidebar({sidebar}) {
   const windowSize = useWindowSize();
-  if (!sidebar?.items.length) return null;
+  if (!sidebar?.items.length) {
+    return null;
+  }
 
   if (windowSize === 'mobile') {
     return <NavbarSecondaryMenuFiller component={MobileSidebar} props={{sidebar}} />;
   }
 
-  return (
-    <aside className={styles.sidebarColumn}>
-      <SidebarTree sidebar={sidebar} />
-    </aside>
-  );
+  return <SidebarTree sidebar={sidebar} />;
 }
