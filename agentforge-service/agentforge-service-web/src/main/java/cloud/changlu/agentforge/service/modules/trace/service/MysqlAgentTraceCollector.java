@@ -1,7 +1,7 @@
 package cloud.changlu.agentforge.service.modules.trace.service;
 
-import cloud.changlu.agentforge.agent.trace.AgentTraceCollector;
-import cloud.changlu.agentforge.agent.trace.domain.AgentTraceSnapshot;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.AgentTraceCollector;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.domain.AgentTraceSnapshot;
 import cloud.changlu.agentforge.service.modules.trace.AgentTraceAttributes;
 import cloud.changlu.agentforge.service.modules.trace.dao.AgentTraceSnapshotMapper;
 import cloud.changlu.agentforge.service.modules.trace.domain.AgentForgeTraceSnapshot;

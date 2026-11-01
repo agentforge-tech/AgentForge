@@ -223,15 +223,15 @@ TraceMiddleware 不应替换 LoggingIAgentMiddleware。日志适合排查服务�
 
 建议将公共协议放在 agentforge-agent-core 中：
 
-1. cloud/changlu/agentforge/agent/trace/AgentTraceCollector.java
-2. cloud/changlu/agentforge/agent/trace/AgentTraceMiddleware.java
-3. cloud/changlu/agentforge/agent/trace/domain/AgentTraceSnapshot.java
-4. cloud/changlu/agentforge/agent/trace/domain/AgentTraceMessageSnapshot.java
-5. cloud/changlu/agentforge/agent/trace/domain/AgentTraceNodeMeta.java
-6. cloud/changlu/agentforge/agent/trace/domain/AgentTraceTokenUsage.java
-7. cloud/changlu/agentforge/agent/trace/runtime/AgentTraceRuntime.java
-8. cloud/changlu/agentforge/agent/trace/runtime/AgentTraceStepRuntime.java
-9. cloud/changlu/agentforge/agent/trace/runtime/AgentTraceToolRuntime.java
+1. cloud/changlu/agentforge/agent/extend/middlewares/trace/AgentTraceCollector.java
+2. cloud/changlu/agentforge/agent/extend/middlewares/trace/AgentTraceMiddleware.java
+3. cloud/changlu/agentforge/agent/extend/middlewares/trace/domain/AgentTraceSnapshot.java
+4. cloud/changlu/agentforge/agent/extend/middlewares/trace/domain/AgentTraceMessageSnapshot.java
+5. cloud/changlu/agentforge/agent/extend/middlewares/trace/domain/AgentTraceNodeMeta.java
+6. cloud/changlu/agentforge/agent/extend/middlewares/trace/domain/AgentTraceTokenUsage.java
+7. cloud/changlu/agentforge/agent/extend/middlewares/trace/runtime/AgentTraceRuntime.java
+8. cloud/changlu/agentforge/agent/extend/middlewares/trace/runtime/AgentTraceStepRuntime.java
+9. cloud/changlu/agentforge/agent/extend/middlewares/trace/runtime/AgentTraceToolRuntime.java
 
 AgentTraceSnapshot 建议字段如下：
 

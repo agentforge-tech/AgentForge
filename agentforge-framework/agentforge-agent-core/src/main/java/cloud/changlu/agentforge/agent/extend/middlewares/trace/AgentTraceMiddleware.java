@@ -1,13 +1,13 @@
-package cloud.changlu.agentforge.agent.trace;
+package cloud.changlu.agentforge.agent.extend.middlewares.trace;
 
 import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.StopResult;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.domain.AgentTraceSnapshot;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.domain.AgentTraceSnapshotStatus;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.domain.AgentTraceToolSnapshot;
 import cloud.changlu.agentforge.agent.step.StepResult;
 import cloud.changlu.agentforge.agent.step.StopResultState;
-import cloud.changlu.agentforge.agent.trace.domain.AgentTraceSnapshot;
-import cloud.changlu.agentforge.agent.trace.domain.AgentTraceSnapshotStatus;
-import cloud.changlu.agentforge.agent.trace.domain.AgentTraceToolSnapshot;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.request.ChatRequest;
 import cloud.changlu.agentforge.model.chat.response.ChatResponse;

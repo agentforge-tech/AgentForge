@@ -1,9 +1,9 @@
 package cloud.changlu.agentforge.service.modules.trace.middleware;
 
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
-import cloud.changlu.agentforge.agent.trace.AgentTraceCollector;
-import cloud.changlu.agentforge.agent.trace.AgentTraceMiddleware;
-import cloud.changlu.agentforge.agent.trace.domain.AgentTraceSnapshot;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.AgentTraceCollector;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.AgentTraceMiddleware;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.domain.AgentTraceSnapshot;
 import cloud.changlu.agentforge.service.modules.trace.AgentTraceAttributes;
 import cloud.changlu.agentforge.service.modules.trace.domain.AgentForgeTraceSnapshot;
 
