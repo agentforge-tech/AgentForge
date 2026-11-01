@@ -71,12 +71,13 @@ docker run -d \
   -v "$PWD/conf":/opt/agentforge/host-conf \
   -e AGENTFORGE_FILE_VISIT_HOST=127.0.0.1 \
   -e AGENTFORGE_FILE_VISIT_PORT=18080 \
+  -e AGENTFORGE_SQLITE_APPLIED_DIR=/opt/agentforge/data/sql-applied \
   --entrypoint /bin/bash \
   codercl/agentforge-service:1.0.0 \
   -c 'cp -n /opt/agentforge/conf/application.yml /opt/agentforge/host-conf/application.yml && cp -n /opt/agentforge/conf/logback.xml /opt/agentforge/host-conf/logback.xml && cp /opt/agentforge/host-conf/application.yml /opt/agentforge/conf/application.yml && cp /opt/agentforge/host-conf/logback.xml /opt/agentforge/conf/logback.xml && /opt/agentforge/bin/upgrade-sql.sh && exec /opt/agentforge/bin/start.sh'
 ```
 
-该命令首次启动时会将镜像内的默认配置导出到宿主机 `conf/` 目录，以后每次启动都会加载该目录中的 `application.yml` 和 `logback.xml`。随后执行幂等的 SQLite 增量迁移并启动 AgentForge。
+该命令首次启动时会将镜像内的默认配置导出到宿主机 `conf/` 目录，以后每次启动都会加载该目录中的 `application.yml` 和 `logback.xml`。随后执行幂等的 SQLite 增量迁移（已执行脚本归档到 `data/sql-applied/`）并启动 AgentForge。
 
 `conf`、`data`、`logs` 和 `upload` 目录会自动创建并持久化到宿主机。修改 `conf/` 下的配置后，执行 `docker restart agentforge-service` 即可生效。
 
@@ -118,8 +119,9 @@ docker start agentforge-service                  # 启动
 | --- | --- |
 | `conf/` | 应用与日志配置 |
 | `data/` | SQLite 数据库 |
+| `data/sql-applied/` | 已执行增量 SQL 归档（幂等判断依据，勿随意删除） |
 | `logs/` | 应用运行日志 |
 | `upload/` | 用户上传的文件 |
 | `backups/` | 手动或升级前的数据库备份 |
 
-迁移服务时，请至少完整备份 `conf/`、`data/` 和 `upload/` 目录。
+迁移服务时，请至少完整备份 `conf/`、`data/`（含 `data/sql-applied/` 归档）和 `upload/` 目录。

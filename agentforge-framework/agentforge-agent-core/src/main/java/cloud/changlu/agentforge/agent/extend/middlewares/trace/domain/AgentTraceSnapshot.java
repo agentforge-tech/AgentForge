@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.agent.trace.domain;
+package cloud.changlu.agentforge.agent.extend.middlewares.trace.domain;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

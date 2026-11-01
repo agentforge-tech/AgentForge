@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.agent.memory.window;
+package cloud.changlu.agentforge.agent.extend.memory.window;
 
 import cloud.changlu.agentforge.agent.memory.ChatMemory;
 import cloud.changlu.agentforge.agent.memory.store.ChatMemoryStore;

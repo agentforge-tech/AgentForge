@@ -34,7 +34,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p ${APP_HOME}/bin ${APP_HOME}/conf ${APP_HOME}/data \
        ${APP_HOME}/logs ${APP_HOME}/upload ${APP_HOME}/lib \
-       ${APP_HOME}/sql/sqllite
+       ${APP_HOME}/sql/sqllite ${APP_HOME}/sql/local/sqlite ${APP_HOME}/data/sql-applied
 
 COPY agentforge-service/docker/container/bin/ ${APP_HOME}/bin/
 COPY agentforge-service/bin/local/upgrate-sqlite.sh ${APP_HOME}/bin/upgrade-sql.sh

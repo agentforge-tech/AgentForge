@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.agent.trace.domain;
+package cloud.changlu.agentforge.agent.extend.middlewares.trace.domain;
 
 /** One tool invocation inside a ReAct step. */
 public class AgentTraceToolSnapshot {

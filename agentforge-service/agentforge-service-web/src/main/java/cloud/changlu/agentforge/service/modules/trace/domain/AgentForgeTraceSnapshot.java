@@ -1,6 +1,6 @@
 package cloud.changlu.agentforge.service.modules.trace.domain;
 
-import cloud.changlu.agentforge.agent.trace.domain.AgentTraceSnapshot;
+import cloud.changlu.agentforge.agent.extend.middlewares.trace.domain.AgentTraceSnapshot;
 
 /** AgentForge Service extension of the framework-neutral trace snapshot. */
 public class AgentForgeTraceSnapshot extends AgentTraceSnapshot {

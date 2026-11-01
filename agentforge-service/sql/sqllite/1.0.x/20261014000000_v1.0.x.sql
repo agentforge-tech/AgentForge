@@ -1,5 +1,7 @@
 -- 2026.10.14：新增 LLM 模型配置表 ai_model_config 与通用 Agent 配置表 ai_agent_config（SQLite 版）
 -- 说明：SQLite 无数据库/字符集概念，时间字段统一使用 TEXT + CURRENT_TIMESTAMP
+-- 说明：SQLite 一个 .db 文件即一个库，无 CREATE DATABASE/USE 语句；
+--       库文件由 upgrate-sqlite.sh 打开时自动创建（先 mkdir 目录再 sqlite3 打开），故此处无需建库语句。
 
 CREATE TABLE IF NOT EXISTS ai_model_config (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
