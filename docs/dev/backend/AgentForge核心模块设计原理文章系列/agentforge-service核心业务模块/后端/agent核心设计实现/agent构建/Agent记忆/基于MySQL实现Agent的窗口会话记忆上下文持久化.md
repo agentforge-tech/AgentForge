@@ -208,12 +208,13 @@ CREATE TABLE IF NOT EXISTS `ai_agent_memrory` (
 
 ```
 agentforge-agent-core                                  ← 无 DB 依赖
-└── agent.memory
-    ├── ChatMemory.java                                  ← 契约
-    ├── ChatMemoryProvider.java                          ← 契约
-    ├── store/
-    │   ├── ChatMemoryStore.java                          ← 存储 SPI（纯读写）
-    │   └── InMemoryChatMemoryStore.java                  ← 进程内默认实现
+├── agent.memory
+│   ├── ChatMemory.java                                  ← 契约
+│   ├── ChatMemoryProvider.java                          ← 契约
+│   └── store/
+│       ├── ChatMemoryStore.java                          ← 存储 SPI（纯读写）
+│       └── InMemoryChatMemoryStore.java                  ← 进程内默认实现
+└── agent.extend.memory
     └── window/
         ├── MessageWindowChatMemory.java                  ← 只做裁剪，状态走 Store
         └── MessageWindowChatMemoryProvider.java          ← 按 memoryId 管理窗口

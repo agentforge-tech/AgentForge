@@ -39,15 +39,15 @@ AgentForge
 
 **llm Model**：大语言模型层
 
-- [x] OpenAI协议
-- [x] Anthropic协议
+- [x] OpenAI协议：[OpenAI协议02、AgentForge 适配OpenAI接入核心实践](../dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/chatmodel/openai/OpenAI协议02、AgentForge%20适配OpenAI接入核心实践.md)
+- [x] Anthropic协议：[Anthropic协议02、AgentForge 适配Anthropic接入核心实践](../dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/chatmodel/anthropic/Anthropic协议02、AgentForge%20适配Anthropic接入核心实践.md)
 - [ ] ...其他待续
 
 
 
 **协议层抽象设计：**
 
-- [x] 协议层function call & 执行器抽象层设计实现：https://blog.changlu.cloud/blog/520
+- [x] 协议层function call & 执行器抽象层设计实现：[统一ChatModel协议层02、Function Calling 工具调用转换与执行扩展实现：Tool 契约 + ToolService 执行循环](../dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/chatmodel/统一ChatModel协议层02、Function%20Calling%20工具调用转换与执行扩展实现：Tool%20契约%20%2B%20ToolService%20执行循环.md)
 
 
 
@@ -67,8 +67,12 @@ AgentForge
 >
 > ​    middleware设计：[agentforge-agent-core](../../agentforge-framework/agentforge-agent-core)的src源码包cloud.changlu.agentforge.agent.component.middleware
 
-- [x] 核心ReAct 框架设计，支持非流式、流式 一套调用
-- [x] middleware接口扩展实现
+- [x] 核心ReAct 框架设计，支持非流式、流式 一套调用：
+  - 实现：`ReActAgent` 承载非流式主循环，`stream.ReActTokenStream` 承载流式主循环，二者共用 think→act→写回记忆 的步进语义与中断、步长上限控制 → `agentforge-agent-core` / `cloud.changlu.agentforge.agent`
+- [x] middleware接口扩展实现：
+  - 实现：`IAgentMiddleware` 定义 loop、AI重试、工具执行等阶段回调，`IStreamingIAgentMiddleware` 承载流式事件，`AgentMiddlewareManager` 负责注册排序与分发 → `...agent.component.middleware`
+
+- [x] agent标准会话记忆设计与实现：[Agent会话记忆接口设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/会话记忆/Agent会话记忆接口设计与实现.md)
 
 
 
@@ -76,16 +80,19 @@ AgentForge
 
 > **核心代码**： [agentforge-agent-core](../../agentforge-framework/agentforge-agent-core)的src源码包cloud.changlu.agentforge.agent.tool 
 
-- [x] 支持本地Local Tool（Java代码）转换：
-- [x] 支持HTTP外部接口转换
-- [x] 支持MCP服务协议接口转换
+- [x] 支持本地Local Tool（Java代码）转换：[Java代码转换FunctionCall协议01、AgentForge Local工具模块核心设计原理](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/functioncall核心扩展业务tool/local/Java代码转换FunctionCall协议01、AgentForge%20Local工具模块核心设计原理.md)
+  - 实现：`LocalToolFactory` 将本地方法映射为 `ToolSpecification`，`LocalToolExecutor` 负责入参转换与反射调用 → `...agent.tool.local`
+- [x] 支持HTTP外部接口转换：[适配HTTP协议转换FunctionCall协议01、AgentForge HTTP工具模块核心设计原理](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/functioncall核心扩展业务tool/http/适配HTTP协议转换FunctionCall协议01、AgentForge%20HTTP工具模块核心设计原理.md)
+  - 实现：`HttpToolFactory` 把 HTTP 插件定义转为工具描述，`HttpToolExecutor` 执行请求，另含 cURL ↔ HttpPlugin 双向转换 → `...agent.tool.http`
+- [x] 支持MCP服务协议接口转换：[MCP协议转换FunctionCall协议02、MCP框架调研与AgentForge接入实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/functioncall核心扩展业务tool/mcp/MCP协议转换FunctionCall协议02、MCP框架调研与AgentForge接入实现.md)
+  - 实现：`McpToolFactory` 拉取 MCP tools 并映射为 `ToolSpecification`，`McpToolExecutor` 走 JSON-RPC 调用，传输层支持 stdio 与 streamable-http → `...agent.tool.mcp`
 - [ ] ...其他规划
 
 
 
 **优化设计：**
 
-- [ ] 插件工具统一function call标准注入思考字段
+- [x] 插件工具统一function call标准注入思考字段：[插件工具统一FunctionCall标准与思考字段注入设计](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/functioncall核心扩展业务tool/插件工具统一FunctionCall标准与思考字段注入设计.md)
 
 
 
@@ -96,11 +103,18 @@ AgentForge
 
 
 
-#### 场景功能扩展（middlware）
+#### 扩展实现-会话记忆
 
-- [x] 日志middlware（支持快速本地调试）：
+- [x] 窗口会话记忆扩展实现：[会话记忆扩展-窗口会话记忆设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/会话记忆/会话记忆扩展-窗口会话记忆设计与实现.md)
+
+
+
+#### 扩展线-middlware插件
+
+- [x] 日志middlware（支持快速本地调试）：[内置middleware扩展：日志Loggingmiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：日志Loggingmiddlware实现.md)
+  - 实现：`LoggingIAgentMiddleware` 打印 loop、模型调用、工具执行关键节点并截断超长内容，按 memoryId 统计模型耗时、工具耗时与 token 消耗 → `...agent.extend.middlewares`
+- [x] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）：[内置middlware扩展：Agent Loop TraceMiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：Agent%20Loop%20TraceMiddlware实现.md)
 - [ ] 上下文压缩middlware（支持策略来设计上下文压缩）
-- [ ] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）
 
 
 
@@ -129,37 +143,74 @@ AgentForge
 
 
 
-# Agent服务：AgentForge Service
+# Agent基础服务：AgentForge Service
 
 ## 资源组件设计
 
 ### 模型配置
 
-- [ ] 核心模型统一协议层设计方案文档
-- [ ] 模型配置教程
+- [x] 核心模型统一协议层设计方案文档：[统一ChatModel协议层01、ChatModel 核心协议层设计：统一 API 契约封装与多协议扩展实现](../dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/chatmodel/统一ChatModel协议层01、ChatModel%20核心协议层设计：统一%20API%20契约封装与多协议扩展实现.md)
 
 
 
 ### HTTP插件工具
 
-- [ ] 核心HTTP插件设计方案文档
-- [ ] 标准HTTP插件工具配置教程
+- [x] 核心Agent插件之HTTP插件设计：[AgentForge Service 接入 HTTP 插件设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/我的资源/http插件/AgentForge%20Service%20接入%20HTTP%20插件设计方案.md)
 
 
 
 ### MCP插件服务
 
-- [ ] 核心MCP插件设计方案文档
-- [ ] 标准MCP插件服务配置教程
+- [x] 核心Agent插件之MCP插件设计：[AgentForge MCP 方案设计与实现说明](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/我的资源/MCP插件/AgentForge%20MCP%20方案设计与实现说明.md)
 
 
 
-## Agent设计
+## Agent核心设计实现
 
-### 通用Agent配置设计实现
+### Agent构建
+
+#### Agent类型
+
+##### 1）通用Agent配置设计实现
+
+- [x] 核心基础通用Agent装配设计，包含配置模型、对接http、mcp插件工具：[核心基础通用Agent装配设计，包含配置模型、对接http、mcp插件工具](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/agent构建/Agent类型/通用agent/核心基础通用Agent装配设计，包含配置模型、对接http、mcp插件工具.md)
+
+
+
+
+##### 2）沙箱Coding Agent配置设计实现
 
 - [ ] 核心通用Agent配置设计 & 扩展实现
-- [ ] 通用Agent详细配置过程指南（包含配置模型、对接http、mcp插件工具）
+
++ 场景：对接沙箱运行时，具备沙箱运行时的一套tool组件核心设计
+
+- [ ] ... todo
+
+
+
+#### Agent核心组成部分
+
+- [x] 基于MySQL实现Agent的窗口会话记忆上下文持久化：[基于MySQL实现Agent的窗口会话记忆上下文持久化](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/agent构建/Agent记忆/基于MySQL实现Agent的窗口会话记忆上下文持久化.md)
+
+
+
+
+
+
+### Agent页面会话对话交互
+
+- [x] AgentForge标准Agent会话与消息核心表设计：[AgentForge标准Agent会话与消息核心表设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/AgentForge标准Agent会话与消息核心表设计.md)
+- [x] agentforge-service核心标准agent事件协议设计定义：[agentforge-service核心事件协议设计定义](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/agentforge-service核心事件协议设计定义.md)
+- [x] Agent工具调用思考参数与前端优雅交互设计：[Agent工具调用思考参数与前端优雅交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent工具调用思考参数与前端优雅交互设计.md)
+- [ ] Agent追加事件 + 插入Agent loop对话
+- [ ] ...
+
+
+
+### Agent版本控制与发布
+
+- [x] 核心Agent版本设计与发布设计实现：[Agent版本设计与Agent发布方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/Agent版本设计与Agent发布方案.md)
+- [ ] 核心Agent调试与发布对话设计与实现：[核心Agent调试与发布对话设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/核心Agent调试与发布对话设计与实现.md)
 
 
 
@@ -167,21 +218,21 @@ AgentForge
 
 核心对接Agent基础设施场景，如定时任务、三方渠道、Agent数据监控
 
-### Agent Data Monitor 监控
-
-> 包含Agent的执行记录、执行耗时、消耗token情况等
-
-- [ ] 核心通用Agent Data Monitor 监控设计实现
-- [ ] 通用Agent的Data Monitor监控使用
-
 
 
 ### Agent Loop Trace监控
 
 > 包含Agent的核心执行链路追踪场景
 
-- [ ] 核心通用Agent Loop Trace监测设计实现
-- [ ] 通用Agent的Loop Trace监控使用
+- [x] Agent Loop Trace业务层监测设计实现：[Agent链路追踪设计实现（火焰图 & 流程图）](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent基础设施/agent链路追踪/Agent链路追踪设计实现（火焰图%20%26%20流程图）.md)；[Agent Trace推理链路画布组件选型与设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/agent基础设施/agent链路追踪/Agent%20Trace推理链路画布组件选型与设计方案.md)
+
+
+
+### Agent Data Monitor 监控
+
+> 包含Agent的执行记录、执行耗时、消耗token情况等
+
+- [ ] 核心通用Agent Data Monitor 监控设计实现
 
 
 
@@ -193,9 +244,16 @@ AgentForge
 
 
 
+### Agent 渠道绑定对接设计
+
+- [ ] 对接标准渠道【钉钉】
+- [ ] ...飞书bot等渠道
 
 
-# 基于AgentForge长出来的Agent应用（平台、cli、桌面）
+
+
+
+# 未来扩展：基于AgentForge长出来的Agent应用（平台、cli、桌面）
 
 ```text
                          +--------------------------------------+
@@ -208,6 +266,12 @@ AgentForge
                          |           Harness Agent              |
                          |                                      |
                          +------------------+-------------------+
+                                            |
+                                            |
+                          +-----------------+-----------------+
+                          |        agentforge-service         |
+                          +-----------------+-----------------+
+                                            |
                                             |
                   +-------------------------+-------------------------+
                   |                         |                         |

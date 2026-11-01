@@ -11,6 +11,8 @@ services:
       AGENTFORGE_DB_TYPE: ${AGENTFORGE_DB_TYPE:-sqlite}
       AGENTFORGE_SQLITE_PATH: ${AGENTFORGE_SQLITE_PATH:-/opt/agentforge/data/agentforge.db}
       AGENTFORGE_SQLITE_INCREMENT_DIR: ${AGENTFORGE_SQLITE_INCREMENT_DIR:-/opt/agentforge/sql/sqllite}
+      # 已执行 SQL 归档目录；放在 data 卷内，保证容器重建后幂等判断不丢失。
+      AGENTFORGE_SQLITE_APPLIED_DIR: ${AGENTFORGE_SQLITE_APPLIED_DIR:-/opt/agentforge/data/sql-applied}
       AGENTFORGE_DB_URL: ${AGENTFORGE_DB_URL:-}
       AGENTFORGE_DB_USERNAME: ${AGENTFORGE_DB_USERNAME:-}
       AGENTFORGE_DB_PASSWORD: ${AGENTFORGE_DB_PASSWORD:-}
