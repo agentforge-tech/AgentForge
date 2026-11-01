@@ -72,6 +72,8 @@ AgentForge
 - [x] middleware接口扩展实现：
   - 实现：`IAgentMiddleware` 定义 loop、AI重试、工具执行等阶段回调，`IStreamingIAgentMiddleware` 承载流式事件，`AgentMiddlewareManager` 负责注册排序与分发 → `...agent.component.middleware`
 
+- [x] agent标准会话记忆设计与实现：[Agent会话记忆接口设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/会话记忆/Agent会话记忆接口设计与实现.md)
+
 
 
 #### 外部协议转Function Call协议 & 执行
@@ -101,11 +103,17 @@ AgentForge
 
 
 
-#### 场景功能扩展（middlware）
+#### 扩展实现-会话记忆
+
+- [x] 窗口会话记忆扩展实现：[会话记忆扩展-窗口会话记忆设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/会话记忆/会话记忆扩展-窗口会话记忆设计与实现.md)
+
+
+
+#### 扩展线-middlware插件
 
 - [x] 日志middlware（支持快速本地调试）：[内置middleware扩展：日志Loggingmiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：日志Loggingmiddlware实现.md)
   - 实现：`LoggingIAgentMiddleware` 打印 loop、模型调用、工具执行关键节点并截断超长内容，按 memoryId 统计模型耗时、工具耗时与 token 消耗 → `...agent.extend.middlewares`
-- [x] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）：
+- [x] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）：[内置middlware扩展：Agent Loop TraceMiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：Agent%20Loop%20TraceMiddlware实现.md)
 - [ ] 上下文压缩middlware（支持策略来设计上下文压缩）
 
 
@@ -161,26 +169,48 @@ AgentForge
 
 ### Agent构建
 
-#### 1）通用Agent配置设计实现
+#### Agent类型
 
-- [ ] 核心基础通用Agent装配设计，包含配置模型、对接http、mcp插件工具
+##### 1）通用Agent配置设计实现
 
-
-
-
+- [x] 核心基础通用Agent装配设计，包含配置模型、对接http、mcp插件工具：[核心基础通用Agent装配设计，包含配置模型、对接http、mcp插件工具](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/agent构建/Agent类型/通用agent/核心基础通用Agent装配设计，包含配置模型、对接http、mcp插件工具.md)
 
 
-#### 2）沙箱Coding Agent配置设计实现
+
+
+##### 2）沙箱Coding Agent配置设计实现
 
 - [ ] 核心通用Agent配置设计 & 扩展实现
 
++ 场景：对接沙箱运行时，具备沙箱运行时的一套tool组件核心设计
+
+- [ ] ... todo
 
 
 
-### Agent页面对话事件交互
+#### Agent核心组成部分
 
-- [ ] 核心基础Agent事件对话协议设计
-- [ ] 扩展：Agent追加事件 + 插入Agent loop对话
+- [x] 基于MySQL实现Agent的窗口会话记忆上下文持久化：[基于MySQL实现Agent的窗口会话记忆上下文持久化](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/agent构建/Agent记忆/基于MySQL实现Agent的窗口会话记忆上下文持久化.md)
+
+
+
+
+
+
+### Agent页面会话对话交互
+
+- [x] AgentForge标准Agent会话与消息核心表设计：[AgentForge标准Agent会话与消息核心表设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/AgentForge标准Agent会话与消息核心表设计.md)
+- [x] agentforge-service核心标准agent事件协议设计定义：[agentforge-service核心事件协议设计定义](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/agentforge-service核心事件协议设计定义.md)
+- [x] Agent工具调用思考参数与前端优雅交互设计：[Agent工具调用思考参数与前端优雅交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent工具调用思考参数与前端优雅交互设计.md)
+- [ ] Agent追加事件 + 插入Agent loop对话
+- [ ] ...
+
+
+
+### Agent版本控制与发布
+
+- [x] 核心Agent版本设计与发布设计实现：[Agent版本设计与Agent发布方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/Agent版本设计与Agent发布方案.md)
+- [ ] 核心Agent调试与发布对话设计与实现：[核心Agent调试与发布对话设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/核心Agent调试与发布对话设计与实现.md)
 
 
 
@@ -190,19 +220,19 @@ AgentForge
 
 
 
+### Agent Loop Trace监控
+
+> 包含Agent的核心执行链路追踪场景
+
+- [x] Agent Loop Trace业务层监测设计实现：[Agent链路追踪设计实现（火焰图 & 流程图）](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent基础设施/agent链路追踪/Agent链路追踪设计实现（火焰图%20%26%20流程图）.md)；[Agent Trace推理链路画布组件选型与设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/前端/agent基础设施/agent链路追踪/Agent%20Trace推理链路画布组件选型与设计方案.md)
+
+
+
 ### Agent Data Monitor 监控
 
 > 包含Agent的执行记录、执行耗时、消耗token情况等
 
 - [ ] 核心通用Agent Data Monitor 监控设计实现
-
-
-
-### Agent Loop Trace监控
-
-> 包含Agent的核心执行链路追踪场景
-
-- [ ] Agent Loop Trace业务层监测设计实现：
 
 
 
@@ -236,6 +266,12 @@ AgentForge
                          |           Harness Agent              |
                          |                                      |
                          +------------------+-------------------+
+                                            |
+                                            |
+                          +-----------------+-----------------+
+                          |        agentforge-service         |
+                          +-----------------+-----------------+
+                                            |
                                             |
                   +-------------------------+-------------------------+
                   |                         |                         |
