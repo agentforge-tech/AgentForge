@@ -214,7 +214,7 @@ mkdir -p agentforge && cd agentforge
 curl -fsSL https://raw.githubusercontent.com/agentforge-tech/AgentForge/master/agentforge-service/docker/standalone/install.sh | bash
 ```
 
-It pulls the all-in-one image (backend + frontend + SQLite), initializes the database and starts the service at <http://127.0.0.1:18080>. Only the Compose file, environment template and upgrade script are downloaded; `conf/`, `data/`, `logs/` and `upload/` are persisted in the current directory. Re-running the installer is safe, and `./upgrade.sh [version]` upgrades an existing deployment.
+It pulls the all-in-one image (backend + frontend + SQLite), initializes the database and starts the service at <http://127.0.0.1:17080>. Only the Compose file, environment template and upgrade script are downloaded; `conf/`, `data/`, `logs/` and `upload/` are persisted in the current directory. Re-running the installer is safe, and `./upgrade.sh [version]` upgrades an existing deployment.
 
 The platform looks like this once started:
 

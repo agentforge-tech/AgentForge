@@ -8,7 +8,7 @@ displayed_sidebar: serviceSidebar
 
 # Service 快速部署
 
-AgentForge 一体化镜像已包含后端、前端与 SQLite，适合在 Linux 或 macOS 上快速启动。默认访问端口为 `18080`，运行数据保存在当前部署目录。
+AgentForge 一体化镜像已包含后端、前端与 SQLite，适合在 Linux 或 macOS 上快速启动。默认访问端口为 `17080`，运行数据保存在当前部署目录。
 
 本地部署提供两种方式：**一键安装部署**与 **Docker 一键部署**，可按场景任选其一。
 
@@ -17,7 +17,7 @@ AgentForge 一体化镜像已包含后端、前端与 SQLite，适合在 Linux �
 - Docker 20.10+
 - Docker Compose v2（`docker compose version` 可检查）
 - 至少 1 GB 可用内存
-- 防火墙 / 安全组放行 `18080` 端口
+- 防火墙 / 安全组放行 `17080` 端口
 
 ## 2. 本地部署
 
@@ -36,7 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/agentforge-tech/AgentForge/master/a
 启动完成后访问：
 
 ```text
-http://127.0.0.1:18080
+http://127.0.0.1:17080
 ```
 
 部署在远程服务器时，把 `127.0.0.1` 替换为服务器 IP 或域名。
@@ -53,13 +53,13 @@ mkdir -p agentforge && cd agentforge
 docker run -d \
   --name agentforge-service \
   --restart unless-stopped \
-  -p 18080:8080 \
+  -p 17080:8080 \
   -v "$PWD/data":/opt/agentforge/data \
   -v "$PWD/logs":/opt/agentforge/logs \
   -v "$PWD/upload":/opt/agentforge/upload \
   -v "$PWD/conf":/opt/agentforge/host-conf \
   -e AGENTFORGE_FILE_VISIT_HOST=127.0.0.1 \
-  -e AGENTFORGE_FILE_VISIT_PORT=18080 \
+  -e AGENTFORGE_FILE_VISIT_PORT=17080 \
   -e AGENTFORGE_SQLITE_APPLIED_DIR=/opt/agentforge/data/sql-applied \
   --entrypoint /bin/bash \
   codercl/agentforge-service:1.0.0 \

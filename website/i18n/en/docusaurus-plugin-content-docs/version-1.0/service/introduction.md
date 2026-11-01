@@ -73,7 +73,7 @@ mkdir -p agentforge && cd agentforge
 curl -fsSL https://raw.githubusercontent.com/agentforge-tech/AgentForge/master/agentforge-service/docker/standalone/install.sh | bash
 ```
 
-Open `http://127.0.0.1:18080` after startup.
+Open `http://127.0.0.1:17080` after startup.
 
 For full steps, port changes, data directories, and upgrades, see [Service Quick Deploy](./quick-deploy).
 

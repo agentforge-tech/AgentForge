@@ -60,7 +60,7 @@ esac
 log "启动 AgentForge"
 docker compose up -d agentforge-service
 docker compose ps
-WEB_PORT="$(env_get WEB_PORT 18080)"
+WEB_PORT="$(env_get WEB_PORT 17080)"
 log "安装完成"
 printf '\n'
 log "本机访问：http://127.0.0.1:${WEB_PORT}"

@@ -24,11 +24,11 @@ services:
       OPENREACH_BASE_URL: ${OPENREACH_BASE_URL:-}
       AGENTFORGE_FILE_VISIT_PROTOCOL: ${AGENTFORGE_FILE_VISIT_PROTOCOL:-http}
       AGENTFORGE_FILE_VISIT_HOST: ${AGENTFORGE_FILE_VISIT_HOST:-127.0.0.1}
-      AGENTFORGE_FILE_VISIT_PORT: ${WEB_PORT:-18080}
+      AGENTFORGE_FILE_VISIT_PORT: ${WEB_PORT:-17080}
       AGENTFORGE_FILE_VISIT_PATH: ${AGENTFORGE_FILE_VISIT_PATH:-/upload}
       JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
     ports:
-      - "${WEB_PORT:-18080}:8080"
+      - "${WEB_PORT:-17080}:8080"
     volumes:
       - ./data:/opt/agentforge/data
       - ./logs:/opt/agentforge/logs
