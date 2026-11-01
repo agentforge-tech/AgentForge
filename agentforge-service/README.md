@@ -36,8 +36,10 @@ Mapper XMLs are maintained per dialect:
 | SQLite | `src/main/resources/sqlliteMapper/<业务>/*.xml` | `sql/sqllite/<version>/*.sql` (`bin/local/upgrate-sqlite.sh`) |
 | MySQL | `src/main/resources/mapper/<业务>/*.xml` | `sql/increment/<version>/*.sql` (`bin/local/upgrate-sql.sh`) |
 
-SQLite applied scripts are recorded in `agentforge_schema_history`. The service does **not** migrate
-at startup; local runs and Docker deploy/upgrade execute the SQLite migration script explicitly.
+SQLite applied scripts are archived under `sql/local/sqlite/<version>/` (Docker:
+`AGENTFORGE_SQLITE_APPLIED_DIR`, default `/opt/agentforge/data/sql-applied`) and used for
+idempotent skipping. The service does **not** migrate at startup; local runs and Docker
+deploy/upgrade execute the SQLite migration script explicitly.
 
 ## Start backend
 
@@ -68,6 +70,7 @@ The default [OI]-compatible endpoint is `https://tokenrhythm.studio/v1` and the 
 | `AGENTFORGE_DB_TYPE` | `sqlite` | Database mode: `sqlite` or `mysql` |
 | `AGENTFORGE_SQLITE_PATH` | `data/agentforge.db` | SQLite database file |
 | `AGENTFORGE_SQLITE_INCREMENT_DIR` | `sql/sqllite` | SQLite incremental SQL directory |
+| `AGENTFORGE_SQLITE_APPLIED_DIR` | `sql/local/sqlite` | Applied SQL archive directory (idempotency record) |
 | `AGENTFORGE_DB_URL` | local MySQL URL | MySQL JDBC URL |
 | `AGENTFORGE_DB_USERNAME` | `root` | MySQL username |
 | `AGENTFORGE_DB_PASSWORD` | `123456` | MySQL password |

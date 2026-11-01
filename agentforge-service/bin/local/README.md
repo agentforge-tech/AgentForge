@@ -12,17 +12,19 @@
 ./bin/local/upgrate-sqlite.sh
 ```
 
-默认数据库：`data/agentforge.db`；默认脚本目录：`sql/sqllite`。
+默认数据库：`data/agentforge.db`；默认脚本目录：`sql/sqllite`；
+执行成功的 SQL 会归档到 `sql/local/sqlite/<版本>/`。
 可用环境变量覆盖：
 
 ```bash
 AGENTFORGE_SQLITE_PATH=/path/to/agentforge.db \
 AGENTFORGE_SQLITE_INCREMENT_DIR=/path/to/sqllite \
+AGENTFORGE_SQLITE_APPLIED_DIR=/path/to/applied \
 ./bin/local/upgrate-sqlite.sh
 ```
 
-执行记录写入 `agentforge_schema_history`，重复执行安全。服务启动本身不会自动迁移，
-本地首次运行或升级后需要先执行该脚本。
+与 MySQL 脚本一致：以归档目录中是否已存在对应 SQL 判断是否执行，重复执行安全。
+服务启动本身不会自动迁移，本地首次运行或升级后需要先执行该脚本。
 
 ## MySQL
 

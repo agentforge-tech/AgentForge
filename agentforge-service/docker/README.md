@@ -97,7 +97,7 @@ cd agentforge-service/docker
 2. 切换 `.env` 中的 `IMAGE_TAG`；
 3. 拉取新镜像（本地镜像可设置 `SKIP_PULL=1`）；
 4. 停止应用容器；
-5. 用**新镜像**启动一次性容器执行 `upgrade-sql.sh`，按 `agentforge_schema_history` 幂等执行增量 SQL；
+5. 用**新镜像**启动一次性容器执行 `upgrade-sql.sh`，按已执行归档（`AGENTFORGE_SQLITE_APPLIED_DIR`）幂等执行增量 SQL；
 6. 重建应用容器。
 
 仅执行 SQL 迁移（不重建应用）：
@@ -138,9 +138,10 @@ cd agentforge-service/docker
 ```bash
 docker load -i agentforge-1.0.0.tar
 mkdir -p data logs upload
-# 1) 先执行 SQLite 迁移（一次性容器）
+# 1) 先执行 SQLite 迁移（一次性容器；归档目录放到 data 卷，保证幂等判断持久化）
 docker run --rm \
   -v "$PWD/data":/opt/agentforge/data \
+  -e AGENTFORGE_SQLITE_APPLIED_DIR=/opt/agentforge/data/sql-applied \
   --entrypoint /opt/agentforge/bin/upgrade-sql.sh \
   agentforge-service:1.0.0
 # 2) 启动服务
@@ -162,6 +163,7 @@ docker run -d --name agentforge --restart unless-stopped \
 | `AGENTFORGE_DB_TYPE` | `sqlite` | `sqlite` 或 `mysql` |
 | `AGENTFORGE_SQLITE_PATH` | `/opt/agentforge/data/agentforge.db` | 容器内 SQLite 文件 |
 | `AGENTFORGE_SQLITE_INCREMENT_DIR` | `/opt/agentforge/sql/sqllite` | 容器内增量 SQL 目录 |
+| `AGENTFORGE_SQLITE_APPLIED_DIR` | `/opt/agentforge/data/sql-applied` | 已执行 SQL 归档目录（位于 data 卷，容器重建后仍幂等） |
 | `AGENTFORGE_FILE_VISIT_HOST` | `127.0.0.1` | 上传文件对外地址 |
 | `AGENTFORGE_FILE_VISIT_PORT` | `WEB_PORT` | 上传文件对外端口 |
 | `JAVA_OPTS` | `-Xms256m -Xmx512m` | JVM 参数 |
