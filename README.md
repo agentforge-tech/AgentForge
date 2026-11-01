@@ -23,13 +23,16 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 
 **Documentation**: <https://agentforge-tech.github.io/AgentForge/>
 
-**Highlights**
+**Roadmap**: <https://github.com/agentforge-tech/AgentForge/issues/1>
 
-- Provider-neutral model abstraction with OpenAI-compatible and Anthropic implementations
-- ReAct agent runtime with streaming, ChatMemory, local / HTTP / MCP tools, middleware, retry and cancellation
-- Out-of-the-box AgentForge Service: model config, Agent build / debug / version / publish, session history and plugin management
-- Unified SSE event protocol with SQLite/MySQL-backed ChatMemory, replayable session events and dual debug / elegant rendering
-- Harness runtime and advanced observability are on the roadmap
+**Highlight**
+
+- **Unified model protocol layer** — provider-neutral `ChatModel` / `StreamingChatModel` contracts with OpenAI-compatible and Anthropic implementations, plus a shared Function Calling / Tool executor abstraction
+- **ReAct agent runtime** — one API for both sync and streaming, window ChatMemory, a pluggable Middleware chain (logging, Agent Loop trace), step limits, cancellation and retry
+- **Tool ecosystem** — local Java `@Tool` methods, HTTP plugins and MCP servers converted into a unified function-call standard, with thought fields injected into every tool call
+- **AgentForge Service** — a runnable single-user Agent workbench covering model config, Agent build / debug / version / publish, session history and replay on SQLite / MySQL
+- **Streaming & observability** — unified SSE event protocol, dual `debug` / `elegant` rendering, session event replay, and Agent Loop Trace with flame graph and flow chart
+- **Coming next** — Harness runtime (sandbox, HITL approval, resumable execution), context compression, scenario-aware retries, scheduled tasks, DingTalk / Feishu channels, and CLI / Desktop / Platform forms
 
 ---
 
@@ -123,10 +126,6 @@ agentforge-service-web
 3. **Modular** — Core abstractions evolve separately from providers, framework, and Agent runtime.
 4. **Lightweight** — Minimize dependencies at the bottom so it can be reused by Spring Boot, plain Java, desktop, or even embedded projects.
 5. **Production-oriented** — The goal is not a demo Agent, but an Agent runtime that can genuinely reach production.
-
-### Roadmap
-
-The roadmap is maintained and discussed in [Issue #1](https://github.com/agentforge-tech/AgentForge/issues/1).
 
 ---
 

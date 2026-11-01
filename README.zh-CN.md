@@ -25,13 +25,16 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 
 **文档站**：<https://agentforge-tech.github.io/AgentForge/>
 
+**路线图**：<https://github.com/agentforge-tech/AgentForge/issues/1>
+
 **核心特性**
 
-- Provider-neutral 的模型抽象，内置 OpenAI-compatible 与 Anthropic 实现
-- ReAct Agent 运行时：流式输出、ChatMemory、本地 / HTTP / MCP 工具、Middleware、重试与取消
-- 开箱即用的 AgentForge Service：模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与插件管理
-- 统一 SSE 事件协议，SQLite / MySQL 持久化 ChatMemory，会话事件可重放，调试与优雅双渲染模式
-- Harness 运行时与高级可观测能力在路线图中
+- **统一模型协议层** — Provider-neutral 的 `ChatModel` / `StreamingChatModel` 契约，内置 OpenAI-compatible 与 Anthropic 实现，以及统一的 Function Calling / Tool 执行器抽象
+- **ReAct Agent 运行时** — 同步与流式一套调用，窗口 ChatMemory，可插拔 Middleware 链路（日志、Agent Loop Trace），支持步长上限、取消与重试
+- **工具生态** — 本地 Java `@Tool` 方法、HTTP 插件与 MCP Server 统一转换为 Function Call 协议，并为每次工具调用注入思考字段
+- **AgentForge Service** — 可运行的单用户 Agent 工作台，覆盖模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与重放，基于 SQLite / MySQL 持久化
+- **流式与可观测** — 统一 SSE 事件协议，`debug` / `elegant` 双渲染模式，会话事件重放，以及包含火焰图与流程图的 Agent Loop Trace
+- **后续规划** — Harness 运行时（沙箱、HITL 审核、可恢复执行）、上下文压缩、分场景异常重试、定时任务、钉钉 / 飞书渠道，以及 CLI / Desktop / Platform 多形态
 
 ---
 
@@ -125,10 +128,6 @@ agentforge-service-web
 3. **Modular** — 核心抽象与 Provider / Framework / Agent Runtime 分模块演进。
 4. **Lightweight** — 底层尽量减少不必要依赖，可被 Spring Boot、普通 Java、桌面端甚至嵌入式工程复用。
 5. **Production-oriented** — 目标不是 Demo Agent，而是可以真正进入生产环境的 Agent Runtime。
-
-### 路线图
-
-路线图统一维护在 [Issue #1](https://github.com/agentforge-tech/AgentForge/issues/1)。
 
 ---
 
