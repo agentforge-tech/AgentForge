@@ -25,19 +25,27 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 
 **文档站**：<https://agentforge-tech.github.io/AgentForge/>
 
+**路线图**：<https://github.com/agentforge-tech/AgentForge/issues/1>
+
 **核心特性**
 
-- Provider-neutral 的模型抽象，内置 OpenAI-compatible 与 Anthropic 实现
-- ReAct Agent 运行时：流式输出、ChatMemory、本地 / HTTP / MCP 工具、Middleware、重试与取消
-- 开箱即用的 AgentForge Service：模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与插件管理
-- 统一 SSE 事件协议，SQLite / MySQL 持久化 ChatMemory，会话事件可重放，调试与优雅双渲染模式
-- Harness 运行时与高级可观测能力在路线图中
+- **统一模型协议层** — Provider-neutral 的 `ChatModel` / `StreamingChatModel` 契约，内置 OpenAI-compatible 与 Anthropic 实现，以及统一的 Function Calling / Tool 执行器抽象
+- **ReAct Agent 运行时** — 同步与流式一套调用，窗口 ChatMemory，可插拔 Middleware 链路（日志、Agent Loop Trace），支持步长上限、取消与重试
+- **工具生态** — 本地 Java `@Tool` 方法、HTTP 插件与 MCP Server 统一转换为 Function Call 协议，并为每次工具调用注入思考字段
+- **AgentForge Service** — 可运行的单用户 Agent 工作台，覆盖模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与重放，基于 SQLite / MySQL 持久化
+- **流式与可观测** — 统一 SSE 事件协议，`debug` / `elegant` 双渲染模式，会话事件重放，以及包含火焰图与流程图的 Agent Loop Trace
+- **后续规划** — Harness 运行时（沙箱、HITL 审核、可恢复执行）、上下文压缩、分场景异常重试、定时任务、钉钉 / 飞书渠道，以及 CLI / Desktop / Platform 多形态
 
 ---
 
 ## 架构
 
-AgentForge 采用 **Bottom-up** 的构建方式：先稳定最底层模型抽象，再逐层向上锻造 Agent 能力。
+AgentForge 遵循 [Roadmap](https://github.com/agentforge-tech/AgentForge/issues/1) 中的两部分设计：
+
+1. **Agent 框架层** —— 可复用的核心基础组件：统一模型协议、通用 ReAct Agent 运行时、Harness Agent 运行时（权限、沙箱、HITL 审核、可恢复执行），以及工具、记忆、Middleware、链路追踪与 Token 统计。
+2. **Agent Service 业务层** —— `agentforge-service`，标准 Agent 基础设施最佳实践的开箱即用实现：模型配置、Agent 构建 / 调试 / 版本 / 发布，以及会话运营。
+
+`agentforge-agent-core` 是框架的核心，它把大模型的原始智能逐层锻造成真实行动：
 
 ```text
 LLM
@@ -49,6 +57,17 @@ LLM
  ↓  Multi-Agent / Sandbox / Observability
 Real Action
 ```
+
+| 层级 | `agentforge-agent-core` 的实现 |
+| --- | --- |
+| LLM | Provider-neutral 的 `ChatModel` / `StreamingChatModel`，OpenAI / Anthropic 通过模型模块接入 |
+| Message / Request / Response | 统一消息模型、`AgentRequest` / `ChatResult`，同步与流式共用一套请求响应语义 |
+| Context / Memory | `ChatMemory` / `ChatMemoryStore`、窗口记忆与按 `memoryId` 隔离的会话 |
+| Tool / Skill / MCP | `ToolService` 与统一的工具描述 / 执行器 SPI：本地 `@Tool`、HTTP 插件与 MCP Server |
+| Reasoning / Planning | ReAct think → act → observe 循环，支持步长上限与中断检查 |
+| Agent Runtime | 同步 `ReActAgent`、流式 `ReActTokenStream`、Middleware 链路、重试与取消 |
+| Multi-Agent / Sandbox / Observability | Agent Loop Trace Middleware 与 Token 统计；Agent Team 与 Harness 沙箱在 Roadmap 中 |
+| Real Action | 通过工具执行器产生真实副作用；审批与沙箱能力随 Harness 运行时落地 |
 
 ### 工程结构
 
@@ -73,22 +92,9 @@ AgentForge
 └── README.md
 ```
 
-### 模块能力
-
-| 模块 | 当前支持能力 |
-| --- | --- |
-| `agentforge-model-api` | 统一的 `ChatModel` / `StreamingChatModel` 契约，Message / Request / Response，工具契约与 HTTP Transport SPI |
-| `agentforge-model-core` | 零依赖 HTTP Transport、内置 JSON、`@Tool` 反射执行与推理-工具循环引擎 |
-| `agentforge-model-openai` | OpenAI Chat Completions 同步 / 流式、Function Calling、OpenAI-compatible endpoint |
-| `agentforge-model-anthropic` | Anthropic Messages API 同步 / 流式、Tool Use |
-| `agentforge-model-registry` | `LlmFactory` 按 provider 构建 ChatModel / StreamingChatModel |
-| `agentforge-agent-core` | ReAct 主循环（同步 / 流式）、可插拔 `ChatMemory` / `ChatMemoryStore`、窗口记忆、本地 / HTTP / MCP 工具、工具调用回合、Middleware 链路、重试与取消 |
-| `agentforge-harness-agent` | 基于核心 Agent 的 Harness 运行时（设计阶段）：权限、工具审批、Human-in-the-loop、沙箱、Trace、可恢复执行 |
-| `agentforge-service` | 可运行的 Agent 工作台：模型配置、Agent 配置 / 调试 / 版本 / 发布、会话与重放、SQLite / MySQL 持久化、HTTP / MCP 插件、统一 SSE（Vue 前端 + Spring Boot 后端） |
-
 ### AgentForge Service
 
-`agentforge-service` 不是 Demo 外壳，而是一套可运行的单用户 Agent 工作台，打通了从模型配置到正式发布的完整闭环：
+`agentforge-service` 是标准 Agent 基础设施最佳实践的可运行参考实现，不是 Demo 外壳。它打通了从模型配置到正式发布的完整闭环：
 
 ```text
 模型配置 → Agent 配置 → 调试 → 版本 → 发布 → 对话与会话历史
@@ -126,15 +132,15 @@ agentforge-service-web
 4. **Lightweight** — 底层尽量减少不必要依赖，可被 Spring Boot、普通 Java、桌面端甚至嵌入式工程复用。
 5. **Production-oriented** — 目标不是 Demo Agent，而是可以真正进入生产环境的 Agent Runtime。
 
-### 路线图
-
-路线图统一维护在 [Issue #1](https://github.com/agentforge-tech/AgentForge/issues/1)。
-
 ---
 
 ## 快速开始
 
-### 依赖引入
+AgentForge 有两种使用方式：作为框架嵌入自己的 Java 应用，或一键在本地启动开箱即用的 Agent Service。
+
+### 第一部分：框架使用方式
+
+#### 依赖引入
 
 在首个 Maven Central 版本发布前，请使用本地构建的 `1.0.0-SNAPSHOT` 产物：
 
@@ -148,14 +154,14 @@ agentforge-service-web
 
 其他常用模块：`agentforge-model-openai`、`agentforge-model-anthropic`，或完整的 `agentforge-service`。
 
-### 环境要求
+#### 环境要求
 
 > **推荐 JDK 17，兼容 JDK 8。**
 
 - 日常开发与 CI 默认推荐 **JDK 17**；公共模块编译目标为 **Java 8 bytecode**，JDK 8 可直接依赖运行；
 - 统一根包名与 `groupId` 均为 `cloud.changlu.agentforge`。
 
-### 调用模型
+#### 调用模型
 
 ```java
 ChatModel model = OpenAiChatModel.builder()
@@ -169,7 +175,7 @@ String answer = model.chat("Hello AgentForge");
 `baseUrl` 可配置，因此也可作为 OpenAI-compatible Provider 使用（DashScope / Ollama / Xinference 等）。
 需要流式输出时，使用 `StreamingChatModel` + `StreamingChatResponseHandler`。
 
-### 构建 Agent
+#### 构建 Agent
 
 ```java
 ToolService toolService = new ToolService();
@@ -193,7 +199,7 @@ ChatResult result = agent.run(AgentRequest.builder()
 流式执行通过 `agent.runStream(request)` 返回 `TokenStream`，可订阅文本 / 思考增量、工具执行与完成事件；
 `agent.cancel(memoryId)` 用于取消任务。模型、记忆、工具与中间件均通过 Builder 注入，详见文档站。
 
-### 源码构建
+#### 源码构建
 
 ```bash
 git clone https://github.com/agentforge-tech/AgentForge.git
@@ -203,7 +209,26 @@ mvn clean install -DskipTests
 
 构建会将 `1.0.0-SNAPSHOT` 产物安装到本地 Maven 仓库。
 
-### 运行 AgentForge Service
+### 第二部分：AgentForge Service 快捷本地一键启动
+
+`agentforge-service` 是标准的 Agent 工作台，打通了从模型配置到正式发布的完整闭环。本地体验最快的方式是一键安装脚本（需要 Docker 20.10+ 与 Docker Compose v2）：
+
+```bash
+mkdir -p agentforge && cd agentforge
+curl -fsSL https://raw.githubusercontent.com/agentforge-tech/AgentForge/master/agentforge-service/docker/standalone/install.sh | bash
+```
+
+脚本会拉取一体化镜像（后端 + 前端 + SQLite）、初始化数据库并启动服务：
+
+```text
+http://127.0.0.1:18080
+```
+
+安装器只下载 Compose 文件、环境变量模板与升级脚本；`conf/`、`data/`、`logs/`、`upload/` 会持久化在当前目录。重复执行同一条命令是安全的，后续可通过 `./upgrade.sh [版本]` 升级。
+
+#### 源码模式启动
+
+需要先完成第一部分的源码构建：
 
 ```bash
 # 后端（Spring Boot，默认 8080）
@@ -217,8 +242,11 @@ java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.ja
 # 前端（Vue 2 + Vite，默认 5173，代理 /api 到 8080）
 cd agentforge-service/agentforge-service-ui
 npm install && npm run dev
+```
 
-# 一体化 Docker（后端 + 前端 + SQLite，默认 18080）
+#### 构建一体化镜像
+
+```bash
 cd agentforge-service/docker && ./scripts/deploy.sh
 ```
 

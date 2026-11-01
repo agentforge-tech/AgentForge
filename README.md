@@ -23,19 +23,27 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 
 **Documentation**: <https://agentforge-tech.github.io/AgentForge/>
 
-**Highlights**
+**Roadmap**: <https://github.com/agentforge-tech/AgentForge/issues/1>
 
-- Provider-neutral model abstraction with OpenAI-compatible and Anthropic implementations
-- ReAct agent runtime with streaming, ChatMemory, local / HTTP / MCP tools, middleware, retry and cancellation
-- Out-of-the-box AgentForge Service: model config, Agent build / debug / version / publish, session history and plugin management
-- Unified SSE event protocol with SQLite/MySQL-backed ChatMemory, replayable session events and dual debug / elegant rendering
-- Harness runtime and advanced observability are on the roadmap
+**Highlight**
+
+- **Unified model protocol layer** — provider-neutral `ChatModel` / `StreamingChatModel` contracts with OpenAI-compatible and Anthropic implementations, plus a shared Function Calling / Tool executor abstraction
+- **ReAct agent runtime** — one API for both sync and streaming, window ChatMemory, a pluggable Middleware chain (logging, Agent Loop trace), step limits, cancellation and retry
+- **Tool ecosystem** — local Java `@Tool` methods, HTTP plugins and MCP servers converted into a unified function-call standard, with thought fields injected into every tool call
+- **AgentForge Service** — a runnable single-user Agent workbench covering model config, Agent build / debug / version / publish, session history and replay on SQLite / MySQL
+- **Streaming & observability** — unified SSE event protocol, dual `debug` / `elegant` rendering, session event replay, and Agent Loop Trace with flame graph and flow chart
+- **Coming next** — Harness runtime (sandbox, HITL approval, resumable execution), context compression, scenario-aware retries, scheduled tasks, DingTalk / Feishu channels, and CLI / Desktop / Platform forms
 
 ---
 
 ## Architecture
 
-AgentForge is built **bottom-up**: stabilize the lowest-level model abstraction first, then forge Agent capabilities layer by layer.
+AgentForge follows the two-part design from the [roadmap](https://github.com/agentforge-tech/AgentForge/issues/1):
+
+1. **Agent framework** — reusable core components: unified model protocol, general-purpose ReAct Agent runtime, Harness Agent runtime (permissions, sandbox, HITL approval, resumable execution), plus tools, memory, middleware, tracing and token accounting.
+2. **Agent Service** — `agentforge-service`, an out-of-the-box implementation of standard Agent infrastructure best practices, from model configuration to Agent build / debug / version / publish and session operations.
+
+`agentforge-agent-core` is the heart of the framework. It takes the raw intelligence of an LLM and forges it into real action, layer by layer:
 
 ```text
 LLM
@@ -47,6 +55,17 @@ LLM
  ↓  Multi-Agent / Sandbox / Observability
 Real Action
 ```
+
+| Layer | How `agentforge-agent-core` implements it |
+| --- | --- |
+| LLM | Provider-neutral `ChatModel` / `StreamingChatModel`; OpenAI and Anthropic providers plug in through the model modules |
+| Message / Request / Response | Unified message model, `AgentRequest` / `ChatResult`, and one consistent sync / streaming execution shape |
+| Context / Memory | `ChatMemory` / `ChatMemoryStore`, window memory and `memoryId`-scoped sessions |
+| Tool / Skill / MCP | `ToolService` with a shared tool specification / executor SPI: local `@Tool`, HTTP plugins and MCP servers |
+| Reasoning / Planning | ReAct think → act → observe loop with step limits and interruption checks |
+| Agent Runtime | `ReActAgent` for sync, `ReActTokenStream` for streaming, a middleware chain, retry and cancellation |
+| Multi-Agent / Sandbox / Observability | Agent Loop Trace middleware with token accounting; Agent Team and harness sandbox are on the roadmap |
+| Real Action | Real tool execution and side effects; approval and sandboxing arrive with the harness runtime |
 
 ### Project Structure
 
@@ -71,22 +90,9 @@ AgentForge
 └── README.md
 ```
 
-### Module Capabilities
-
-| Module | Capabilities |
-| --- | --- |
-| `agentforge-model-api` | Unified `ChatModel` / `StreamingChatModel` contracts, Message / Request / Response, tool contracts, and HTTP Transport SPI |
-| `agentforge-model-core` | Zero-dependency HTTP Transport, built-in JSON, `@Tool` reflective execution, and the inference-tool loop engine |
-| `agentforge-model-openai` | OpenAI Chat Completions sync / streaming, Function Calling, OpenAI-compatible endpoints |
-| `agentforge-model-anthropic` | Anthropic Messages API sync / streaming, Tool Use |
-| `agentforge-model-registry` | `LlmFactory` builds ChatModel / StreamingChatModel per provider |
-| `agentforge-agent-core` | ReAct main loop (sync / streaming), pluggable `ChatMemory` / `ChatMemoryStore`, window memory, local / HTTP / MCP tools, tool-calling rounds, Middleware chain, retry & cancellation |
-| `agentforge-harness-agent` | Harness runtime on top of the core Agent (design phase): permission, tool approval, human-in-the-loop, sandbox, trace, resumable execution |
-| `agentforge-service` | Runnable Agent workbench: model config, Agent config / debug / version / publish, sessions & replay, SQLite / MySQL persistence, HTTP / MCP plugins, unified SSE (Vue frontend + Spring Boot backend) |
-
 ### AgentForge Service
 
-`agentforge-service` is a runnable single-user Agent workbench, not a demo shell. It closes the loop from model configuration to a published Agent:
+`agentforge-service` is a runnable single-user Agent workbench and the reference implementation of standard Agent infrastructure best practices — not a demo shell. It closes the loop from model configuration to a published Agent:
 
 ```text
 Model config → Agent config → Debug → Version → Publish → Chat & session history
@@ -124,15 +130,15 @@ agentforge-service-web
 4. **Lightweight** — Minimize dependencies at the bottom so it can be reused by Spring Boot, plain Java, desktop, or even embedded projects.
 5. **Production-oriented** — The goal is not a demo Agent, but an Agent runtime that can genuinely reach production.
 
-### Roadmap
-
-The roadmap is maintained and discussed in [Issue #1](https://github.com/agentforge-tech/AgentForge/issues/1).
-
 ---
 
 ## Quick Start
 
-### Dependency
+AgentForge offers two entry points: embed the framework in your own Java application, or start the out-of-the-box service locally with one command.
+
+### Part 1: Use the Framework
+
+#### Dependency
 
 Until the first Maven Central release is published, use the locally built `1.0.0-SNAPSHOT` artifacts:
 
@@ -146,14 +152,14 @@ Until the first Maven Central release is published, use the locally built `1.0.0
 
 Other common modules: `agentforge-model-openai`, `agentforge-model-anthropic`, or the full `agentforge-service`.
 
-### Requirements
+#### Requirements
 
 > **JDK 17 recommended, JDK 8 compatible.**
 
 - Day-to-day development and CI default to **JDK 17**; public modules compile to **Java 8 bytecode** and can be depended on and run directly under JDK 8.
 - The root package name and `groupId` are both `cloud.changlu.agentforge`.
 
-### Call a Model
+#### Call a Model
 
 ```java
 ChatModel model = OpenAiChatModel.builder()
@@ -166,7 +172,7 @@ String answer = model.chat("Hello AgentForge");
 
 `baseUrl` is configurable, so it also works as an OpenAI-compatible provider (DashScope / Ollama / Xinference, etc.). For streaming output, use `StreamingChatModel` with `StreamingChatResponseHandler`.
 
-### Build an Agent
+#### Build an Agent
 
 ```java
 ToolService toolService = new ToolService();
@@ -189,7 +195,7 @@ ChatResult result = agent.run(AgentRequest.builder()
 
 For streaming, `agent.runStream(request)` returns a `TokenStream` that lets you subscribe to text / thinking deltas, tool executions, and completion events; `agent.cancel(memoryId)` cancels a task. Models, memory, tools, and middleware are all injected through the builder — see the documentation site for details.
 
-### Build from Source
+#### Build from Source
 
 ```bash
 git clone https://github.com/agentforge-tech/AgentForge.git
@@ -199,7 +205,20 @@ mvn clean install -DskipTests
 
 This installs the `1.0.0-SNAPSHOT` artifacts into your local Maven repository.
 
-### Run AgentForge Service
+### Part 2: One-Click Local Startup of AgentForge Service
+
+`agentforge-service` is the standard Agent workbench: it closes the loop from model configuration to a published Agent. The fastest local start is the one-click installer (Docker 20.10+ and Docker Compose v2 required):
+
+```bash
+mkdir -p agentforge && cd agentforge
+curl -fsSL https://raw.githubusercontent.com/agentforge-tech/AgentForge/master/agentforge-service/docker/standalone/install.sh | bash
+```
+
+It pulls the all-in-one image (backend + frontend + SQLite), initializes the database and starts the service at <http://127.0.0.1:18080>. Only the Compose file, environment template and upgrade script are downloaded; `conf/`, `data/`, `logs/` and `upload/` are persisted in the current directory. Re-running the installer is safe, and `./upgrade.sh [version]` upgrades an existing deployment.
+
+#### Run from Source
+
+Requires the source build from Part 1:
 
 ```bash
 # Backend (Spring Boot, default 8080)
@@ -213,8 +232,11 @@ java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.ja
 # Frontend (Vue 2 + Vite, default 5173, proxies /api to 8080)
 cd agentforge-service/agentforge-service-ui
 npm install && npm run dev
+```
 
-# All-in-one Docker (backend + frontend + SQLite, default 18080)
+#### Build the All-in-One Image
+
+```bash
 cd agentforge-service/docker && ./scripts/deploy.sh
 ```
 
