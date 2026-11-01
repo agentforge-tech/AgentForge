@@ -29,5 +29,14 @@
   },
   "sidebar.docs.category.RoadMap": {
     "message": "Roadmap"
+  },
+  "sidebar.sdkSidebar.category.开始使用": {
+    "message": "Getting Started"
+  },
+  "sidebar.sdkSidebar.category.核心组件": {
+    "message": "Core Components"
+  },
+  "sidebar.serviceSidebar.category.AgentForge Service": {
+    "message": "AgentForge Service"
   }
 }

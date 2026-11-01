@@ -408,27 +408,165 @@
     "message": "Config-driven docs structure and sidebar, with on-page TOC and site navigation."
   },
   "home.description": {
-    "message": "From unified LLM abstractions to Agent Runtime, AgentForge gives Java developers a transparent, controllable and extensible foundation for building agents."
+    "message": "From unified LLM abstractions to Agent Runtime, AgentForge gives Java developers a transparent, controllable, and extensible foundation for intelligent agents."
   },
-  "home.start": {"message": "Start building"},
-  "home.foundation": {"message": "Built from foundational abstractions"},
-  "home.release": {"message": "AgentForge v1.0 · Java Agent Framework"},
-  "home.title.line1": {"message": "Intelligence that goes beyond answers"},
-  "home.title.line2": {"message": "and takes real action."},
-  "home.flow.title": {"message": "A clear path from intent to action"},
-  "home.flow.desc": {"message": "Every layer has a clear boundary. Every step can be observed, replaced and extended."},
-  "home.capabilities.title": {"message": "Built for agent engineering"},
-  "home.cta.title": {"message": "Start with your first agent."},
-  "home.cta.action": {"message": "Read the quick start"},
-  "home.demo.prompt": {"message": "Inspect the project and propose the next implementation plan."},
-  "home.demo.think": {"message": "Identify the goal and current context"},
-  "home.demo.act": {"message": "Generate an executable task plan"},
-  "home.flow.goal": {"message": "Natural-language intent"},
-  "home.flow.think": {"message": "Context and planning"},
-  "home.flow.tool": {"message": "Invoke real capabilities"},
-  "home.flow.action": {"message": "Complete the task loop"},
-  "home.card.llm": {"message": "OpenAI, Anthropic and other models share one interface, keeping upper layers free from vendor lock-in."},
-  "home.card.runtime": {"message": "A ReAct loop coordinates reasoning, action, observation and stopping in a transparent runtime."},
-  "home.card.tool": {"message": "Typed tool definitions, argument parsing and execution results reliably turn model decisions into action."},
-  "home.card.memory": {"message": "Combine conversations, runtime state and long-term memory into an extensible agent context."}
+  "home.start": {
+    "message": "Start building"
+  },
+  "home.foundation": {
+    "message": "Built from foundational abstractions"
+  },
+  "home.release": {
+    "message": "AgentForge v1.0 · Java Agent Framework"
+  },
+  "home.title.line1": {
+    "message": "Intelligence that goes beyond answers"
+  },
+  "home.title.line2": {
+    "message": "and takes real action."
+  },
+  "home.flow.title": {
+    "message": "A clear path from intent to action"
+  },
+  "home.flow.desc": {
+    "message": "Every layer has a clear boundary. Every step can be observed, replaced and extended."
+  },
+  "home.capabilities.title": {
+    "message": "Built for agent engineering"
+  },
+  "home.cta.title": {
+    "message": "Start with your first agent."
+  },
+  "home.cta.action": {
+    "message": "Read the quick start"
+  },
+  "home.demo.prompt": {
+    "message": "Inspect the project and propose the next implementation plan."
+  },
+  "home.demo.think": {
+    "message": "Identify the goal and current context"
+  },
+  "home.demo.act": {
+    "message": "Generate an executable task plan"
+  },
+  "home.flow.goal": {
+    "message": "Natural-language intent"
+  },
+  "home.flow.think": {
+    "message": "Context and planning"
+  },
+  "home.flow.tool": {
+    "message": "Invoke real capabilities"
+  },
+  "home.flow.action": {
+    "message": "Complete the task loop"
+  },
+  "home.card.llm": {
+    "message": "OpenAI, Anthropic and other models share one interface, keeping upper layers free from vendor lock-in."
+  },
+  "home.card.runtime": {
+    "message": "A ReAct loop coordinates reasoning, action, observation and stopping in a transparent runtime."
+  },
+  "home.card.tool": {
+    "message": "Local Java methods, HTTP plugins and MCP services all become Function Calls with one unified pipeline for schema, argument binding, execution and result write-back."
+  },
+  "home.card.memory": {
+    "message": "Combine conversations, runtime state and long-term memory into an extensible agent context."
+  },
+  "home.deploy": {
+    "message": "Deploy Service locally"
+  },
+  "home.capabilities.desc": {
+    "message": "Six core capabilities cover model access, tool calling, runtime governance and a ready-to-use workbench."
+  },
+  "home.card.middleware": {
+    "message": "Attach logging, tracing, auditing and masking to model calls, tool execution and the Agent loop, keeping cross-cutting logic out of the main loop."
+  },
+  "home.card.events": {
+    "message": "Unified messages and streaming events bring synchronous results, reasoning deltas, tool calls and frontend SSE onto the same semantics."
+  },
+  "home.card.service": {
+    "message": "Model configuration, Agent debugging, version publishing, session replay and tracing out of the box — experience the full Agent workbench."
+  },
+  "home.stack.title": {
+    "message": "A bottom-up Agent stack"
+  },
+  "home.stack.desc": {
+    "message": "Compose upward from protocol contracts; every layer can be replaced independently."
+  },
+  "home.modules.title": {
+    "message": "Bring only what you need"
+  },
+  "home.modules.desc": {
+    "message": "Manage versions with one BOM and compose from model contracts to the Agent runtime."
+  },
+  "home.code.title": {
+    "message": "Your first Agent in a few dozen lines"
+  },
+  "home.code.desc": {
+    "message": "Inject models, memory and tools, then run synchronously or with streaming. The same ReActAgent instance switches freely between both modes."
+  },
+  "home.code.detail": {
+    "message": "Read the Agent design"
+  },
+  "home.service.title": {
+    "message": "Skip the frontend work and start the workbench"
+  },
+  "home.service.desc": {
+    "message": "AgentForge Service provides model configuration, Agent debugging, version publishing, session replay and tracing. One Docker command gives you the full loop."
+  },
+  "home.service.detail": {
+    "message": "Explore Service capabilities"
+  },
+  "home.layer.model": {
+    "message": "ChatRequest / ChatResponse / Message / streaming callbacks"
+  },
+  "home.layer.model.note": {
+    "message": "Vendor protocols stay inside Providers"
+  },
+  "home.layer.tool": {
+    "message": "Local / HTTP / MCP unified ToolSpecification and executors"
+  },
+  "home.layer.tool.note": {
+    "message": "Model decisions become real actions"
+  },
+  "home.layer.react": {
+    "message": "Think → Act → memory write-back, sync, streaming, cancel and retry"
+  },
+  "home.layer.react.note": {
+    "message": "One kernel, two drivers"
+  },
+  "home.layer.middleware": {
+    "message": "Composable cross-cutting logic across loop, model, tool and stop stages"
+  },
+  "home.layer.middleware.note": {
+    "message": "Observable, governable, extensible"
+  },
+  "home.layer.service": {
+    "message": "Permissions, approvals, sandboxes and a ready-to-use Agent workbench"
+  },
+  "home.layer.service.note": {
+    "message": "From framework to production"
+  },
+  "home.module.api": {
+    "message": "Provider-neutral model contracts and unified req/vo"
+  },
+  "home.module.core": {
+    "message": "Default parameter merge, JDK HTTP transport and Tool engine"
+  },
+  "home.module.openai": {
+    "message": "OpenAI / OpenAI-compatible Provider"
+  },
+  "home.module.anthropic": {
+    "message": "Anthropic Messages Provider"
+  },
+  "home.module.registry": {
+    "message": "Out-of-the-box ChatModel factory assembled from config"
+  },
+  "home.module.agent": {
+    "message": "ReAct Agent, Middleware, Memory and Tool extensions"
+  },
+  "home.modules.link": {
+    "message": "View full dependencies →"
+  }
 }
