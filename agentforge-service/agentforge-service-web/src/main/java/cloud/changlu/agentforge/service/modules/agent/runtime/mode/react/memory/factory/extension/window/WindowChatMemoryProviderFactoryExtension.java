@@ -1,8 +1,8 @@
 package cloud.changlu.agentforge.service.modules.agent.runtime.mode.react.memory.factory.extension.window;
 
+import cloud.changlu.agentforge.agent.extend.memory.window.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
 import cloud.changlu.agentforge.agent.memory.store.ChatMemoryStore;
-import cloud.changlu.agentforge.agent.memory.window.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.service.modules.agent.runtime.mode.react.memory.enums.ChatMemoryType;
 import cloud.changlu.agentforge.service.modules.agent.runtime.mode.react.memory.factory.extension.ChatMemoryProviderFactoryExtension;
 
