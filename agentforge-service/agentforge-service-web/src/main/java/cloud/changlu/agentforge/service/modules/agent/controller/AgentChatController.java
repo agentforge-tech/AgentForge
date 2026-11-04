@@ -2,7 +2,7 @@ package cloud.changlu.agentforge.service.modules.agent.controller;
 
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentRuntimeConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.IAgentManager;
 import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitContext;
@@ -53,6 +53,7 @@ public class AgentChatController {
                 agentManager.getAgentAndInitAgent(
                         AgentInitContext.builder()
                                 .aid(config.getAid())
+                                .agentName(config.getName())
                                 .agentConfig(config.getAgentConfig())
                                 .debug(isDebug)
                                 .channelId(AgentInitContext.WEBSITE_CHANNEL_ID)

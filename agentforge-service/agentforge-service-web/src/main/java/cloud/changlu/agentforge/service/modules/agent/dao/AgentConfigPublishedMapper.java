@@ -1,6 +1,6 @@
 package cloud.changlu.agentforge.service.modules.agent.dao;
 
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPublishedPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigPublishedPojo;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

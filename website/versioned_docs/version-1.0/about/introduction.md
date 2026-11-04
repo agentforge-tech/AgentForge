@@ -136,6 +136,25 @@ ChatResult result = agent.run(AgentRequest.builder()
 - **想做可观测与治理**：阅读 [Middleware 设计](../sdk/middleware) 与 [消息事件](../sdk/message-event)；
 - **想直接使用成品工作台**：访问 [AgentForge Service](../service/introduction)。
 
+## SDK 文档地图
+
+SDK 栏目按“先使用、再理解、最后扩展”的顺序组织：
+
+```text
+开始使用
+  认识 AgentForge → 快速开始
+核心组件
+  Model → Agent → 消息事件 → Middleware → Tool → 会话记忆
+会话记忆扩展
+  窗口会话记忆
+Agent Tool 扩展
+  JavaLocalTool → HTTP → MCP
+Middleware 扩展
+  日志 → Trace → 对话追加
+```
+
+Tool 和 Middleware 的专题页都按三层展开：先解释设计思想，再给出“如何和 Agent 组合”的 SDK 用法，最后说明如何替换存储、执行器、事件适配器或格式化策略。这样可以先复制最小示例跑通，再根据工程需要深入扩展。
+
 ## Service 工作台
 
 AgentForge Service 是框架之上的一套开箱即用工作台，打通了从模型配置到正式发布的完整闭环：

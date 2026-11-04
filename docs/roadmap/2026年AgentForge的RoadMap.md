@@ -114,7 +114,8 @@ AgentForge
 - [x] 日志middlware（支持快速本地调试）：[内置middleware扩展：日志Loggingmiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：日志Loggingmiddlware实现.md)
   - 实现：`LoggingIAgentMiddleware` 打印 loop、模型调用、工具执行关键节点并截断超长内容，按 memoryId 统计模型耗时、工具耗时与 token 消耗 → `...agent.extend.middlewares`
 - [x] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）：[内置middlware扩展：Agent Loop TraceMiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：Agent%20Loop%20TraceMiddlware实现.md)
-- [ ] 上下文压缩middlware（支持策略来设计上下文压缩）
+- [x] Agent 对话追加middleware（Agent Loop过程中追加消息）：[内置middleware扩展：追加对话到Agent.md](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：追加对话到Agent.md)
+- [ ] 上下文压缩middlware（阈值比例压缩机制）
 
 
 
@@ -202,7 +203,7 @@ AgentForge
 - [x] AgentForge标准Agent会话与消息核心表设计：[AgentForge标准Agent会话与消息核心表设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/AgentForge标准Agent会话与消息核心表设计.md)
 - [x] agentforge-service核心标准agent事件协议设计定义：[agentforge-service核心事件协议设计定义](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/agentforge-service核心事件协议设计定义.md)
 - [x] Agent工具调用思考参数与前端优雅交互设计：[Agent工具调用思考参数与前端优雅交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent工具调用思考参数与前端优雅交互设计.md)
-- [ ] Agent追加事件 + 插入Agent loop对话
+- [x] Agent追加事件 + 插入Agent loop对话交互设计：[Agent追加事件 + 插入Agent loop对话设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent追加事件%20%2B%20插入Agent%20loop对话设计.md)
 - [ ] ...
 
 

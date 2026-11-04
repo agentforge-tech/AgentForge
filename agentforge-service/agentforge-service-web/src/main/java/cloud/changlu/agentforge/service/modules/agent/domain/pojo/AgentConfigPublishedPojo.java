@@ -1,20 +1,19 @@
-package cloud.changlu.agentforge.service.modules.agent.domain;
+package cloud.changlu.agentforge.service.modules.agent.domain.pojo;
 
 import java.util.Date;
 
-/** Agent 历史版本持久化对象，对应表 {@code ai_agent_config_version}。 */
-public class AgentConfigVersionPojo {
+/** Agent 当前发布快照持久化对象，对应表 {@code ai_agent_config_published}。 */
+public class AgentConfigPublishedPojo {
 
     private Long id;
-    private Long versionNo;
     private String name;
     private Integer type;
     private String agentConfig;
     private String experConfig;
+    private Date lastPublishTime;
     private String aid;
     private String avatar;
     private String description;
-    private String versionRemark;
     private Integer isDeleted;
     private Long createUserId;
     private Date createTime;
@@ -26,14 +25,6 @@ public class AgentConfigVersionPojo {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Long getVersionNo() {
-        return versionNo;
-    }
-
-    public void setVersionNo(Long versionNo) {
-        this.versionNo = versionNo;
     }
 
     public String getName() {
@@ -68,6 +59,14 @@ public class AgentConfigVersionPojo {
         this.experConfig = experConfig;
     }
 
+    public Date getLastPublishTime() {
+        return lastPublishTime;
+    }
+
+    public void setLastPublishTime(Date lastPublishTime) {
+        this.lastPublishTime = lastPublishTime;
+    }
+
     public String getAid() {
         return aid;
     }
@@ -90,14 +89,6 @@ public class AgentConfigVersionPojo {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getVersionRemark() {
-        return versionRemark;
-    }
-
-    public void setVersionRemark(String versionRemark) {
-        this.versionRemark = versionRemark;
     }
 
     public Integer getIsDeleted() {

@@ -41,7 +41,11 @@ public class StandardReActAgentManager
     @Override
     protected ReActAgent createAgent(AgentInitContext context) {
         StandardAgentConfig agentConfig = parseAgentConf(context.getAgentConfig());
-        return reActAgentFactory.createReActAgent(agentConfig);
+        String agentName = context.getAgentName();
+        if (agentName == null || agentName.trim().isEmpty()) {
+            agentName = context.getAid();
+        }
+        return reActAgentFactory.createReActAgent(agentName, agentConfig);
     }
 
     @Override

@@ -2,9 +2,9 @@ package cloud.changlu.agentforge.service.modules.agent.service;
 
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigPublishedMapper;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPublishedPojo;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentRuntimeConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigPublishedPojo;
 import cloud.changlu.agentforge.service.modules.agent.exception.AgentUnavailableException;
 
 import org.junit.Test;

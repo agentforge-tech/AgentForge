@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.agent.dao.UserMessageAppendMapper">
+    <resultMap id="AppendResult" type="cloud.changlu.agentforge.service.modules.agent.domain.pojo.UserMessageAppendPojo">
+        <id property="id" column="id"/>
+        <result property="sessionId" column="session_id"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="queuedAt" column="queued_at"/>
+        <result property="createTime" column="create_time"/>
+        <result property="modifyTime" column="modify_time"/>
+    </resultMap>
+    <sql id="columns">id, session_id, content, status, queued_at, create_time, modify_time</sql>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into ai_agent_session_message_append (session_id, content, status, queued_at)
+        values (#{sessionId}, #{content}, #{status}, #{queuedAt})
+    </insert>
+    <select id="selectPending" resultMap="AppendResult">
+        select <include refid="columns"/> from ai_agent_session_message_append
+        where session_id = #{sessionId} and status = #{status} order by id asc
+    </select>
+    <select id="selectPendingById" resultMap="AppendResult">
+        select <include refid="columns"/> from ai_agent_session_message_append
+        where session_id = #{sessionId} and id = #{id} and status = #{status}
+    </select>
+    <select id="countPending" resultType="java.lang.Integer">
+        select count(1) from ai_agent_session_message_append where session_id = #{sessionId} and status = #{status}
+    </select>
+    <delete id="deleteByIds">
+        delete from ai_agent_session_message_append where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+    <delete id="deletePendingById">
+        delete from ai_agent_session_message_append where session_id = #{sessionId} and id = #{id} and status = #{status}
+    </delete>
+    <delete id="deleteBySessionId">
+        delete from ai_agent_session_message_append where session_id = #{sessionId}
+    </delete>
+</mapper>

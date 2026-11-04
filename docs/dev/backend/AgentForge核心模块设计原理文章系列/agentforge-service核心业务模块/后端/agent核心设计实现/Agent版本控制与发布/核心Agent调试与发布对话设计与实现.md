@@ -304,6 +304,7 @@ public final void removeAgent(String aid, boolean isDebug) {
 | --- | --- | --- |
 | `ai_agent_session` | 一次连续对话的元数据 | 列表、标题、置顶、状态、`is_debug` |
 | `ai_agent_session_message` | 会话内消息明细 | 用户问题、AI 最终回答、SSE 事件快照 |
+| `ai_agent_session_message_append` | 单次 Run 的待注入追加消息 | 运行中用户补充指令的 QUEUED 队列 |
 | `ai_agent_memrory` | 模型上下文窗口 | 由服务内的记忆存储维护，不承担页面展示 |
 
 `ai_agent_session` 的关键字段：
@@ -357,7 +358,7 @@ session.setIsDebug(
 | --- | --- | --- |
 | 请求进入 | 新建或刷新 `modify_time` | 插入占位 `1` |
 | Agent 启动（`onInitComplete`） | `status=1` | `1 → 2`，写 `started_at` |
-| 流式执行中 | 保持 `1` | 保持 `2`，事件只在内存聚合 |
+| 流式执行中 | 保持 `1` | 保持 `2`，事件按 800ms 节流增量写入；append/retry 等关键事件立即写入 |
 | `onStop(NORMAL)` | `status=2` | `5`，补齐 `content/events/elapsed_ms/finished_at` |
 | 异常 | `status=2` | `3` |
 | 用户停止 | `status=2` | `4` |
@@ -381,13 +382,110 @@ Integer debugFilter =
 
 ### 7.4 事件快照与历史重放
 
-流式过程中不逐帧写库，只在内存中收集推送事件，结束时一次性写入 `events`：
+事件不是只在结束时写一次，而是“运行中增量 + 结束时收口”：
 
-- `think`、`resp`、`tool_call` 按到达顺序进入 JSON 数组。
-- `content` 只保存最终正文，用于快速渲染。
-- 历史重放时解析 `events`，思考块、工具卡片、耗时都能还原。
+- `think`、`resp`、`tool_call` 按到达顺序进入事件数组，普通过程事件按 `EVENT_PERSIST_INTERVAL_MS = 800ms` 节流写入 `events`；
+- 追加用户消息（`user_message`）与模型重试（`retry`）属于关键状态变化，立即写入；
+- `content` 只保存最终正文，用于快速渲染；
+- `onStop` 最终收口时写入完整 `content/events/elapsed_ms/finished_at`；
+- 增量写入与最终收口共用 `synchronized (state)`，避免旧快照覆盖终态。
+
+这样做的直接收益是：Run 进行中打开另一个页面或刷新时，`session-messages/detail` 能返回“截至最近一次落库”的部分事件，页面可以恢复：
+
+- 已输出的思考/正文/工具卡片；
+- 追加消息的 `EFFECTIVE` 过程片段与 `QUEUED` 等待项；
+- 后续通过 1.5s 轮询继续刷新，直到 AI 消息离开 `status=2`。
+
+历史重放仍然使用同一套事件协议，`replaySession` 会把 `events` 还原为消息结构。只有 `EFFECTIVE` 会生成 AI 过程片段；`DEFERRED` 恢复为草稿；`QUEUED/CANCELED` 不再出现在已完成的历史里。`retry` 事件会落库用于审计，但历史重放不生成过期倒计时。
 
 调试会话和正式会话使用同一份事件协议，因此调试面板看到的过程与正式页完全一致。排查“线上为什么这么回答”时，可以直接在当前配置上复现，不需要再为调试单独造一套渲染逻辑。
+
+### 7.5 运行中状态优化
+
+#### 7.5.1 运行中指示常驻
+
+发布模式（`ElegantMessage`）与调试模式（`DebugMessage`）在 `message.status === 'running'` 时，底部持续显示运行中指示：
+
+- 发布模式：`正在处理...` 渐变文字；
+- 调试模式：三点闪烁。
+
+条件是“只要仍在执行”，不再要求正文为空。因此以下阶段都有明确反馈：
+
+- 只有 think、还没有正文；
+- 已经输出部分正文，仍在继续思考；
+- 正在调用工具；
+- 等待下一次模型调用。
+
+#### 7.5.2 模型重试事件与倒计时
+
+模型调用失败重试时，Core 通过 `onAiCallRetry` 回调通知中间件；Service 将其转换为独立事件：
+
+```json
+{
+  "event": "retry",
+  "type": "retry",
+  "content": {
+    "currentStep": 2,
+    "retryCount": 1,
+    "maxRetries": 3,
+    "delayMs": 2000,
+    "delaySeconds": 2,
+    "eventAt": 1793778791094,
+    "retryAt": 1793778793094
+  },
+  "isFinish": false
+}
+```
+
+- `currentStep`：第几轮；
+- `retryCount` / `maxRetries`：第几次 / 共几次；
+- `delayMs` / `delaySeconds`：本次展示时长；
+- `eventAt` / `retryAt`：事件时间与预计开始重试时间。
+
+前端收到后：
+
+1. 在 AI 正文末尾插入 `retry_notice` 过程片段；
+2. 用 `retryAt - eventAt` 换算成本地 `deadline`，规避服务端/客户端时钟偏差；
+3. `RetryNotice` 每 250ms 刷新倒计时，显示 `Retrying (第 2 轮 · 1/3 · 4s)`，归零后显示“即将重试”；
+4. 下一次 `think/resp/tool_call/resp_end/error` 到达时自动移除；
+5. 多次重试会替换为最新一条。
+
+重试期间隐藏普通的“正在处理...”指示，避免两条状态并排。
+
+#### 7.5.3 SSE 绑定与活跃 Run 清理
+
+`JdkHttpTransport.executeStreaming` 是异步的，`TokenStream.start()` 会立即返回。因此流式入口必须区分两件事：
+
+| 事项 | 触发时机 | 处理 |
+| --- | --- | --- |
+| SSE 解绑 | emitter `onCompletion/onTimeout` | `streamingMiddleware.unbind(sessionId)` |
+| 活跃 Run 清理 | TokenStream `onCompleteResponse/onError` | `activeStops.remove(sessionId)` |
+
+不能在 `start()` 之后立即 `unbind`，否则整轮流式事件都会丢失；也不能依赖 SSE completion 清理 `activeStops`，否则客户端断开后其他页面无法停止后台 Run。
+
+正确写法：
+
+```java
+agentManager.stream(agent, chatReq)
+        .onCompleteResponse(response -> activeStops.remove(sessionId))
+        .onError(error -> activeStops.remove(sessionId))
+        .ignoreErrors()
+        .start();
+```
+
+`ServiceStreamingMiddleware.onStop/onStopWithError` 负责发送 `resp_end/error` 并完成 SSE 收口。
+
+#### 7.5.4 跨页面恢复
+
+Run 进行中切换到另一个页面时：
+
+1. `session-messages/detail` 返回增量落库的部分事件；
+2. 最后一条 AI 消息 `status=2` 时，页面进入 running 状态；
+3. 页面每 1.5s 轮询消息与事件快照；
+4. 追加消息的排队/生效/未赶上/取消完全由 `user_message` 事件驱动；
+5. Run 结束后停止轮询，恢复 deferred 草稿并刷新会话列表。
+
+详细协议见《Agent追加事件 + 插入Agent loop对话设计.md》。
 
 ## 八、关键流程
 
@@ -466,6 +564,10 @@ sequenceDiagram
 8. **同步接口不落会话**：会话历史的唯一写入方是流式链路的初始化 + 生命周期中间件。
 9. **`session_id` 即运行时记忆标识**：调试与正式会话的记忆上下文天然隔离。
 10. **发布页展示与运行同源**：`basic` 接口和正式对话都读 `ai_agent_config_published`。
+11. **流式异步，禁止启动后立即解绑**：`executeStreaming` 提交到后台线程后 `start()` 立即返回；SSE 解绑只由 emitter 完成/超时触发。
+12. **活跃 Run 与 SSE 生命周期分离**：`activeStops` 在 TokenStream 真正完成/错误时清理，保证切换页面后仍能停止后台 Run。
+13. **运行中事件增量落库**：普通事件 800ms 节流，append/retry 立即写入，最终收口覆盖完整快照。
+14. **页面状态由事件驱动**：追加消息的排队/生效/延后/取消与重试倒计时都只由事件序列推导，HTTP 响应仅作为命令回执。
 
 ## 十、接口与落地文件
 
@@ -474,21 +576,27 @@ sequenceDiagram
 | `POST /api/agent/chat` | 同步对话，按 `isDebug` 选择运行态 | 当前表 / 发布表 |
 | `POST /api/chat/stream` | 流式对话，按 `isDebug` 选择运行态 | 当前表 / 发布表 |
 | `POST /api/chat/stop` | 发送停止信号，不写库 | 运行时 |
+| `POST /api/chat/append` | 运行中追加用户消息 | Append Store |
+| `POST /api/chat/append/cancel` | 取消尚未生效的追加消息 | Append Store |
 | `GET /api/agent-config/{id}` | 编辑页配置 | `ai_agent_config` |
 | `GET /api/agent-config/published/{aid}/basic` | 发布页基本信息 | `ai_agent_config_published` |
 | `GET /api/agent/session-messages/detail` | 调试/正式会话历史 | `ai_agent_session_message` |
 
 核心落地文件：
 
-| 层次 | 类 |
+| 层次 | 类 / 文件 |
 | --- | --- |
-| Controller | `AgentChatController`、`ChatController` |
+| Controller | `AgentChatController`、`ChatController`、`UserMessageAppendController` |
 | 配置解析 | `AgentRuntimeConfigResolver`、`AgentRuntimeConfig` |
 | 异常 | `AgentUnavailableException` |
 | 运行时 | `AgentManagerFactory`、`IAgentManager`、`AbstractAgentManager`、`StandardReActAgentManager` |
 | 初始化上下文 | `AgentInitContext` |
 | 会话 | `IAgentSessionService` / `AgentSessionServiceImpl`、`SessionLifecycleMiddleware` |
 | 配置服务 | `AgentConfigServiceImpl`（保存、发布、取消发布、版本切换） |
+| 追加消息 | `UserMessageAppendMiddleware`、`IUserMessageAppendService`、`MysqlUserMessageAppendStore`、`ServiceUserMessageAppendEventListener`、`UserMessageAppendProcessor` |
+| 重试事件 | `AiRetryProcessor`、`ServiceStreamingMiddleware.onAiCallRetry`、`SessionLifecycleMiddleware.onAiCallRetry` |
+| 运行中渲染 | `RetryNotice.vue`、`DebugMessage.vue`、`ElegantMessage.vue` |
+| 前端恢复 | `appendEventReducer.js`、`sessionReplay.js`（`replaySession`）、`PublishedAgentChatPage.vue`、`AgentDebugPanel.vue` |
 
 ## 十一、总结
 

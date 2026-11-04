@@ -5,6 +5,7 @@ import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.StopResult;
 import cloud.changlu.agentforge.agent.stream.PartialThinking;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
+import cloud.changlu.agentforge.model.chat.request.ChatRequest;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMapper;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMessageMapper;
 import cloud.changlu.agentforge.service.modules.session.enums.SessionMessageStatusEnum;
@@ -13,6 +14,7 @@ import cloud.changlu.agentforge.service.modules.session.enums.SessionStatusTrans
 import cloud.changlu.agentforge.service.protocol.StreamEventResponse;
 import cloud.changlu.agentforge.service.protocol.ToolCallResult;
 import cloud.changlu.agentforge.service.protocol.processor.AiResponseProcessor;
+import cloud.changlu.agentforge.service.protocol.processor.retry.AiRetryProcessor;
 import cloud.changlu.agentforge.service.protocol.processor.think.AiThinkProcessor;
 import cloud.changlu.agentforge.service.protocol.processor.tool.AiToolCallProcessor;
 
@@ -40,6 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
 
     private static final Logger log = LoggerFactory.getLogger(SessionLifecycleMiddleware.class);
+
+    /** 运行中事件快照的最小落库间隔，避免逐 token 写库；append 等关键事件会强制立即落库。 */
+    private static final long EVENT_PERSIST_INTERVAL_MS = 800L;
 
     /** 会话会话标识（等于 memoryId），由请求初始化写入运行期上下文。 */
     public static final String EXT_SESSION_ID = "session.sessionId";
@@ -197,6 +202,32 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
         finishState(state, SessionMessageStatusEnum.FAILED, message(error));
     }
 
+    /** 收集由其他业务中间件产生的事件，使实时流与历史重放使用同一份协议。 */
+    public void collectEvent(Object memoryId, StreamEventResponse event) {
+        RunState state = memoryId == null ? null : states.get(memoryId);
+        if (state != null && event != null) {
+            state.collect(event, true);
+        }
+    }
+
+    /** 模型调用重试事件：记录“第几轮、第几次、等待秒数”，供历史重放与审计。 */
+    @Override
+    public void onAiCallRetry(
+            int currentStep,
+            ChatRequest chatRequest,
+            AgentChatContext chatContext,
+            int retryCount,
+            int maxRetries,
+            long delayMs,
+            Exception lastException) {
+        if (chatContext == null) {
+            return;
+        }
+        collectEvent(
+                chatContext.getMemoryId(),
+                AiRetryProcessor.retry(currentStep, retryCount, maxRetries, delayMs));
+    }
+
     private void finish(
             AgentChatContext chatContext, SessionMessageStatusEnum status, String fallbackContent) {
         RunState state = state(chatContext);
@@ -208,33 +239,42 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
 
     private void finishState(
             RunState state, SessionMessageStatusEnum status, String fallbackContent) {
-        if (state == null || !state.finished.compareAndSet(false, true)) {
+        if (state == null) {
             return;
         }
-        Date finishedAt = new Date();
-        String content =
-                state.content.length() > 0
-                        ? state.content.toString()
-                        : (fallbackContent == null ? state.content.toString() : fallbackContent);
-        long elapsed = Math.max(0L, finishedAt.getTime() - state.startedAt.getTime());
-        String eventsJson = toJson(state.events);
         try {
-            agentSessionMessageMapper.finish(
-                    state.aiMessageId,
-                    status.getCode(),
-                    content,
-                    eventsJson,
-                    elapsed,
-                    finishedAt,
-                    finishedAt);
-            agentSessionMapper.updateStatus(
-                    state.sessionPk, SessionStatusEnum.FINISHED.getCode(), finishedAt);
-        } catch (RuntimeException e) {
-            log.warn(
-                    "会话收口写入失败, sessionId={}, aiMessageId={}",
-                    state.sessionId,
-                    state.aiMessageId,
-                    e);
+            synchronized (state) {
+                if (!state.finished.compareAndSet(false, true)) {
+                    return;
+                }
+                Date finishedAt = new Date();
+                String content =
+                        state.content.length() > 0
+                                ? state.content.toString()
+                                : (fallbackContent == null
+                                        ? state.content.toString()
+                                        : fallbackContent);
+                long elapsed = Math.max(0L, finishedAt.getTime() - state.startedAt.getTime());
+                String eventsJson = toJson(state.events);
+                try {
+                    agentSessionMessageMapper.finish(
+                            state.aiMessageId,
+                            status.getCode(),
+                            content,
+                            eventsJson,
+                            elapsed,
+                            finishedAt,
+                            finishedAt);
+                    agentSessionMapper.updateStatus(
+                            state.sessionPk, SessionStatusEnum.FINISHED.getCode(), finishedAt);
+                } catch (RuntimeException e) {
+                    log.warn(
+                            "会话收口写入失败, sessionId={}, aiMessageId={}",
+                            state.sessionId,
+                            state.aiMessageId,
+                            e);
+                }
+            }
         } finally {
             states.remove(state.memoryId);
         }
@@ -309,7 +349,7 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
     }
 
     /** 单次运行状态。 */
-    private static final class RunState {
+    private final class RunState {
         private final Object memoryId;
         private final String sessionId;
         private final Long sessionPk;
@@ -320,6 +360,7 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
         private final Map<String, Long> toolStartTimes = new ConcurrentHashMap<>();
         private final java.util.concurrent.atomic.AtomicBoolean finished =
                 new java.util.concurrent.atomic.AtomicBoolean(false);
+        private long lastEventPersistAt = 0L;
 
         private RunState(Object memoryId, String sessionId, Long sessionPk, Long aiMessageId) {
             this.memoryId = memoryId;
@@ -328,9 +369,42 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
             this.aiMessageId = aiMessageId;
         }
 
+        /** 普通过程事件按最小间隔节流落库，避免逐 token 写库。 */
         private synchronized void collect(StreamEventResponse event) {
-            if (event != null) {
-                events.add(event);
+            collect(event, false);
+        }
+
+        /**
+         * 收集事件并按需写入运行中快照。
+         *
+         * <p>{@code flush=true} 用于 append 等低频关键事件，保证其他页面能立即恢复页面状态。
+         */
+        private synchronized void collect(StreamEventResponse event, boolean flush) {
+            if (event == null) {
+                return;
+            }
+            events.add(event);
+            long now = System.currentTimeMillis();
+            if (!flush && now - lastEventPersistAt < EVENT_PERSIST_INTERVAL_MS) {
+                return;
+            }
+            persistEvents();
+        }
+
+        private void persistEvents() {
+            if (finished.get() || events.isEmpty()) {
+                return;
+            }
+            String json = toJson(new ArrayList<>(events));
+            if (json == null) {
+                return;
+            }
+            lastEventPersistAt = System.currentTimeMillis();
+            try {
+                agentSessionMessageMapper.updateEvents(
+                        aiMessageId, json, new Date(lastEventPersistAt));
+            } catch (RuntimeException e) {
+                log.warn("会话事件增量写入失败, sessionId={}, aiMessageId={}", sessionId, aiMessageId, e);
             }
         }
 

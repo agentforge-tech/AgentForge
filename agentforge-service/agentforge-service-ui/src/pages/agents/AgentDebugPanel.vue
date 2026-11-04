@@ -86,15 +86,29 @@
         <span class="chat-scroll-btn__label">回到底部</span>
       </button>
     </transition>
+    <div v-if="pendingAppends.length" class="append-queue agent-debug-append-queue" aria-live="polite">
+      <div class="append-queue-head">
+        <span class="append-queue-status"><i></i>后续指令</span>
+        <span class="append-queue-hint">{{ pendingAppends.length }} 条等待插入</span>
+      </div>
+      <transition-group name="append-list" tag="div" class="append-queue-list">
+        <div v-for="(item, index) in pendingAppends" :key="item.appendId" class="append-pill">
+          <span class="append-pill-index">↳</span>
+          <span class="append-pill-content" :title="item.content">{{ item.content }}</span>
+          <span class="append-pill-waiting">第 {{ index + 1 }} 位</span>
+          <button type="button" title="取消追加" @click="cancelAppend(item.appendId)"><i class="el-icon-close"></i></button>
+        </div>
+      </transition-group>
+    </div>
     <div class="agent-debug-input">
       <textarea
         v-model="draft"
-        placeholder="输入调试问题..."
+        :placeholder="running ? '输入补充指令，将在下一轮处理…' : '输入调试问题...'"
         @compositionstart="composing = true"
         @compositionend="composing = false"
         @keydown.enter="onEnter"
       ></textarea>
-      <button class="af-btn af-btn--primary" :disabled="running || !draft.trim()" @click="send">{{ running ? '运行中' : '发送' }}</button>
+      <button class="af-btn af-btn--primary" :disabled="!draft.trim()" @click="send">{{ running ? '追加' : '发送' }}</button>
     </div>
   </aside>
 </template>
@@ -104,8 +118,9 @@ import { RENDER_MODES, DEFAULT_RENDER_MODE } from '../../modes'
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
 import chatAutoScroll from '../../utils/chatAutoScroll'
 import { fetchSessionList, fetchSessionMessages } from '../../utils/sessionApi'
-import { replaySessionMessages } from '../../utils/sessionReplay'
+import { replaySession } from '../../utils/sessionReplay'
 import { postSse } from '../../utils/sse'
+import { reduceAppendEvent } from '../../utils/appendEventReducer'
 
 const MODE_KEY = 'agentforge.render.mode'
 export default {
@@ -117,7 +132,7 @@ export default {
     agentName: { type: String, default: '' },
     agentAvatar: { type: String, default: '/logo.png' }
   },
-  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', composing: false, running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [], historyOpen: false, historyLoading: false, historySessions: [] } },
+  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', composing: false, running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [], pendingAppends: [], deferredAppends: [], remotePollTimer: null, historyOpen: false, historyLoading: false, historySessions: [] } },
   computed: {
     renderModes() { return RENDER_MODES },
     displayAgentName() { return this.agentName || 'AgentForge' }
@@ -141,7 +156,8 @@ export default {
       this.send()
     },
     async send() {
-      const text = this.draft.trim(); if (!text || this.running) return
+      const text = this.draft.trim(); if (!text) return
+      if (this.running) { await this.sendAppend(text); return }
       const requestVersion = ++this.requestVersion
       this.draft = ''; this.messages.push({ role: 'user', text }); const answer = { role: 'assistant', status: 'running', parts: [], content: '', error: '', startedAt: Date.now(), finishedAt: null, elapsedMs: null }; this.messages.push(answer); this.running = true; this.controller = new AbortController(); const controller = this.controller; this.resetScrollFollow(); this.scroll()
       try {
@@ -150,9 +166,63 @@ export default {
         if (e.name !== 'AbortError') { answer.status = 'error'; answer.error = e.message || '调试失败'; this.finishParts(answer) }
       } finally {
         if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
-        if (requestVersion === this.requestVersion) { this.running = false; this.controller = null; this.scroll() }
+        if (requestVersion === this.requestVersion) { this.running = false; this.controller = null; this.restoreDeferredAppends(); this.scroll() }
         if (this.historyOpen) this.loadHistory()
       }
+    },
+    async sendAppend(text) {
+      try {
+        const response = await fetch('/api/chat/append', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ aid: this.aid, sessionId: this.sessionId, message: text, isDebug: true })
+        })
+        const result = await response.json()
+        if (!result.queued) { this.$message.warning(result.reason || '追加失败'); return }
+        this.draft = ''
+      } catch (error) {
+        this.$message.error(error.message || '追加消息失败')
+      }
+    },
+    async cancelAppend(appendId) {
+      try {
+        const response = await fetch('/api/chat/append/cancel', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ aid: this.aid, sessionId: this.sessionId, appendId, isDebug: true })
+        })
+        const result = await response.json()
+        if (!result.canceled) this.$message.info('该指令已经生效或本轮已经结束')
+      } catch (_error) { this.$message.error('取消追加失败') }
+    },
+    applyAppendEvent(answer, event) {
+      reduceAppendEvent(this, answer, event)
+    },
+    applyRetryEvent(answer, event) {
+      const content = event.content || {}
+      const eventAt = Number(content.eventAt || 0)
+      const retryAt = Number(content.retryAt || 0)
+      const delaySeconds = Number(content.delaySeconds || 0)
+      const waitMs = retryAt > eventAt ? retryAt - eventAt : delaySeconds * 1000
+      this.clearRetryNotice(answer)
+      answer.parts.push({
+        type: 'retry_notice',
+        currentStep: content.currentStep,
+        attempt: content.retryCount || 1,
+        maxRetries: content.maxRetries || 1,
+        durationSeconds: delaySeconds || Math.ceil(waitMs / 1000),
+        deadline: Date.now() + Math.max(0, waitMs)
+      })
+    },
+    clearRetryNotice(answer) {
+      if (!answer || !Array.isArray(answer.parts)) return
+      if (!answer.parts.some((part) => part.type === 'retry_notice')) return
+      answer.parts = answer.parts.filter((part) => part.type !== 'retry_notice')
+    },
+    restoreDeferredAppends() {
+      if (!this.deferredAppends.length) return
+      const text = this.deferredAppends.splice(0).map((item) => item.content).filter(Boolean).join('\n\n')
+      if (!text) return
+      this.draft = this.draft.trim() ? this.draft + '\n\n' + text : text
+      this.$message.info('未赶上本轮的补充内容已放回输入框')
     },
     createSessionId() { return 'agent-debug-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) },
     newSession() {
@@ -160,7 +230,7 @@ export default {
       ++this.requestVersion
       if (this.controller) this.controller.abort()
       if (this.running && oldSessionId) fetch(`/api/chat/stop?sessionId=${encodeURIComponent(oldSessionId)}`, { method: 'POST' }).catch(() => {})
-      this.controller = null; this.running = false; this.messages = []; this.draft = ''; this.sessionId = this.createSessionId(); this.resetScrollFollow()
+      this.controller = null; this.running = false; this.messages = []; this.pendingAppends = []; this.deferredAppends = []; this.stopRemotePoll(); this.draft = ''; this.sessionId = this.createSessionId(); this.resetScrollFollow()
       this.$message.success('已新建会话')
     },
     toggleHistory() {
@@ -190,18 +260,78 @@ export default {
       }
     },
     async openSession(item) {
-      if (!item || this.running) return
-      ++this.requestVersion
+      if (!item) return
+      if (this.running) this.detachCurrentRun()
+      else ++this.requestVersion
       this.closeHistory()
       this.sessionId = item.sessionId
       try {
         const records = await fetchSessionMessages(item.id)
-        this.messages = replaySessionMessages(records)
+        const replay = replaySession(records)
+        this.messages = replay.messages
+        this.pendingAppends = replay.pendingAppends
+        this.deferredAppends = replay.deferredAppends
+        this.restoreDeferredAppends()
+        this.syncRemoteRun(item.id, replay.messages)
         this.resetScrollFollow()
         this.scroll()
       } catch (e) {
         this.$message.error(e.message || '会话加载失败')
       }
+    },
+    syncRemoteRun(sessionRefId, messages) {
+      const last = [...(messages || [])].reverse().find((item) => item.role === 'assistant')
+      const running = !!(last && last.status === 'running')
+      if (running && !this.controller) {
+        this.running = true
+        this.startRemotePoll(sessionRefId)
+      } else if (!this.controller) {
+        this.stopRemotePoll()
+        this.running = false
+      }
+    },
+    startRemotePoll(sessionRefId) {
+      if (this.remotePollTimer) return
+      const expectedSessionId = this.sessionId
+      const tick = async () => {
+        this.remotePollTimer = null
+        if (!this.running || this.sessionId !== expectedSessionId) return
+        try {
+          const replay = replaySession(await fetchSessionMessages(sessionRefId))
+          if (this.sessionId !== expectedSessionId) return
+          this.messages = replay.messages
+          this.pendingAppends = replay.pendingAppends
+          const last = [...replay.messages].reverse().find((item) => item.role === 'assistant')
+          if (!last || last.status !== 'running') {
+            this.running = false
+            this.deferredAppends = replay.deferredAppends
+            this.restoreDeferredAppends()
+            if (this.historyOpen) this.loadHistory()
+            return
+          }
+          this.remotePollTimer = setTimeout(tick, 1500)
+          this.scroll()
+        } catch (_error) {
+          this.remotePollTimer = setTimeout(tick, 2000)
+        }
+      }
+      this.remotePollTimer = setTimeout(tick, 1200)
+    },
+    stopRemotePoll() {
+      if (this.remotePollTimer) {
+        clearTimeout(this.remotePollTimer)
+        this.remotePollTimer = null
+      }
+    },
+    /** 切换会话时仅脱离当前 SSE，不停止后台 Agent Run。 */
+    detachCurrentRun() {
+      ++this.requestVersion
+      if (this.controller) this.controller.abort()
+      this.controller = null
+      this.running = false
+      this.pendingAppends = []
+      this.deferredAppends = []
+      this.stopRemotePoll()
     },
     formatSessionTime(item) {
       const raw = item.lastMessageAt || item.modifyTime || item.createTime
@@ -212,11 +342,13 @@ export default {
     handleEvent(answer, event) {
       switch (event.event) {
         case 'session': if (event.content) this.sessionId = event.content; break
-        case 'think': this.applyThink(answer, event); break
-        case 'resp': answer.content += event.content || ''; break
-        case 'tool_call': this.closeOpenThink(answer); this.applyTool(answer, event); break
-        case 'resp_end': answer.status = 'success'; this.finishParts(answer); break
-        case 'error': answer.status = 'error'; answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '调试失败'); this.finishParts(answer); break
+        case 'think': this.clearRetryNotice(answer); this.applyThink(answer, event); break
+        case 'resp': this.clearRetryNotice(answer); answer.content += event.content || ''; break
+        case 'tool_call': this.clearRetryNotice(answer); this.closeOpenThink(answer); this.applyTool(answer, event); break
+        case 'user_message': this.applyAppendEvent(answer, event); break
+        case 'retry': this.applyRetryEvent(answer, event); break
+        case 'resp_end': this.clearRetryNotice(answer); answer.status = 'success'; this.finishParts(answer); break
+        case 'error': this.clearRetryNotice(answer); answer.status = 'error'; answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '调试失败'); this.finishParts(answer); break
         default: break
       }
       this.scroll()

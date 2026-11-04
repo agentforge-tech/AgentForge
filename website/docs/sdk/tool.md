@@ -1,12 +1,12 @@
 ---
-title: Tool 扩展设计
-sidebar_label: Tool扩展设计
+title: Tool 扩展接口设计
+sidebar_label: Tool扩展接口设计
 description: 将本地 Java 方法、HTTP 插件与 MCP 服务统一转换为模型可调用的 Function Call 工具
 sidebar_position: 5
 displayed_sidebar: sdkSidebar
 ---
 
-# Tool 扩展设计
+# Tool 扩展接口设计
 
 Tool 层负责把真实世界的能力转换成模型可理解的 Function Call：声明工具名、描述、参数 Schema 与执行器，并在模型请求调用时完成参数绑定、执行和结果写回。
 
@@ -19,6 +19,14 @@ AgentForge 支持三类工具来源：
 | MCP Server | 标准 MCP 服务、stdio / streamable-http | `McpToolFactory` |
 
 三类工具最终都会注册进同一个 `ToolService`，对 Agent 完全透明。
+
+本文是 Tool 扩展总览，负责说明统一契约、注册方式和执行策略。需要落地某一种工具时，按下面的专题阅读“设计思路 → Agent SDK 用法 → 如何继续扩展”：
+
+| 专题 | 适用场景 |
+| --- | --- |
+| [JavaLocalTool 对接](./tool/java-local) | 把已有 Java 方法封装成类型明确、可测试的本地工具 |
+| [HTTP 对接](./tool/http) | 把 REST API 或 curl 描述转换为受控工具 |
+| [MCP 对接](./tool/mcp) | 连接 stdio 或 Streamable HTTP MCP Server |
 
 ## 依赖（v1.0.0）
 

@@ -1,21 +1,20 @@
-package cloud.changlu.agentforge.service.modules.agent.domain;
+package cloud.changlu.agentforge.service.modules.agent.domain.pojo;
 
 import java.util.Date;
 
-/** 通用 Agent 配置持久化对象，对应表 {@code ai_agent_config}。 */
-public class AgentConfigPojo {
+/** Agent 历史版本持久化对象，对应表 {@code ai_agent_config_version}。 */
+public class AgentConfigVersionPojo {
 
     private Long id;
+    private Long versionNo;
     private String name;
     private Integer type;
     private String agentConfig;
     private String experConfig;
-    private Integer publish;
-    private Date lastPublishTime;
     private String aid;
-    private Integer isPublic;
     private String avatar;
     private String description;
+    private String versionRemark;
     private Integer isDeleted;
     private Long createUserId;
     private Date createTime;
@@ -27,6 +26,14 @@ public class AgentConfigPojo {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersionNo() {
+        return versionNo;
+    }
+
+    public void setVersionNo(Long versionNo) {
+        this.versionNo = versionNo;
     }
 
     public String getName() {
@@ -61,36 +68,12 @@ public class AgentConfigPojo {
         this.experConfig = experConfig;
     }
 
-    public Integer getPublish() {
-        return publish;
-    }
-
-    public void setPublish(Integer publish) {
-        this.publish = publish;
-    }
-
-    public Date getLastPublishTime() {
-        return lastPublishTime;
-    }
-
-    public void setLastPublishTime(Date lastPublishTime) {
-        this.lastPublishTime = lastPublishTime;
-    }
-
     public String getAid() {
         return aid;
     }
 
     public void setAid(String aid) {
         this.aid = aid;
-    }
-
-    public Integer getIsPublic() {
-        return isPublic;
-    }
-
-    public void setIsPublic(Integer isPublic) {
-        this.isPublic = isPublic;
     }
 
     public String getAvatar() {
@@ -107,6 +90,14 @@ public class AgentConfigPojo {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getVersionRemark() {
+        return versionRemark;
+    }
+
+    public void setVersionRemark(String versionRemark) {
+        this.versionRemark = versionRemark;
     }
 
     public Integer getIsDeleted() {

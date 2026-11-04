@@ -184,6 +184,24 @@ button, textarea { font: inherit; }
 /* ------------------------------ 输入框 ------------------------------ */
 .composer-wrap { flex-shrink: 0; width: 100%; background: #fff; }
 .composer-inner { max-width: 860px; margin: 0 auto; padding: 12px 24px 30px; }
+.append-queue { width: 100%; max-height: 132px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; margin: 0 0 7px; padding: 1px 2px 7px; box-sizing: border-box; }
+.append-queue-head { position: sticky; z-index: 2; top: -1px; display: flex; min-height: 24px; align-items: center; justify-content: flex-start; gap: 8px; padding: 1px 4px 3px; background: #fff; }
+.append-queue-status { display: inline-flex; align-items: center; gap: 5px; color: #5d6f8d; font-size: 11px; font-weight: 500; }
+.append-queue-status > i { width: 5px; height: 5px; border-radius: 50%; background: #7c91b4; animation: append-status-pulse 1.8s ease-in-out infinite; }
+.append-queue-hint { color: #a2a9b5; font-size: 10px; white-space: nowrap; }
+.append-queue-list { display: flex; flex-direction: column; gap: 3px; }
+.append-pill { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 32px; flex-shrink: 0; padding: 3px 8px; color: #606266; background: #f6f8fb; border: 1px solid #e8ecf2; border-radius: 6px; font-size: 12px; box-sizing: border-box; transition: background-color .16s ease, border-color .16s ease, transform .18s, opacity .18s; }
+.append-pill:hover { background: #f1f5fa; border-color: #dde4ee; }
+.append-pill-index { width: 14px; flex: 0 0 14px; color: #8294b0; background: transparent; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1; text-align: center; }
+.append-pill-content { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #303133; }
+.append-pill-waiting { color: #909399; white-space: nowrap; font-size: 10px; }
+.append-pill-waiting > i { display: none; }
+.append-pill button { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; padding: 0; color: #909399; background: transparent; border: 0; border-radius: 50%; cursor: pointer; }
+.append-pill button:hover { color: #f56c6c; background: rgba(245, 108, 108, 0.1); }
+.append-list-enter-active, .append-list-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.append-list-enter, .append-list-leave-to { opacity: 0; transform: translateY(5px); }
+.append-list-move { transition: transform 0.2s ease; }
+@keyframes append-status-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 .composer-box {
   display: flex; align-items: flex-end; gap: 10px;
   border: 1px solid #e2e7ef; border-radius: 24px; background: #fff;
@@ -191,6 +209,7 @@ button, textarea { font: inherit; }
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .composer-box.focus { border-color: #9cc0f5; box-shadow: 0 2px 16px rgba(75, 142, 247, 0.14); }
+.composer-box.append-mode { border-color: #b9cae4; background: linear-gradient(180deg, #fff 0%, #fbfcff 100%); box-shadow: 0 2px 16px rgba(74, 111, 164, 0.12); }
 .composer-box textarea {
   flex: 1; border: none; outline: none; resize: none;
   font-size: 14px; line-height: 1.6; color: #24292f; background: transparent;
@@ -209,6 +228,7 @@ button, textarea { font: inherit; }
 .send-btn:hover:not(:disabled) { filter: brightness(1.05); box-shadow: 0 3px 10px rgba(96, 158, 255, 0.45); }
 .send-btn:disabled { background: #e5e7eb; color: #b0b8c4; box-shadow: none; cursor: not-allowed; }
 .send-btn .stop-square { width: 11px; height: 11px; border-radius: 3px; background: #fff; }
+.send-btn.append { background: #2563eb; }
 .composer-tip {
   position: absolute; left: 0; right: 0; bottom: 6px;
   text-align: center; font-size: 11.5px; color: #b0b8c4;

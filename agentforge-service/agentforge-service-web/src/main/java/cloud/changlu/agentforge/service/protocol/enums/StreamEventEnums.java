@@ -14,6 +14,14 @@ public final class StreamEventEnums {
         THINK("think", "AI思考", TypeEnum.TEXT),
         RESP("resp", "AI回答事件", TypeEnum.TEXT),
         TOOL_CALL("tool_call", "工具调用事件", TypeEnum.TOOL_CARD),
+        RETRY("retry", "AI调用重试事件", TypeEnum.RETRY),
+        USER_MESSAGE(
+                "user_message",
+                "运行时追加用户消息",
+                TypeEnum.APPEND_QUEUED,
+                TypeEnum.APPEND_EFFECTIVE,
+                TypeEnum.APPEND_DEFERRED,
+                TypeEnum.APPEND_CANCELED),
         RESP_END("resp_end", "AI回答结束"),
         ERROR("error", "异常事件", TypeEnum.TEXT);
 
@@ -51,7 +59,12 @@ public final class StreamEventEnums {
     public enum TypeEnum {
         CREATED("created", "会话创建"),
         TEXT("text", "文本内容"),
-        TOOL_CARD("tool_card", "工具调用卡片");
+        TOOL_CARD("tool_card", "工具调用卡片"),
+        RETRY("retry", "模型调用重试"),
+        APPEND_QUEUED("append_queued", "追加已排队"),
+        APPEND_EFFECTIVE("append_effective", "追加已生效"),
+        APPEND_DEFERRED("append_deferred", "追加未赶上本轮"),
+        APPEND_CANCELED("append_canceled", "追加已取消");
 
         private final String code;
         private final String msg;
