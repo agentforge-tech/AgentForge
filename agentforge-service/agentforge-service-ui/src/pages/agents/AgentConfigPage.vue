@@ -114,14 +114,47 @@
             </el-form-item>
 
             <el-form-item label="对话模型">
-              <el-select v-model.number="form.modelId" placeholder="请选择对话模型" style="width: 100%">
+              <el-select v-model.number="form.modelId" placeholder="请选择对话模型" style="width: 100%" @change="applySelectedModelDefaults()">
                 <el-option
                   v-for="model in models"
                   :key="model.id"
-                  :label="model.name + '（' + model.modelname + '）'"
+                  :label="model.name + '（' + model.modelName + '）'"
                   :value="model.id"
                 />
               </el-select>
+              <div class="agent-memory-settings agent-model-settings">
+                <button
+                  type="button"
+                  class="agent-memory-settings__head"
+                  :aria-expanded="modelParamsExpanded ? 'true' : 'false'"
+                  @click="modelParamsExpanded = !modelParamsExpanded"
+                >
+                  <span class="agent-memory-settings__icon"><i class="el-icon-setting"></i></span>
+                  <div>
+                    <b>高级模型参数</b>
+                  </div>
+                  <i class="el-icon-arrow-down agent-memory-settings__arrow" :class="{ 'is-expanded': modelParamsExpanded }"></i>
+                </button>
+                <el-collapse-transition>
+                  <div v-show="modelParamsExpanded" class="agent-model-settings__body">
+                    <div class="agent-memory-settings__field">
+                      <div class="agent-memory-settings__label">
+                        <span>最大上下文（k单位）</span>
+                      <small>留空时使用当前模型的注册默认值</small>
+                      </div>
+                      <el-input-number v-model="form.maxInputToken" :min="0" :step="1" step-strictly controls-position="right" placeholder="如 1000" />
+                    </div>
+                    <div class="agent-memory-settings__field">
+                      <div class="agent-memory-settings__label">
+                        <span>最大输出token（k单位）</span>
+                        <small>留空由模型默认值决定</small>
+                      </div>
+                      <el-input-number v-model="form.maxOutputToken" :min="0" :step="1" step-strictly controls-position="right" placeholder="如 8" />
+                    </div>
+                  </div>
+                </el-collapse-transition>
+              </div>
+              <div class="af-form-tip">配置 Chat 模型的最大上下文和最大输出参数，留空则按默认适配</div>
             </el-form-item>
 
             <el-form-item label="MCP 插件">
@@ -554,12 +587,15 @@ export default {
       mcpPage: 1,
       mcpPageSize: 5,
       memorySettingsExpanded: false,
+      modelParamsExpanded: false,
       form: {
         id: null,
         name: '',
         avatar: '',
         description: '',
         modelId: null,
+        maxInputToken: 1000,
+        maxOutputToken: null,
         systemPrompt: '',
         chatMemoryType: 1,
         chatMemoryMaxMessages: 1000,
@@ -626,8 +662,8 @@ export default {
         fetchMcpPlugins('', true).catch(() => null),
         fetchHttpPluginOptions().catch(() => null)
       ])
+      this.models = modelResult || []
       this.applyDetail(detail)
-      this.models = (modelResult && modelResult.data) || []
       this.mcpPlugins = pluginList || []
       this.httpPlugins = httpPluginList || []
     } catch (e) {
@@ -646,13 +682,22 @@ export default {
         avatar: detail.avatar || '',
         description: detail.description || '',
         modelId: detail.modelId,
+        maxInputToken: detail.maxInputToken,
+        maxOutputToken: detail.maxOutputToken,
         systemPrompt: detail.systemPrompt || '',
         chatMemoryType: detail.chatMemoryType || 1,
         chatMemoryMaxMessages: detail.chatMemoryMaxMessages || 1000,
         mcpPlugins: ((detail.pluginConfig && detail.pluginConfig.mcpPlugins) || []).map((item) => ({ pluginId: item.pluginId, serverIds: item.serverIds || [] })),
         httpPlugins: ((detail.pluginConfig && detail.pluginConfig.httpPlugins) || []).map((item) => ({ pluginId: item.pluginId, pluginMethodIds: item.pluginMethodIds || [] }))
       }
+      this.applySelectedModelDefaults(false)
       this.baseline = JSON.stringify(this.form)
+    },
+    applySelectedModelDefaults(overwrite = true) {
+      const model = this.models.find((item) => Number(item.id) === Number(this.form.modelId))
+      if (!model || !model.modelConfig) return
+      if (overwrite || this.form.maxInputToken == null) this.form.maxInputToken = model.modelConfig.maxInputKTokens
+      if (overwrite || this.form.maxOutputToken == null) this.form.maxOutputToken = model.modelConfig.maxOutputKTokens
     },
     // ---------- HTTP 选择 ----------
     async openHttpPicker() {
@@ -904,6 +949,8 @@ export default {
         name: version.name,
         description: version.description || '',
         modelId: config.modelId,
+        maxInputToken: config.maxInputToken,
+        maxOutputToken: config.maxOutputToken,
         systemPrompt: config.systemPrompt,
         chatMemoryType: config.chatMemoryType,
         chatMemoryMaxMessages: config.chatMemoryMaxMessages
@@ -940,6 +987,8 @@ export default {
       const currentConfig = {
         systemPrompt: current.systemPrompt || '',
         modelId: current.modelId,
+        maxInputToken: current.maxInputToken,
+        maxOutputToken: current.maxOutputToken,
         chatMemoryType: current.chatMemoryType || 1,
         chatMemoryMaxMessages: current.chatMemoryMaxMessages || 1000
       }
@@ -948,6 +997,8 @@ export default {
         { key: 'description', label: 'Agent 描述', versionValue: historical.description || '', currentValue: current.description || '' },
         { key: 'systemPrompt', label: 'Prompt 提示词', versionValue: versionConfig.systemPrompt, currentValue: currentConfig.systemPrompt },
         { key: 'modelId', label: '对话模型', versionValue: this.modelLabel(versionConfig.modelId), currentValue: this.modelLabel(currentConfig.modelId) },
+        { key: 'maxInputToken', label: '最大上下文(k)', versionValue: versionConfig.maxInputToken, currentValue: currentConfig.maxInputToken },
+        { key: 'maxOutputToken', label: '最大输出(k)', versionValue: versionConfig.maxOutputToken, currentValue: currentConfig.maxOutputToken },
         { key: 'chatMemoryType', label: '记忆类型', versionValue: this.memoryTypeLabel(versionConfig.chatMemoryType), currentValue: this.memoryTypeLabel(currentConfig.chatMemoryType) },
         { key: 'chatMemoryMaxMessages', label: '最大记忆消息数', versionValue: String(versionConfig.chatMemoryMaxMessages), currentValue: String(currentConfig.chatMemoryMaxMessages) }
       ]
@@ -972,11 +1023,13 @@ export default {
         return {
           systemPrompt: config.systemPrompt || '',
           modelId: chatModel.llm_model_id ?? chatModel.llmModelId ?? null,
+          maxInputToken: chatModel.maxInputToken ?? null,
+          maxOutputToken: chatModel.maxOutputToken ?? null,
           chatMemoryType: memory.type || 1,
           chatMemoryMaxMessages: memoryConfig.maxMessage || 1000
         }
       } catch (_e) {
-        return { systemPrompt: '', modelId: null, chatMemoryType: 1, chatMemoryMaxMessages: 1000 }
+        return { systemPrompt: '', modelId: null, maxInputToken: null, maxOutputToken: null, chatMemoryType: 1, chatMemoryMaxMessages: 1000 }
       }
     },
     modelLabel(modelId) {
@@ -1044,6 +1097,7 @@ export default {
 .agent-config-prompt textarea { flex: 1; width: 100%; resize: none; border: 0; outline: 0; padding: 18px; color: $color-text; font: 13px/1.75 $font-mono; }
 .agent-config-fields { display: flex; flex-direction: column; gap: 18px; padding: 18px; overflow-y: auto; }
 .agent-config-form { display: flex; flex-direction: column; gap: 4px; }
+.agent-model-settings { margin-top: 10px; }
 .agent-memory-settings { margin-top: 10px; overflow: hidden; border: 1px solid #dce7f3; border-radius: 9px; background: #f8fbff; }
 .agent-memory-settings__head { display: flex; width: 100%; height: 40px; align-items: center; gap: 8px; padding: 0 10px; border: 0; background: #f1f6fc; cursor: pointer; font-family: inherit; line-height: 1.4; text-align: left; transition: background .15s; > div { min-width: 0; flex: 1; } b { display: block; color: $color-text-secondary; font-size: 12.5px; } &:hover, &:focus { outline: 0; background: #eaf2fb; } }
 .agent-memory-settings__icon { display: inline-flex; width: 24px; height: 24px; flex: 0 0 24px; align-items: center; justify-content: center; border-radius: 6px; background: #fff; color: $color-brand; box-shadow: 0 1px 3px rgba(45, 82, 128, .09); font-size: 13px; }

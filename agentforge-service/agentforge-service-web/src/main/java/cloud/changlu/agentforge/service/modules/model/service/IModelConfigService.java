@@ -8,6 +8,7 @@ import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigDetai
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigOptionsVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigTestVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigVo;
+import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelSelectionOptionVo;
 
 import java.util.List;
 
@@ -42,4 +43,7 @@ public interface IModelConfigService {
 
     /** 获取模型厂商与模型类别枚举选项。 */
     ModelConfigOptionsVo options();
+
+    /** 获取业务表单使用的模型下拉选项及模型能力默认值。 */
+    List<ModelSelectionOptionVo> modelOptions(Integer modelType);
 }

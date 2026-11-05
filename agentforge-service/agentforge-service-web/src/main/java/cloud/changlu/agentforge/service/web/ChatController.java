@@ -2,7 +2,7 @@ package cloud.changlu.agentforge.service.web;
 
 import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
 import cloud.changlu.agentforge.service.domain.req.ChatStreamRequest;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentRuntimeConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
@@ -84,6 +84,7 @@ public class ChatController {
                 agentManager.getAgentAndInitAgent(
                         AgentInitContext.builder()
                                 .aid(config.getAid())
+                                .agentName(config.getName())
                                 .agentConfig(config.getAgentConfig())
                                 .debug(isDebug)
                                 .channelId(AgentInitContext.WEBSITE_CHANNEL_ID)
@@ -92,8 +93,9 @@ public class ChatController {
         final SseEmitter emitter = new SseEmitter(0L);
         streamingMiddleware.bind(sessionId, emitter);
         activeStops.put(sessionId, () -> agentManager.cancel(agent, sessionId));
-        emitter.onCompletion(() -> cleanup(sessionId));
-        emitter.onTimeout(() -> cleanup(sessionId));
+        // 客户端断开只解绑 SSE 输出，不能清理 activeStops：Run 仍在后台继续，其他页面恢复后仍可停止。
+        emitter.onCompletion(() -> streamingMiddleware.unbind(sessionId));
+        emitter.onTimeout(() -> streamingMiddleware.unbind(sessionId));
 
         final AgentChatReq chatReq = new AgentChatReq();
         chatReq.setAid(config.getAid());
@@ -107,9 +109,16 @@ public class ChatController {
         executor.execute(
                 () -> {
                     try {
-                        // 事件全部由 ServiceStreamingMiddleware 在 Agent 生命周期回调中发送
-                        agentManager.stream(agent, chatReq).ignoreErrors().start();
+                        // 事件全部由 ServiceStreamingMiddleware 在 Agent 生命周期回调中发送。
+                        // 说明：streamingChatModel 的 executeStreaming 是异步的，start() 会立即返回，
+                        // 因此不能在这里 unbind SSE，也不能在这里判断 Run 已结束。
+                        agentManager.stream(agent, chatReq)
+                                .onCompleteResponse(response -> activeStops.remove(sessionId))
+                                .onError(error -> activeStops.remove(sessionId))
+                                .ignoreErrors()
+                                .start();
                     } catch (RuntimeException e) {
+                        activeStops.remove(sessionId);
                         sessionLifecycleMiddleware.finishWithError(sessionId, e);
                         streamingMiddleware.onError(sessionId, e);
                     }
@@ -146,10 +155,5 @@ public class ChatController {
     /** 当前阶段未接入登录态，统一使用默认用户，后续替换为登录上下文。 */
     private Long currentUserId() {
         return 1L;
-    }
-
-    private void cleanup(String sessionId) {
-        activeStops.remove(sessionId);
-        streamingMiddleware.unbind(sessionId);
     }
 }

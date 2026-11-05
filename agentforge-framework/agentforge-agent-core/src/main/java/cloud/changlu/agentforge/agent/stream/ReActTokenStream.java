@@ -21,6 +21,10 @@ import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -35,6 +39,24 @@ public class ReActTokenStream implements TokenStream {
     private static final String MODEL_CALL_INTERRUPTED = "模型调用被中间件中断";
 
     private static final String MAX_STEPS_PREFIX = "执行步长达到限制";
+
+    /** 未显式配置 AgentSettings 时的默认重试次数，与 AgentSettings 默认值保持一致。 */
+    private static final int DEFAULT_AI_CALL_RETRY = 3;
+
+    /** 未显式配置 AgentSettings 时的默认首次重试等待时间。 */
+    private static final long DEFAULT_AI_CALL_RETRY_DELAY_MS = 2000L;
+
+    /** 流式重试的延迟调度器：不在模型回调线程内 sleep，避免阻塞底层 HTTP 客户端线程。 */
+    private static final ScheduledExecutorService RETRY_SCHEDULER =
+            Executors.newSingleThreadScheduledExecutor(
+                    new ThreadFactory() {
+                        @Override
+                        public Thread newThread(Runnable runnable) {
+                            Thread thread = new Thread(runnable, "react-stream-retry");
+                            thread.setDaemon(true);
+                            return thread;
+                        }
+                    });
 
     private final AgentChatContext chatContext;
     private final StreamingChatModel streamingChatModel;
@@ -197,12 +219,29 @@ public class ReActTokenStream implements TokenStream {
         }
         currentChatRequest = processedRequest;
 
-        final ChatRequest callRequest = processedRequest;
-        streamingChatModel.chat(
-                callRequest,
+        attemptChat(currentStep, processedRequest, 0);
+    }
+
+    /**
+     * 发起一次流式模型调用。
+     *
+     * <p>流式调用是异步的，失败可能表现为同步异常，也可能通过 {@code onError} 回调返回。两种入口统一收敛到 {@link #handleAttemptError}，再按
+     * {@link AgentSettings} 的重试配置决定重试或失败。
+     *
+     * <p>只有本次尝试尚未输出任何增量内容时才允许重试：已经下发给页面的 think/resp token 无法撤回， 重试会造成内容重复。
+     */
+    private void attemptChat(
+            final int currentStep, final ChatRequest request, final int retriedCount) {
+        final AtomicBoolean resolved = new AtomicBoolean(false);
+        final AtomicBoolean hadPartial = new AtomicBoolean(false);
+        StreamingChatResponseHandler handler =
                 new StreamingChatResponseHandler() {
                     @Override
                     public void onPartialResponse(String partialResponse) {
+                        if (resolved.get()) {
+                            return;
+                        }
+                        hadPartial.set(true);
                         if (middlewareManager != null) {
                             middlewareManager.triggerOnPartialResponse(
                                     currentStep, partialResponse, chatContext);
@@ -214,6 +253,10 @@ public class ReActTokenStream implements TokenStream {
 
                     @Override
                     public void onPartialThinking(String partialThinking) {
+                        if (resolved.get()) {
+                            return;
+                        }
+                        hadPartial.set(true);
                         PartialThinking thinking = new PartialThinking(partialThinking);
                         if (middlewareManager != null) {
                             middlewareManager.triggerOnPartialThinking(
@@ -226,14 +269,111 @@ public class ReActTokenStream implements TokenStream {
 
                     @Override
                     public void onCompleteResponse(ChatResponse completeResponse) {
+                        if (!resolved.compareAndSet(false, true)) {
+                            return;
+                        }
                         onRoundComplete(currentStep, completeResponse);
                     }
 
                     @Override
                     public void onError(Throwable error) {
-                        handleError(currentStep, error);
+                        if (!resolved.compareAndSet(false, true)) {
+                            return;
+                        }
+                        handleAttemptError(
+                                currentStep, request, retriedCount, hadPartial.get(), error);
                     }
-                });
+                };
+        try {
+            streamingChatModel.chat(request, handler);
+        } catch (RuntimeException e) {
+            if (resolved.compareAndSet(false, true)) {
+                handleAttemptError(currentStep, request, retriedCount, hadPartial.get(), e);
+            }
+        }
+    }
+
+    private void handleAttemptError(
+            int currentStep,
+            ChatRequest request,
+            int retriedCount,
+            boolean hadPartial,
+            Throwable error) {
+        if (isCancelled()) {
+            handleCancel(
+                    currentStep,
+                    String.format("会话：%s 在第%d步被取消", chatContext.getMemoryId(), currentStep));
+            return;
+        }
+        if (!hadPartial && retriedCount < getMaxAiCallRetries()) {
+            scheduleRetry(currentStep, request, retriedCount + 1, error);
+            return;
+        }
+        handleError(currentStep, error);
+    }
+
+    private void scheduleRetry(
+            final int currentStep,
+            final ChatRequest request,
+            final int retryCount,
+            final Throwable lastError) {
+        long delayMs = retryDelay(retryCount);
+        if (middlewareManager != null) {
+            middlewareManager.triggerOnAiCallRetry(
+                    currentStep,
+                    request,
+                    chatContext,
+                    retryCount,
+                    getMaxAiCallRetries(),
+                    delayMs,
+                    asException(lastError));
+        }
+        Runnable retryTask =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isCancelled()) {
+                            handleCancel(
+                                    currentStep,
+                                    String.format(
+                                            "会话：%s 在第%d步被取消",
+                                            chatContext.getMemoryId(), currentStep));
+                            return;
+                        }
+                        attemptChat(currentStep, request, retryCount);
+                    }
+                };
+        if (delayMs <= 0L) {
+            retryTask.run();
+        } else {
+            RETRY_SCHEDULER.schedule(retryTask, delayMs, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private int getMaxAiCallRetries() {
+        return agentSettings == null
+                ? DEFAULT_AI_CALL_RETRY
+                : Math.max(agentSettings.getAiCallRetry(), 0);
+    }
+
+    private long retryDelay(int retryCount) {
+        long base =
+                agentSettings == null
+                        ? DEFAULT_AI_CALL_RETRY_DELAY_MS
+                        : Math.max(agentSettings.getAiCallRetryDelay(), 0L);
+        long delay = base;
+        // retryCount 从 1 开始：第 1 次重试等待 base，之后每次翻倍
+        for (int i = 1; i < retryCount && delay > 0L; i++) {
+            delay = delay > Long.MAX_VALUE / 2 ? Long.MAX_VALUE : delay * 2;
+        }
+        return delay;
+    }
+
+    private static Exception asException(Throwable error) {
+        if (error instanceof Exception) {
+            return (Exception) error;
+        }
+        return new AgentException(error.getMessage(), error);
     }
 
     private void onRoundComplete(int currentStep, ChatResponse response) {

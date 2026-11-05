@@ -1,274 +1,244 @@
 ---
-title: Tool 扩展设计
-sidebar_label: Tool扩展设计
-description: 将本地 Java 方法、HTTP 插件与 MCP 服务统一转换为模型可调用的 Function Call 工具
+title: Tool 扩展接口设计
+sidebar_label: Tool扩展接口设计
+description: AgentForge Function Call、ToolExecutor 与工具调用实体的核心设计
 sidebar_position: 5
 displayed_sidebar: sdkSidebar
 ---
 
-# Tool 扩展设计
+# Tool 扩展接口设计
 
-Tool 层负责把真实世界的能力转换成模型可理解的 Function Call：声明工具名、描述、参数 Schema 与执行器，并在模型请求调用时完成参数绑定、执行和结果写回。
+AgentForge 将所有工具统一抽象为两部分：`ToolSpecification` 告诉模型“可以调用什么”，`ToolExecutor` 负责“如何执行”。Agent Loop 只处理统一的 Function Call 实体，不关心能力来自 Java 方法、HTTP 接口还是 MCP Server。
 
-AgentForge 支持三类工具来源：
+本文只介绍 Tool 核心实现。具体接入用法请阅读 [Java本地Tool 对接](./tool/java-local)、[HTTP 对接](./tool/http) 和 [MCP 对接](./tool/mcp)。
 
-| 来源 | 适用场景 | 工厂 |
-| --- | --- | --- |
-| Local Tool | 已有 Java 方法、内部服务 | `ToolService.tools(...)` 自动扫描 `@Tool` |
-| HTTP Plugin | 三方 REST API、curl 脚本 | `HttpToolFactory` |
-| MCP Server | 标准 MCP 服务、stdio / streamable-http | `McpToolFactory` |
+## 1. 整体执行链路
 
-三类工具最终都会注册进同一个 `ToolService`，对 Agent 完全透明。
-
-## 依赖（v1.0.0）
-
-```xml
-<dependency>
-    <groupId>cloud.changlu.agentforge</groupId>
-    <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.0</version>
-</dependency>
+```text
+ToolSpecification
+        ↓ 随模型请求发送
+模型返回 ToolExecutionRequest
+        ↓ 按 name 查找执行器
+ToolExecutor.executeWithResult(...)
+        ↓
+ToolExecutionResult
+        ↓ 转换并写回会话
+ToolExecutionResultMessage
 ```
 
-`ToolService`、`@Tool`、`@P`、HTTP / MCP 工具工厂均包含在该模块及其传递依赖中。
+`ToolService` 维护工具说明与执行器的注册关系，`AgentToolExecutor` 在 Agent Loop 的 Act 阶段完成调度、Middleware 回调、事件记录和结果写回。
 
-## 1. 本地 Java 工具
+## 2. Function Call 的统一封装
 
-### 1.1 声明工具
+不同模型厂商的 Function Call 报文并不相同。AgentForge 在模型层定义提供商无关的实体，由各模型适配器负责协议转换，避免 Agent Loop 直接依赖厂商格式。
+
+### 2.1 ToolSpecification：函数声明
+
+`ToolSpecification` 描述模型可调用的函数：
+
+| 字段 | 作用 |
+| --- | --- |
+| `name` | 工具唯一名称，也是执行器查找键 |
+| `description` | 告诉模型何时、如何使用工具 |
+| `parameters` | 基于 JSON Schema 的参数定义 |
+| `strict` | 是否要求严格遵循参数 Schema |
+| `metadata` | 保存核心逻辑之外的扩展信息 |
 
 ```java
-import cloud.changlu.agentforge.model.tool.P;
-import cloud.changlu.agentforge.model.tool.Tool;
+ToolSpecification specification = ToolSpecification.builder()
+        .name("query_weather")
+        .description("查询指定城市的天气")
+        .parameters(ToolParameters.builder()
+                .addProperty("city", "string", "城市名称", true)
+                .build())
+        .strict(true)
+        .build();
+```
 
-public class WeatherTools {
+`ToolParameters` 使用普通 `Map` 保存 JSON Schema，使 API 层不依赖具体 JSON 库。模型适配器再将它转换为 OpenAI、Anthropic 等模型的请求结构。
 
-    @Tool("查询指定城市的实时天气")
-    public String getWeather(
-            @P(name = "city", description = "城市名称，例如：北京") String city) {
-        return "{\"city\":\"" + city + "\",\"weather\":\"晴\",\"temperature\":\"26℃\"}";
-    }
+### 2.2 ToolExecutionRequest：函数调用
 
-    @Tool(value = "把摄氏度转换为华氏度", name = "celsiusToFahrenheit")
-    public double celsiusToFahrenheit(
-            @P(name = "celsius", description = "摄氏度") double celsius) {
-        return celsius * 9 / 5 + 32;
+模型返回 Function Call 后，适配器将其转换为统一请求：
+
+```java
+ToolExecutionRequest request = ToolExecutionRequest.builder()
+        .id("call_001")
+        .name("query_weather")
+        .arguments("{\"city\":\"杭州\"}")
+        .build();
+```
+
+- `id` 用来关联调用与返回结果；
+- `name` 用来定位 `ToolExecutor`；
+- `arguments` 保留模型生成的原始 JSON。
+
+参数不在公共实体层提前反序列化，而是交给具体执行器解析。这样本地、HTTP、MCP 等执行器可以使用各自的参数语义，核心 API 也不必绑定某一种 JSON 实现。
+
+## 3. ToolExecutor 执行器
+
+`ToolExecutor` 是扩展工具能力的最小契约：
+
+```java
+@FunctionalInterface
+public interface ToolExecutor {
+    String execute(ToolExecutionRequest request, Object memoryId);
+
+    default ToolExecutionResult executeWithResult(
+            ToolExecutionRequest request, Object memoryId) {
+        String text = execute(request, memoryId);
+        return ToolExecutionResult.builder().text(text).build();
     }
 }
 ```
 
-### 1.2 @Tool
-
-| 属性 | 说明 |
-| --- | --- |
-| `value` | 工具描述，多个字符串按换行拼接 |
-| `name` | 工具名，为空时使用方法名 |
-| `returnBehavior` | 返回值处理策略，默认 `TO_LLM` |
-
-返回值规则：
-
-- `String`：原样作为工具结果；
-- `void`：写入字面量 `Success`；
-- 其他类型：序列化为 JSON 字符串。
-
-### 1.3 @P
-
-| 属性 | 说明 |
-| --- | --- |
-| `name` | 暴露给模型的参数名，为空时使用方法参数名 |
-| `value` / `description` | 参数说明，两者等价 |
-
-> 如果编译时没有开启 `-parameters`，反射拿到的参数名可能是 `arg0`、`arg1`，此时应显式填写 `@P(name = "...")`。
-
-### 1.4 注册到 ToolService
+`execute(...)` 适合只返回文本的简单执行器；`executeWithResult(...)` 则支持原始对象、错误状态和模型文本。默认实现会把文本包装成成功结果，复杂执行器可以覆盖它：
 
 ```java
-import cloud.changlu.agentforge.model.tool.execution.ToolService;
+public ToolExecutionResult executeWithResult(
+        ToolExecutionRequest request, Object memoryId) {
+    try {
+        Object rawResult = invokeCapability(request.arguments());
+        return ToolExecutionResult.builder()
+                .result(rawResult)
+                .text(toModelText(rawResult))
+                .build();
+    } catch (Exception error) {
+        return ToolExecutionResult.failure("工具执行失败：" + error.getMessage(), error);
+    }
+}
+```
 
+`result` 面向程序内部和观测逻辑，`text` 才会进入模型上下文。两者分离后，执行器既能保留结构化原始对象，也能控制发送给模型的格式与长度。
+
+## 4. Function Call 实体实现类
+
+核心过程由四个不可变实体共同表达：
+
+### 4.1 ToolExecutionRequest
+
+表示模型希望执行的工具及参数，是执行链路输入。它提供 Builder、`from(...)` 和 `toBuilder()`，便于模型适配器构造和复制。
+
+### 4.2 ToolExecutionResult
+
+表示执行器内部返回值：
+
+| 字段 | 作用 |
+| --- | --- |
+| `isError` | 本次执行是否失败 |
+| `result` | 原始对象或异常，不直接发送给模型 |
+| `text` | 写回模型上下文的文本 |
+
+`success(...)` 和 `failure(...)` 用于构造标准结果。可预期的执行失败也作为结果返回，使模型能够根据错误提示修正参数或选择其他工具。
+
+### 4.3 ToolExecutionResultMessage
+
+表示写入对话历史的工具消息。它通过请求 `id` 关联原始 Function Call，并携带 `toolName`、`text`、`isError` 和扩展 `attributes`。
+
+```java
+ToolExecutionResultMessage message = ToolExecutionResultMessage.builder()
+        .id(request.id())
+        .toolName(request.name())
+        .text(result.text())
+        .isError(result.isError())
+        .build();
+```
+
+模型下一轮推理看到的是该消息，而不是 Java 原始返回对象。
+
+### 4.4 ToolExecution
+
+表示一次完整的执行记录，组合 `ToolExecutionRequest` 和 `ToolExecutionResult`，并记录开始时间、结束时间、耗时和 `memoryId`。它用于流式监听、日志、Trace 和业务事件，不参与模型协议转换。
+
+## 5. ToolService 注册中心
+
+`ToolService` 内部维护两份核心数据：
+
+```java
+List<ToolSpecification> toolSpecifications;
+Map<String, ToolExecutor> toolExecutors;
+```
+
+前者随请求发送给模型，后者只存在于应用内部。注册时通过工具名称建立对应关系：
+
+```java
 ToolService toolService = new ToolService();
-toolService.tools(new WeatherTools());
+toolService.tool(specification, executor);
 ```
 
-注册单个方法：
+模型只能看到工具说明，运行时则根据模型返回的 `name` 找到真实执行器。因此工具名是稳定的 Function Call 契约，应保持唯一并避免随意变更。
+
+## 6. AgentToolExecutor 统一调度
+
+`AgentToolExecutor` 位于 Agent Loop 的 Act 阶段，主要负责：
+
+1. 从 `ToolService.toolExecutors()` 按名称查找执行器；
+2. 调用 `executeWithResult(request, memoryId)`；
+3. 将异常转换为失败的 `ToolExecutionResult`；
+4. 触发执行前后及异常 Middleware；
+5. 构造 `ToolExecutionResultMessage` 并写入 ChatMemory；
+6. 构造带耗时和会话信息的 `ToolExecution` 并通知监听器；
+7. 根据 Agent 配置选择顺序或并发执行。
+
+并发模式下，同一轮工具最多使用 8 个线程执行，但结果仍按请求顺序写回，保证调用与结果稳定对应。工具不存在、执行异常或返回空文本也会在这一层统一处理。
+
+## 7. 后续扩展方式
+
+扩展 Tool 的核心不是修改 Agent Loop，而是实现新的“工具来源适配器”。适配器最终统一产出：
 
 ```java
-toolService.tool(new WeatherTools(), "getWeather");
+Map<ToolSpecification, ToolExecutor>
 ```
 
-批量注册多个对象：
+其中 `ToolSpecification` 解决“如何让模型理解能力”，`ToolExecutor` 解决“如何调用真实能力”。推荐拆成三层。
+
+### 7.1 规格转换器
+
+从外部能力定义中提取工具名、描述和参数 Schema，转换成 `ToolSpecification`。它只负责声明，不执行工具，因而可以独立测试模型最终看到的 Function Call Schema。
+
+### 7.2 专用执行器
+
+不同能力来源通过不同执行器实现多态：
+
+| 执行器类型 | 核心职责 |
+| --- | --- |
+| 本地执行器 | JSON 参数绑定、类型转换、反射调用、返回值序列化 |
+| HTTP 执行器 | 参数映射到 path/query/header/body，处理请求、状态码和响应体 |
+| MCP 执行器 | 发起 MCP 工具调用，处理传输与协议错误，提取远程结果 |
+| 自定义执行器 | 对接 RPC、消息队列、脚本、工作流等其他能力 |
+
+它们接收相同的 `ToolExecutionRequest` 并返回相同的 `ToolExecutionResult`，因此能够复用 Agent Loop、Middleware、并发策略和结果写回逻辑。
+
+### 7.3 工厂或注册器
+
+工厂负责把规格与执行器配对：
 
 ```java
-toolService.tools(Arrays.asList(new WeatherTools(), new OrderTools()));
+public Map<ToolSpecification, ToolExecutor> buildTools(SourceDefinition source) {
+    Map<ToolSpecification, ToolExecutor> tools = new LinkedHashMap<>();
+    for (Capability capability : source.capabilities()) {
+        tools.put(toSpecification(capability), createExecutor(capability));
+    }
+    return tools;
+}
 ```
 
-> 如果对象中没有任何 `@Tool` 方法，`tools(Object)` 会抛出 `IllegalArgumentException`，便于尽早发现配置错误。
+结果统一交给 `ToolService.tools(...)` 注册。新增协议时无需改动 `AgentToolExecutor`。
 
-## 2. 直接在模型层使用 ToolService
+### 7.4 扩展边界
 
-`ToolService` 自带完整的工具调用循环，适合不构建 Agent、只想让模型调用工具的场景：
+1. Schema 生成与执行逻辑分离；
+2. 执行器自行负责参数解析与协议细节；
+3. 原始结果放入 `result`，模型可读内容放入 `text`；
+4. 可预期失败返回 `isError=true`，编程错误再抛异常；
+5. 鉴权信息封装在执行器配置中，不放进 `ToolSpecification`；
+6. 执行器尽量无状态且线程安全，以支持并发调用；
+7. 日志、Trace 和结果改写优先通过 Middleware 实现。
 
-```java
-ToolChatResult result = toolService.chat(chatModel, parameters, messages);
+## 8. 设计总结
+
+```text
+统一规格描述 + 统一调用实体 + 多态执行器 + Agent 层统一调度
 ```
 
-它会在模型返回工具调用时执行工具、追加 `ToolExecutionResultMessage`，并重新调用模型，直到没有工具请求或达到 `maxToolCallingRoundTrips`。
-
-## 3. HTTP 插件工具
-
-HTTP 插件把一组 REST 方法转换为工具。支持从 curl 一键转换：
-
-```java
-import cloud.changlu.agentforge.agent.tool.http.HttpToolFactory;
-import cloud.changlu.agentforge.agent.tool.http.domain.HttpPlugin;
-import cloud.changlu.agentforge.agent.tool.http.parser.curl.CurlParser;
-import cloud.changlu.agentforge.agent.tool.http.parser.curl.CurlToHttpPluginConverter;
-
-String curl = "curl -X GET 'https://api.example.com/weather?city=beijing'";
-
-HttpPlugin plugin = new CurlToHttpPluginConverter()
-        .convert(new CurlParser().parse(curl));
-
-toolService.tools(HttpToolFactory.buildHttpTools(plugin));
-```
-
-也可以从管理后台的 JSON 配置构建 `HttpPlugin`，再交给工厂。
-
-### 工具命名
-
-HTTP 插件会按「插件别名 + 方法名」生成工具名，避免多个插件之间冲突。注册后可以通过以下方式确认模型看到的工具：
-
-```java
-toolService.toolSpecifications().forEach(spec ->
-        System.out.println(spec.name() + " -> " + spec.description()));
-```
-
-### 思考参数注入
-
-如果希望模型在调用工具前显式说明意图，可以开启 `__thought` 参数注入：
-
-```java
-toolService.tools(HttpToolFactory.buildHttpTools(plugin, null, true));
-```
-
-MCP 工具同样支持：
-
-```java
-McpToolFactory.buildToolsWithThought(client, "weather", true);
-```
-
-## 4. MCP 工具
-
-### 4.1 Streamable HTTP
-
-```java
-import cloud.changlu.agentforge.agent.tool.mcp.DefaultMcpClient;
-import cloud.changlu.agentforge.agent.tool.mcp.McpClient;
-import cloud.changlu.agentforge.agent.tool.mcp.McpToolFactory;
-import cloud.changlu.agentforge.agent.tool.mcp.transport.StreamableHttpMcpTransport;
-
-McpClient client = DefaultMcpClient.builder()
-        .serverAlias("weather")
-        .transport(StreamableHttpMcpTransport.builder()
-                .endpoint("https://mcp.example.com/mcp")
-                .header("Authorization", "Bearer " + System.getenv("MCP_TOKEN"))
-                .build())
-        .build();
-
-toolService.tools(McpToolFactory.buildTools(client));
-```
-
-### 4.2 stdio
-
-```java
-import cloud.changlu.agentforge.agent.tool.mcp.transport.StdioMcpTransport;
-
-McpClient client = DefaultMcpClient.builder()
-        .serverAlias("filesystem")
-        .transport(StdioMcpTransport.of(
-                "npx", "-y", "@modelcontextprotocol/server-filesystem", "/tmp"))
-        .build();
-
-toolService.tools(McpToolFactory.buildTools(client));
-```
-
-### 4.3 工具过滤与命名空间
-
-MCP 工具默认命名为 `{serverAlias}__{toolName}`，例如 `weather__get_forecast`。可以按需过滤：
-
-```java
-Map<ToolSpecification, ToolExecutor> tools = McpToolFactory.buildTools(
-        client,
-        "weather",
-        new HashSet<>(Arrays.asList("get_forecast", "get_alerts")), // 只启用
-        null);
-```
-
-多个 MCP Server 可以注册进同一个 `ToolService`，通过别名隔离名称冲突。
-
-## 5. ToolService 执行策略
-
-### 5.1 错误处理
-
-默认行为：
-
-- 参数解析失败：重新抛出；
-- 工具执行失败：把错误信息作为工具结果返回模型，让模型自行修正。
-
-可以自定义：
-
-```java
-import cloud.changlu.agentforge.model.tool.error.ToolErrorHandlerResult;
-
-toolService.executionErrorHandler((error, context) ->
-        ToolErrorHandlerResult.text("工具执行失败：" + error.getMessage()));
-
-toolService.argumentsErrorHandler((error, context) ->
-        ToolErrorHandlerResult.text("参数不合法，请检查 JSON 结构：" + error.getMessage()));
-```
-
-### 5.2 模型编造工具名
-
-当模型请求一个不存在的工具时，默认直接抛异常。可以改为返回提示文本：
-
-```java
-toolService.hallucinatedToolNameStrategy(request ->
-        ToolExecutionResultMessage.builder()
-                .id(request.id())
-                .toolName(request.name())
-                .text("工具不存在：" + request.name())
-                .isError(true)
-                .build());
-```
-
-### 5.3 最大工具轮次
-
-```java
-toolService.maxToolCallingRoundTrips(20);
-```
-
-该配置只影响直接使用 `ToolService.chat(...)` 的循环；Agent 层的最大轮次由 `AgentSettings.maxSteps` 控制。
-
-## 6. 并发执行
-
-Agent 默认开启工具并发执行：
-
-```java
-AgentSettings.builder()
-        .enableConcurrentToolExecution(true)
-        .build();
-```
-
-- 仅当模型在同一轮返回多个工具调用时才并发；
-- 并发结果的顺序仍与请求顺序一致；
-- 需要严格串行时关闭该开关。
-
-## 7. 工具设计建议
-
-1. **描述比实现更重要**：模型只能看到工具名、描述和参数 Schema，描述要说明“什么时候用”；
-2. **参数尽量扁平**：嵌套 JSON 会增加模型填错参数的概率；
-3. **返回结构化文本**：优先返回 JSON 字符串，字段名稳定、可解析；
-4. **控制返回长度**：工具结果会进入上下文，过长内容应截断或摘要；
-5. **错误可读**：错误信息要能让模型理解并自行修正；
-6. **工具名稳定**：工具名是模型调用契约，不要随意重命名；
-7. **敏感操作加中间件**：删除、转账等高风险工具应结合审批中间件或人工确认。
-
-下一步：阅读 [Agent 智能体](./agent) 将工具接入 ReAct 循环。
+Function Call 实体屏蔽模型厂商差异，`ToolExecutor` 屏蔽能力来源差异，`AgentToolExecutor` 屏蔽顺序、并发、Middleware 和结果写回差异。后续新增工具类型时，只需要扩展规格转换器和执行器，不需要重新实现 Agent Loop。

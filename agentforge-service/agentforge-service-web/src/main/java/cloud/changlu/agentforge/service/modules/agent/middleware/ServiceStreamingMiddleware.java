@@ -12,6 +12,7 @@ import cloud.changlu.agentforge.service.protocol.ToolCallResult;
 import cloud.changlu.agentforge.service.protocol.processor.AiErrorProcessor;
 import cloud.changlu.agentforge.service.protocol.processor.AiResponseProcessor;
 import cloud.changlu.agentforge.service.protocol.processor.AiSessionProcessor;
+import cloud.changlu.agentforge.service.protocol.processor.retry.AiRetryProcessor;
 import cloud.changlu.agentforge.service.protocol.processor.think.AiThinkProcessor;
 import cloud.changlu.agentforge.service.protocol.processor.tool.AiToolCallProcessor;
 
@@ -46,6 +47,30 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         SessionContext context = sessions.remove(memoryId);
         if (context != null) {
             context.dispose();
+        }
+    }
+
+    /** 供 Agent 运行期扩展事件复用当前会话的串行 SSE 输出。 */
+    public void publish(Object memoryId, StreamEventResponse event) {
+        SessionContext context = memoryId == null ? null : sessions.get(memoryId);
+        if (context != null && event != null) {
+            context.send(event);
+        }
+    }
+
+    /** 模型调用重试：把“第几轮、第几次、等待秒数”推给前端。 */
+    @Override
+    public void onAiCallRetry(
+            int currentStep,
+            ChatRequest chatRequest,
+            AgentChatContext chatContext,
+            int retryCount,
+            int maxRetries,
+            long delayMs,
+            Exception lastException) {
+        SessionContext context = state(chatContext);
+        if (context != null) {
+            context.send(AiRetryProcessor.retry(currentStep, retryCount, maxRetries, delayMs));
         }
     }
 

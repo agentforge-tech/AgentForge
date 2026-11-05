@@ -1,17 +1,19 @@
-package cloud.changlu.agentforge.service.modules.agent.domain;
+package cloud.changlu.agentforge.service.modules.agent.domain.pojo;
 
 import java.util.Date;
 
-/** Agent 当前发布快照持久化对象，对应表 {@code ai_agent_config_published}。 */
-public class AgentConfigPublishedPojo {
+/** 通用 Agent 配置持久化对象，对应表 {@code ai_agent_config}。 */
+public class AgentConfigPojo {
 
     private Long id;
     private String name;
     private Integer type;
     private String agentConfig;
     private String experConfig;
+    private Integer publish;
     private Date lastPublishTime;
     private String aid;
+    private Integer isPublic;
     private String avatar;
     private String description;
     private Integer isDeleted;
@@ -59,6 +61,14 @@ public class AgentConfigPublishedPojo {
         this.experConfig = experConfig;
     }
 
+    public Integer getPublish() {
+        return publish;
+    }
+
+    public void setPublish(Integer publish) {
+        this.publish = publish;
+    }
+
     public Date getLastPublishTime() {
         return lastPublishTime;
     }
@@ -73,6 +83,14 @@ public class AgentConfigPublishedPojo {
 
     public void setAid(String aid) {
         this.aid = aid;
+    }
+
+    public Integer getIsPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(Integer isPublic) {
+        this.isPublic = isPublic;
     }
 
     public String getAvatar() {

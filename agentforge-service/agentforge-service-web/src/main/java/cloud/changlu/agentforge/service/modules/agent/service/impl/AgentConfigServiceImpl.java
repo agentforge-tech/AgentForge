@@ -5,13 +5,13 @@ import cloud.changlu.agentforge.service.common.util.AidGeneratorUtil;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigPublishedMapper;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigVersionMapper;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPublishedPojo;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigVersionPojo;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentModelConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.ChatMemoryConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.PluginConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigPublishedPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigVersionPojo;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigQueryReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentConfigUpsertReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentConfigVersionVo;
@@ -215,6 +215,8 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         pojo.setAgentConfig(
                 buildAgentConfig(
                         req.getModelId(),
+                        req.getMaxInputToken(),
+                        req.getMaxOutputToken(),
                         req.getSystemPrompt(),
                         req.getChatMemoryType(),
                         req.getChatMemoryMaxMessages(),
@@ -244,6 +246,8 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         pojo.setAgentConfig(
                 buildAgentConfig(
                         req.getModelId(),
+                        req.getMaxInputToken(),
+                        req.getMaxOutputToken(),
                         prompt,
                         memoryType,
                         maxMessages,
@@ -389,12 +393,16 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
 
     private String buildAgentConfig(
             Long modelId,
+            Integer maxInputToken,
+            Integer maxOutputToken,
             String prompt,
             Integer memoryType,
             Integer maxMessages,
             PluginConfig pluginConfig) {
         AgentModelConfig chatModel = new AgentModelConfig();
         chatModel.setLlmModelId(modelId);
+        chatModel.setMaxInputKTokens(maxInputToken);
+        chatModel.setMaxOutputKTokens(maxOutputToken);
         StandardAgentConfig config = new StandardAgentConfig();
         config.setSystemPrompt(
                 prompt == null || prompt.trim().isEmpty()
@@ -435,6 +443,11 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         vo.setChatMemoryType(resolveMemoryType(config.getChatMemoryConfig()));
         vo.setChatMemoryMaxMessages(resolveMaxMessages(config.getChatMemoryConfig()));
         vo.setPluginConfig(config.getPluginConfig());
+        AgentModelConfig chatModel = config.getChatModel();
+        if (chatModel != null) {
+            vo.setMaxInputToken(chatModel.getMaxInputKTokens());
+            vo.setMaxOutputToken(chatModel.getMaxOutputKTokens());
+        }
         Long modelId = readModelId(pojo.getAgentConfig());
         vo.setModelId(modelId);
         if (modelId != null) {

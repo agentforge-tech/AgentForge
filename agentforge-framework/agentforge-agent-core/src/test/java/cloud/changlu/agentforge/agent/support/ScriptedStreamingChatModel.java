@@ -88,6 +88,17 @@ public class ScriptedStreamingChatModel implements StreamingChatModel {
         return this;
     }
 
+    /** 先回调一段增量文本，再以错误结束，用于验证“已输出后不再重试” */
+    public ScriptedStreamingChatModel enqueuePartialThenError(String partial, Throwable error) {
+        rounds.add(
+                new Round(
+                        Collections.<String>emptyList(),
+                        Collections.singletonList(partial),
+                        null,
+                        error));
+        return this;
+    }
+
     @Override
     public void chat(ChatRequest chatRequest, StreamingChatResponseHandler handler) {
         requests.add(chatRequest);
@@ -96,15 +107,15 @@ public class ScriptedStreamingChatModel implements StreamingChatModel {
             return;
         }
         Round round = rounds.remove(0);
-        if (round.error != null) {
-            handler.onError(round.error);
-            return;
-        }
         for (String thinkingFragment : round.thinking) {
             handler.onPartialThinking(thinkingFragment);
         }
         for (String partial : round.partials) {
             handler.onPartialResponse(partial);
+        }
+        if (round.error != null) {
+            handler.onError(round.error);
+            return;
         }
         handler.onCompleteResponse(round.response);
     }

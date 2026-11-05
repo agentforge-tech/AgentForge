@@ -4,6 +4,7 @@ package cloud.changlu.agentforge.service.modules.agent.runtime.context;
 public class AgentInitContext {
     public static final String WEBSITE_CHANNEL_ID = "-1";
     private String aid;
+    private String agentName;
     private String agentConfig;
     private boolean debug;
     private String channelId;
@@ -14,6 +15,10 @@ public class AgentInitContext {
 
     public String getAid() {
         return aid;
+    }
+
+    public String getAgentName() {
+        return agentName;
     }
 
     public String getAgentConfig() {
@@ -33,6 +38,11 @@ public class AgentInitContext {
 
         public Builder aid(String aid) {
             context.aid = aid;
+            return this;
+        }
+
+        public Builder agentName(String agentName) {
+            context.agentName = agentName;
             return this;
         }
 

@@ -44,5 +44,5 @@ export function chatAgent(payload) {
 }
 
 export function fetchChatModels() {
-  return request(MODEL_BASE + '/page?page=1&pageSize=100&modelType=0')
+  return request(MODEL_BASE + '/options/models?modelType=0')
 }
