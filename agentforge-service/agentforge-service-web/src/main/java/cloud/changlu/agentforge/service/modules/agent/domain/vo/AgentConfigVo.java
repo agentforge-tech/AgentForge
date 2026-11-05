@@ -13,6 +13,8 @@ public class AgentConfigVo {
     private Integer type;
     private Long modelId;
     private String modelName;
+    private Integer maxInputToken;
+    private Integer maxOutputToken;
     private String systemPrompt;
     private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
@@ -72,6 +74,22 @@ public class AgentConfigVo {
 
     public void setModelName(String modelName) {
         this.modelName = modelName;
+    }
+
+    public Integer getMaxInputToken() {
+        return maxInputToken;
+    }
+
+    public void setMaxInputToken(Integer maxInputToken) {
+        this.maxInputToken = maxInputToken;
+    }
+
+    public Integer getMaxOutputToken() {
+        return maxOutputToken;
+    }
+
+    public void setMaxOutputToken(Integer maxOutputToken) {
+        this.maxOutputToken = maxOutputToken;
     }
 
     public String getSystemPrompt() {

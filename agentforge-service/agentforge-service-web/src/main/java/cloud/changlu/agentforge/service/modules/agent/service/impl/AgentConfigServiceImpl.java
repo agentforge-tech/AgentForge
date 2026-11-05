@@ -215,6 +215,8 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         pojo.setAgentConfig(
                 buildAgentConfig(
                         req.getModelId(),
+                        req.getMaxInputToken(),
+                        req.getMaxOutputToken(),
                         req.getSystemPrompt(),
                         req.getChatMemoryType(),
                         req.getChatMemoryMaxMessages(),
@@ -244,6 +246,8 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         pojo.setAgentConfig(
                 buildAgentConfig(
                         req.getModelId(),
+                        req.getMaxInputToken(),
+                        req.getMaxOutputToken(),
                         prompt,
                         memoryType,
                         maxMessages,
@@ -389,12 +393,16 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
 
     private String buildAgentConfig(
             Long modelId,
+            Integer maxInputToken,
+            Integer maxOutputToken,
             String prompt,
             Integer memoryType,
             Integer maxMessages,
             PluginConfig pluginConfig) {
         AgentModelConfig chatModel = new AgentModelConfig();
         chatModel.setLlmModelId(modelId);
+        chatModel.setMaxInputKTokens(maxInputToken);
+        chatModel.setMaxOutputKTokens(maxOutputToken);
         StandardAgentConfig config = new StandardAgentConfig();
         config.setSystemPrompt(
                 prompt == null || prompt.trim().isEmpty()
@@ -435,6 +443,11 @@ public class AgentConfigServiceImpl implements IAgentConfigService {
         vo.setChatMemoryType(resolveMemoryType(config.getChatMemoryConfig()));
         vo.setChatMemoryMaxMessages(resolveMaxMessages(config.getChatMemoryConfig()));
         vo.setPluginConfig(config.getPluginConfig());
+        AgentModelConfig chatModel = config.getChatModel();
+        if (chatModel != null) {
+            vo.setMaxInputToken(chatModel.getMaxInputKTokens());
+            vo.setMaxOutputToken(chatModel.getMaxOutputKTokens());
+        }
         Long modelId = readModelId(pojo.getAgentConfig());
         vo.setModelId(modelId);
         if (modelId != null) {

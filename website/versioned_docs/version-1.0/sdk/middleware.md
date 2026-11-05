@@ -29,6 +29,7 @@ Middleware 契约、管理器与内置实现都在 `agentforge-agent-core` 中�
 | [日志 Middleware](./middleware/logging) | 本地调试、模型/工具耗时和 Token 汇总 |
 | [Trace Middleware](./middleware/trace) | 输出可持久化、可绘制执行链路的快照 |
 | [对话追加 Middleware](./middleware/append) | Agent Loop 运行中接收并注入新的用户消息 |
+| [上下文阈值压缩 Middleware](./middleware/compact) | 长会话阈值压缩、历史摘要与超大工具结果截断 |
 
 ## 1. 两个接口
 

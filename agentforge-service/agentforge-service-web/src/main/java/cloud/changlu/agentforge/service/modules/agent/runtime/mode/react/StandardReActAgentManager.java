@@ -45,7 +45,7 @@ public class StandardReActAgentManager
         if (agentName == null || agentName.trim().isEmpty()) {
             agentName = context.getAid();
         }
-        return reActAgentFactory.createReActAgent(agentName, agentConfig);
+        return reActAgentFactory.createReActAgent(agentName, agentConfig, context.isDebug());
     }
 
     @Override

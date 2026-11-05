@@ -1,4 +1,5 @@
 import { createAppendState, reduceAppendEvent } from './appendEventReducer'
+import { reduceCompactEvent } from './compactEventReducer'
 
 /**
  * 历史消息事件重放：把后端 events 字段（SSE 事件 JSON 数组字符串）还原成渲染所需的 message 结构。
@@ -73,7 +74,7 @@ function applyTool(message, event) {
 }
 
 /** 把一条 AI 消息记录（含 events）还原为渲染用 message 对象 */
-export function replayMessage(record, appendState = createAppendState()) {
+export function replayMessage(record, appendState = createAppendState(), detailed = false) {
   const message = {
     role: 'assistant',
     status: 'success',
@@ -98,6 +99,9 @@ export function replayMessage(record, appendState = createAppendState()) {
         break
       case 'user_message':
         reduceAppendEvent(appendState, message, event)
+        break
+      case 'compact':
+        reduceCompactEvent(message, event, detailed)
         break
       case 'error':
         message.status = 'error'
@@ -135,7 +139,7 @@ export function replayMessage(record, appendState = createAppendState()) {
  * 两者都由同一条事件序列经 {@link reduceAppendEvent} 推导，实时与历史语义一致。
  * 历史重放时 pending 正常情况下应为空：已完成的 Run 里 QUEUED 一定会有终态事件。
  */
-export function replaySession(records) {
+export function replaySession(records, detailed = false) {
   const state = createAppendState()
   const messages = []
   ;(records || []).forEach((record) => {
@@ -143,7 +147,7 @@ export function replaySession(records) {
       messages.push({ role: 'user', text: record.contentText || '' })
       return
     }
-    messages.push(replayMessage(record, state))
+    messages.push(replayMessage(record, state, detailed))
   })
   return {
     messages,

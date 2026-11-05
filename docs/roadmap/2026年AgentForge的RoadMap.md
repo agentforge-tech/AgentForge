@@ -115,7 +115,8 @@ AgentForge
   - 实现：`LoggingIAgentMiddleware` 打印 loop、模型调用、工具执行关键节点并截断超长内容，按 memoryId 统计模型耗时、工具耗时与 token 消耗 → `...agent.extend.middlewares`
 - [x] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）：[内置middlware扩展：Agent Loop TraceMiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：Agent%20Loop%20TraceMiddlware实现.md)
 - [x] Agent 对话追加middleware（Agent Loop过程中追加消息）：[内置middleware扩展：追加对话到Agent.md](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：追加对话到Agent.md)
-- [ ] 上下文压缩middlware（阈值比例压缩机制）
+- [x] 上下文压缩middlware（阈值比例压缩机制）：[内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）.md)
+  - 实现：`CompactSummarizationMiddleware` 在 `beforeModelCall` 按阈值压缩历史并重建请求，在 `afterToolExecution` / `afterConcurrentToolExecution` 截断超大工具结果，通过 `CompactLifecycleHook` 向业务层发布压缩事件 → `...agent.extend.middlewares.compact`
 
 
 
@@ -204,6 +205,8 @@ AgentForge
 - [x] agentforge-service核心标准agent事件协议设计定义：[agentforge-service核心事件协议设计定义](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/agentforge-service核心事件协议设计定义.md)
 - [x] Agent工具调用思考参数与前端优雅交互设计：[Agent工具调用思考参数与前端优雅交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent工具调用思考参数与前端优雅交互设计.md)
 - [x] Agent追加事件 + 插入Agent loop对话交互设计：[Agent追加事件 + 插入Agent loop对话设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent追加事件%20%2B%20插入Agent%20loop对话设计.md)
+- [x] Agent 上下文阈值压缩交互设计：[Agent 上下文阈值压缩交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent%20上下文阈值压缩交互设计.md)
+  - 实现：`ServiceCompactSummarizationMiddleware` 将 Core 压缩钩子转为 `compact` SSE 事件，经 `ServiceStreamingMiddleware` 实时推送、`SessionLifecycleMiddleware` 落库回放；前端调试模式展示压缩前/后两条，发布模式合并为一条 → `...agent.middleware.compact`
 - [ ] ...
 
 
@@ -211,7 +214,7 @@ AgentForge
 ### Agent版本控制与发布
 
 - [x] 核心Agent版本设计与发布设计实现：[Agent版本设计与Agent发布方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/Agent版本设计与Agent发布方案.md)
-- [ ] 核心Agent调试与发布对话设计与实现：[核心Agent调试与发布对话设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/核心Agent调试与发布对话设计与实现.md)
+- [x] 核心Agent调试与发布对话设计与实现：[核心Agent调试与发布对话设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent版本控制与发布/核心Agent调试与发布对话设计与实现.md)
 
 
 

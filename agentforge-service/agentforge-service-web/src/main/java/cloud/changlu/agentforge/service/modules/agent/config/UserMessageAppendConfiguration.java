@@ -6,8 +6,8 @@ import cloud.changlu.agentforge.agent.extend.middlewares.append.store.UserMessag
 import cloud.changlu.agentforge.service.modules.agent.dao.UserMessageAppendMapper;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
-import cloud.changlu.agentforge.service.modules.agent.middleware.UserMessageAppendMiddleware;
-import cloud.changlu.agentforge.service.modules.agent.service.ServiceUserMessageAppendEventListener;
+import cloud.changlu.agentforge.service.modules.agent.middleware.append.ServiceUserMessageAppendEventListener;
+import cloud.changlu.agentforge.service.modules.agent.middleware.append.UserMessageAppendMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.store.MysqlUserMessageAppendStore;
 
 import org.springframework.context.annotation.Bean;

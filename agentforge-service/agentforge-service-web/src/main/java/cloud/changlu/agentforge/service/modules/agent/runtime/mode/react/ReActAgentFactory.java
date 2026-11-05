@@ -2,8 +2,12 @@ package cloud.changlu.agentforge.service.modules.agent.runtime.mode.react;
 
 import cloud.changlu.agentforge.agent.ReActAgent;
 import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
+import cloud.changlu.agentforge.agent.config.LlmModelConfig;
+import cloud.changlu.agentforge.agent.config.LlmModelConfigRegistry;
+import cloud.changlu.agentforge.agent.config.LlmModelConfigRegistryApi;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.extend.middlewares.LoggingIAgentMiddleware;
+import cloud.changlu.agentforge.agent.extend.middlewares.compact.CompactSummarizationMiddleware;
 import cloud.changlu.agentforge.model.registry.LlmFactory;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
 import cloud.changlu.agentforge.model.registry.constant.ChatModelProperties;
@@ -15,7 +19,8 @@ import cloud.changlu.agentforge.service.modules.agent.domain.config.PluginConfig
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
-import cloud.changlu.agentforge.service.modules.agent.middleware.UserMessageAppendMiddleware;
+import cloud.changlu.agentforge.service.modules.agent.middleware.append.UserMessageAppendMiddleware;
+import cloud.changlu.agentforge.service.modules.agent.middleware.compact.ServiceCompactSummarizationMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.runtime.mode.react.memory.factory.ChatMemoryProviderFactory;
 import cloud.changlu.agentforge.service.modules.model.dao.ModelConfigMapper;
 import cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo;
@@ -34,6 +39,9 @@ import java.util.Map;
 /** Standard ReAct Agent 工厂，负责装配模型、记忆、工具及默认中间件。 */
 @Component
 public class ReActAgentFactory {
+
+    private static final LlmModelConfigRegistryApi MODEL_CONFIG_REGISTRY =
+            LlmModelConfigRegistry.registry();
 
     private final ModelConfigMapper modelConfigMapper;
     private final OpenReachTools openReachTools;
@@ -67,6 +75,11 @@ public class ReActAgentFactory {
     }
 
     public ReActAgent createReActAgent(String agentName, StandardAgentConfig standardAgentConfig) {
+        return createReActAgent(agentName, standardAgentConfig, false);
+    }
+
+    public ReActAgent createReActAgent(
+            String agentName, StandardAgentConfig standardAgentConfig, boolean isDebug) {
         if (standardAgentConfig == null || standardAgentConfig.getChatModel() == null) {
             throw new IllegalArgumentException("StandardAgentConfig.chatModel 不能为空");
         }
@@ -76,17 +89,34 @@ public class ReActAgentFactory {
             throw new IllegalArgumentException("对话模型不存在或已被删除");
         }
         LlmBasicConfig llmConfig = ModelConfigTransfer.toBasicConfig(modelConfig);
+        LlmModelConfig modelAdvancedConfig =
+                MODEL_CONFIG_REGISTRY.getConfig(llmConfig.getUrl(), llmConfig.getModelName());
         // 默认模型返回思考
         ChatModelProperties chatModelProperties =
                 ChatModelProperties.builder()
                         .timeout(2 * 60 * 60)
-                        .maxTokens(chatModelConfig.getMaxOutputToken())
+                        .maxTokens(
+                                toActualTokens(
+                                        chatModelConfig.getMaxOutputKTokens(),
+                                        modelAdvancedConfig.getMaxOutputTokens()))
                         .returnThinking(true)
                         .build();
         llmConfig.setProps(chatModelProperties.toProperties());
+        CompactSummarizationMiddleware compactSummarizationMiddleware =
+                new ServiceCompactSummarizationMiddleware(
+                        CompactSummarizationMiddleware.CompactConfig.builder()
+                                .maxContextTokens(
+                                        toActualTokens(
+                                                chatModelConfig.getMaxInputKTokens(),
+                                                modelAdvancedConfig.getMaxInputTokens()))
+                                .build(),
+                        streamingMiddleware,
+                        sessionLifecycleMiddleware,
+                        isDebug);
         List<IAgentMiddleware> middlewares =
                 Arrays.<IAgentMiddleware>asList(
                         userMessageAppendMiddleware,
+                        compactSummarizationMiddleware,
                         new LoggingIAgentMiddleware(),
                         sessionLifecycleMiddleware,
                         streamingMiddleware,
@@ -104,6 +134,14 @@ public class ReActAgentFactory {
                         .middlewares(middlewares)
                         .toolService(buildToolService(standardAgentConfig));
         return builder.build();
+    }
+
+    private static Integer toActualTokens(Integer kTokens, Integer defaultValue) {
+        if (kTokens == null || kTokens <= 0) {
+            return defaultValue;
+        }
+        long actual = (long) kTokens * 1000L;
+        return actual > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) actual;
     }
 
     private ToolService buildToolService(StandardAgentConfig standardAgentConfig) {

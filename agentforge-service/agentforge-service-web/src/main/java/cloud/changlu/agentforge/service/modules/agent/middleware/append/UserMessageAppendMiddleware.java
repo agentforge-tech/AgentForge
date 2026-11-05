@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.service.modules.agent.middleware;
+package cloud.changlu.agentforge.service.modules.agent.middleware.append;
 
 import cloud.changlu.agentforge.agent.extend.middlewares.append.event.UserMessageAppendEventListener;
 import cloud.changlu.agentforge.agent.extend.middlewares.append.service.IUserMessageAppendService;

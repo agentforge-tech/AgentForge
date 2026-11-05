@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.service.modules.agent.domain.config;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
@@ -10,8 +11,12 @@ public class AgentModelConfig {
     @JsonProperty("llm_model_id")
     private Long llmModelId;
 
-    private Integer maxInputToken;
-    private Integer maxOutputToken;
+    @JsonAlias("maxInputToken")
+    private Integer maxInputKTokens;
+
+    @JsonAlias("maxOutputToken")
+    private Integer maxOutputKTokens;
+
     private Map<String, String> params;
 
     public Long getLlmModelId() {
@@ -22,20 +27,20 @@ public class AgentModelConfig {
         this.llmModelId = llmModelId;
     }
 
-    public Integer getMaxInputToken() {
-        return maxInputToken;
+    public Integer getMaxInputKTokens() {
+        return maxInputKTokens;
     }
 
-    public void setMaxInputToken(Integer maxInputToken) {
-        this.maxInputToken = maxInputToken;
+    public void setMaxInputKTokens(Integer maxInputKTokens) {
+        this.maxInputKTokens = maxInputKTokens;
     }
 
-    public Integer getMaxOutputToken() {
-        return maxOutputToken;
+    public Integer getMaxOutputKTokens() {
+        return maxOutputKTokens;
     }
 
-    public void setMaxOutputToken(Integer maxOutputToken) {
-        this.maxOutputToken = maxOutputToken;
+    public void setMaxOutputKTokens(Integer maxOutputKTokens) {
+        this.maxOutputKTokens = maxOutputKTokens;
     }
 
     public Map<String, String> getParams() {

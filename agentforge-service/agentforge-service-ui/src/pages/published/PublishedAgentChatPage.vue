@@ -187,6 +187,7 @@ import {
 } from '../../utils/sessionApi'
 import { replaySession } from '../../utils/sessionReplay'
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
+import { reduceCompactEvent } from '../../utils/compactEventReducer'
 
 /** 输入框最大高度（px），超过后内部滚动，不再继续撑高 */
 const COMPOSER_MAX_HEIGHT = 120
@@ -571,6 +572,9 @@ export default {
           break
         case 'retry':
           this.applyRetryEvent(answer, event)
+          break
+        case 'compact':
+          reduceCompactEvent(answer, event)
           break
         case 'resp_end':
           this.clearRetryNotice(answer)

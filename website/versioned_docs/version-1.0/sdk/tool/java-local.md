@@ -1,12 +1,12 @@
 ---
-title: JavaLocalTool 对接
-sidebar_label: JavaLocalTool 对接
+title: Java本地Tool 对接
+sidebar_label: Java本地Tool 对接
 description: 使用 @Tool 把 Java 方法接入 Agent，并理解本地工具的 Schema 与执行器设计
 sidebar_position: 1
 displayed_sidebar: sdkSidebar
 ---
 
-# JavaLocalTool 对接
+# Java本地Tool 对接
 
 JavaLocalTool 适合已经存在于应用进程内的 Java 能力：查询数据库、调用内部 Service、读取配置或执行一段可控的业务逻辑。开发者用 `@Tool` 描述方法，用 `@P` 描述参数，AgentForge 将方法转换为 `ToolSpecification` 和 `ToolExecutor`，最后统一交给 `ToolService`。
 

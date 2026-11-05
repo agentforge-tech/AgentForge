@@ -15,6 +15,7 @@
             <ElegantThinkItem v-if="part.type === 'think'" :key="'t' + idx" :part="part" />
             <ElegantToolItem v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
             <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
+            <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" />
           </template>
         </div>
       </el-collapse-transition>
@@ -52,10 +53,11 @@ import ElegantThinkItem from './ElegantThinkItem.vue'
 import ElegantToolItem from './ElegantToolItem.vue'
 import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
 import RetryNotice from '../../components/RetryNotice.vue'
+import CompactNotice from '../../components/CompactNotice.vue'
 
 export default {
   name: 'ElegantMessage',
-  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice },
+  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice },
   props: {
     message: { type: Object, required: true }
   },
@@ -64,7 +66,7 @@ export default {
   },
   computed: {
     thinkParts() {
-      return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message')
+      return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice')
     },
     retryNotice() {
       const parts = this.message.parts || []

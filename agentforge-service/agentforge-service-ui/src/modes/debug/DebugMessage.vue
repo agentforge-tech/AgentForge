@@ -16,6 +16,7 @@
             <ThinkBlock v-if="part.type === 'think'" :key="'t' + idx" :part="part" />
             <ToolCard v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
             <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
+            <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" detailed />
           </template>
         </div>
       </el-collapse-transition>
@@ -54,10 +55,11 @@ import ThinkBlock from './ThinkBlock.vue'
 import ToolCard from './ToolCard.vue'
 import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
 import RetryNotice from '../../components/RetryNotice.vue'
+import CompactNotice from '../../components/CompactNotice.vue'
 
 export default {
   name: 'DebugMessage',
-  components: { MarkdownView, ThinkBlock, ToolCard, AppendedUserMessage, RetryNotice },
+  components: { MarkdownView, ThinkBlock, ToolCard, AppendedUserMessage, RetryNotice, CompactNotice },
   props: {
     message: { type: Object, required: true }
   },

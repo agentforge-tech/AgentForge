@@ -11,6 +11,8 @@ public class AgentConfigUpsertReq {
     private String description;
     private String avatar;
     private Long modelId;
+    private Integer maxInputToken;
+    private Integer maxOutputToken;
     private String systemPrompt;
     private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
@@ -64,6 +66,22 @@ public class AgentConfigUpsertReq {
 
     public void setModelId(Long modelId) {
         this.modelId = modelId;
+    }
+
+    public Integer getMaxInputToken() {
+        return maxInputToken;
+    }
+
+    public void setMaxInputToken(Integer maxInputToken) {
+        this.maxInputToken = maxInputToken;
+    }
+
+    public Integer getMaxOutputToken() {
+        return maxOutputToken;
+    }
+
+    public void setMaxOutputToken(Integer maxOutputToken) {
+        this.maxOutputToken = maxOutputToken;
     }
 
     public String getSystemPrompt() {

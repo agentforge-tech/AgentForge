@@ -1,12 +1,16 @@
-# AgentForge 上下文压缩 Middleware 设计方案：阈值比例压缩机制
+# AgentForge 上下文压缩 Middleware 技术设计：阈值比例压缩机制
 
-## 1. 文档定位
+> 文档定位：说明 AgentForge 内置上下文压缩 Middleware 的设计原理、触发时机、压缩算法、Prompt 结构，以及业务层（Service 层）如何通过生命周期钩子进行扩展。
+>
+> 当前实现位置：`agentforge-framework/agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/extend/middlewares/compact/`。
+>
+> 本文所有参数、公式、行为均以当前代码为准，已去除早期设计中未落地的内容（如独立并发锁、协议校验器、中英文双 Prompt 等），相关差异在“当前实现边界与后续演进”中统一说明。
 
-本文给出 AgentForge 内置上下文压缩 Middleware 的集成设计，目标是在不修改 ReAct 主循环的前提下，为长会话和多轮工具调用提供可控的上下文压缩能力。
+---
 
-本文是设计方案，不代表下文列出的类已经全部实现。当前 AgentForge 已具备 Middleware 生命周期、可改写的模型请求、可改写的工具结果、ChatMemory 和 ChatModel 等基础能力。本次集成以复刻阈值比例压缩机制为目标，不额外设计复杂配置体系。
+## 一、背景与问题引入
 
-## 2. 背景与问题
+### 1.1 长会话为什么会把上下文撑爆
 
 ReAct Agent 每一轮都会把会话记忆作为模型输入。随着用户消息、模型回复、工具调用和工具结果持续累积，上下文会出现三个问题：
 
@@ -14,9 +18,15 @@ ReAct Agent 每一轮都会把会话记忆作为模型输入。随着用户消�
 2. 大体积工具结果快速挤占窗口，模型输出和后续工具调用缺少空间。
 3. 简单按消息条数淘汰历史会丢失长期目标、关键结论，并可能拆散“工具调用—工具结果”协议消息。
 
-AgentForge 当前的 `MessageWindowChatMemory` 以消息条数控制容量，适合解决无界消息增长，但不能感知不同消息的 Token 差异。例如，一条工具结果可能比几十条短消息更大。因此需要在消息窗口之上增加 Token 维度的治理能力。
+### 1.2 MessageWindowChatMemory 不够用
 
-本方案采用“达到阈值后压缩历史，保留最近上下文”的机制：
+AgentForge 的 `MessageWindowChatMemory` 以消息条数控制容量，适合解决无界消息增长，但不能感知不同消息的 Token 差异。一条工具结果可能比几十条短消息更大。
+
+**重点**：消息条数与 Token 数之间没有稳定关系。消息窗口只能做“数量兜底”，无法做“体积预算”。因此需要在消息窗口之上增加 Token 维度的治理能力。
+
+### 1.3 核心思路
+
+采用“达到阈值后压缩历史，保留最近上下文”的机制：
 
 ```text
 系统提示 + 历史消息 + 最近消息
@@ -26,567 +36,753 @@ AgentForge 当前的 `MessageWindowChatMemory` 以消息条数控制容量，适
 系统提示 + 历史摘要 + 最近完整消息组
 ```
 
-## 3. 设计目标
+---
 
-### 3.1 核心目标
+## 二、核心概念与配置参数
 
-- 在模型调用前估算本轮输入规模，并在超过阈值时自动压缩。
-- 永久保留 Agent 系统提示，不把系统规则混入普通历史摘要。
-- 优先保留最近对话，旧历史转换为结构化摘要。
-- 工具调用消息和对应工具结果作为原子消息组处理，避免产生孤儿消息。
-- 在工具结果写入 Memory 前治理超大结果，防止单次工具调用击穿窗口。
-- 同步和流式 ReAct 执行复用同一套 Middleware，不修改两套执行循环。
-- 压缩失败时降级为原请求，不能让辅助能力阻断 Agent 主任务。
+### 2.1 产品设计三问
 
-### 3.2 非目标
+- **什么时候压缩**：上下文 Token 使用量达到 `compressThreshold` 时触发。
+- **压缩哪些内容**：压缩较早的历史消息；超大工具结果在写入 Memory 前先截断。
+- **保留什么**：原始系统提示永久保留，最近对话按 `keepRatio` 保留原文，较早历史转换为一条摘要。
 
-- 不保证摘要能够无损恢复全部历史原文。
-- 不替代业务侧的长期记忆、向量检索或知识库存储。
-- 不修改底层模型协议，也不绑定特定模型厂商的 Tokenizer。
-- 第一阶段不自动根据模型名称推断上下文窗口，由调用方显式配置。
-
-## 4. AgentForge 当前能力与集成结论
-
-### 4.1 已具备的基础能力
-
-当前代码已经提供本方案所需的主要扩展边界：
-
-| 现有能力 | 代码位置 | 在压缩方案中的作用 |
-| --- | --- | --- |
-| `IAgentMiddleware.beforeModelCall` | `agentforge-agent-core/.../component/middleware/IAgentMiddleware.java` | 检测阈值、压缩历史、重建 `ChatRequest` |
-| `afterToolExecution` | 同上 | 单个工具结果写回前执行截断或治理 |
-| `afterConcurrentToolExecution` | 同上 | 并发工具结果统一分配预算并改写结果 |
-| `AgentMiddlewareManager` | `agentforge-agent-core/.../component/middleware/AgentMiddlewareManager.java` | 按注册顺序串联请求和结果改写 |
-| `AgentChatContext` | `agentforge-agent-core/.../domain/AgentChatContext.java` | 提供 ChatMemory、ChatModel、memoryId 和运行期扩展字段 |
-| `ChatMemory` | `agentforge-agent-core/.../memory/ChatMemory.java` | 读取和替换本会话消息 |
-| `MessageWindowChatMemory` | `agentforge-agent-core/.../extend/memory/window/MessageWindowChatMemory.java` | 消息条数兜底，并已有工具消息关联淘汰语义 |
-| `ReActAgent` | `agentforge-agent-core/.../ReActAgent.java` | 模型调用前已经经过 Middleware 链 |
-
-### 4.2 集成结论
-
-上下文压缩应作为 `agentforge-agent-core` 的内置 Middleware 实现，而不是写入 `ReActAgent.think()`。原因如下：
-
-- 压缩是横切能力，不属于 ReAct 的 think → act 核心语义。
-- `beforeModelCall` 可以同时访问最终请求、Memory 和 ChatModel。
-- Middleware 返回的新 `ChatRequest` 会被同步和流式链路实际使用。
-- 工具执行后的回调允许在结果写回 Memory 前处理大结果。
-- 通过 Builder 注册即可按 Agent 开启或关闭，保持核心运行时稳定。
-
-建议新增目录：
+压缩前后结构：
 
 ```text
-agentforge-agent-core/src/main/java/cloud/changlu/agentforge/agent/extend/middlewares/compact/
-├── CompactSummarizationMiddleware.java
-└── TokenStatsUtil.java
+压缩前：系统提示 + 较早历史 + 最近对话
+压缩后：系统提示 + 历史摘要 + 最近对话
 ```
 
-`CompactSummarizationMiddleware` 负责阈值检测、消息切分、摘要生成、Memory 更新和工具结果截断；`CompactConfig` 作为其 `public static` 内部类存在。`TokenStatsUtil` 负责 Token 估算、统计、文本截断和会话格式化。首版不再拆分更多接口，优先保持实现直接、行为一致。
+### 2.2 五个核心配置参数
 
-## 5. 整体执行流程
+配置载体为 `CompactSummarizationMiddleware.CompactConfig`，仅包含以下五个字段：
 
-### 5.1 模型调用前压缩
+| 参数 | 默认值 | 取值范围 | 产品含义 |
+| --- | ---: | --- | --- |
+| `maxContextTokens` | `1000000` | `> 0` | Agent 可使用的最大上下文 Token，是所有比例计算的基数 |
+| `compressThreshold` | `80` | `0 ~ 100` | 达到最大上下文的百分比时触发压缩 |
+| `keepRatio` | `40` | `10 ~ 100` | 压缩时最多保留最近原始消息的百分比 |
+| `maxSystemRatio` | `30` | `0 ~ 100` | 摘要输入中系统类内容及摘要输出的上限 |
+| `maxOtherRatio` | `50` | `0 ~ 100` | AI 回复、工具结果等其他摘要内容的上限 |
 
-```text
-ReActAgent.think
-  │
-  ├─ 从 ChatMemory 构建 ChatRequest
-  │
-  ├─ AgentMiddlewareManager.triggerBeforeModelCall
-  │    │
-  │    └─ CompactSummarizationMiddleware
-  │         ├─ 读取 request.messages
-  │         ├─ 估算输入 Token
-  │         ├─ 未达到阈值：原样返回
-  │         ├─ 达到阈值：按消息组切分历史与最近窗口
-  │         ├─ 调用摘要模型压缩历史
-  │         ├─ 原子替换 ChatMemory
-  │         └─ 保留 parameters，重建 ChatRequest
-  │
-  └─ ChatModel.chat(processedRequest)
-```
-
-这里应以 `ChatRequest.messages()` 作为阈值判断的主要输入，因为它代表本轮真正准备送给模型的消息。Memory 用于持久化压缩结果，两者必须在压缩成功后保持一致。
-
-### 5.2 工具结果治理
-
-```text
-工具执行完成
-  │
-  ├─ 单工具：afterToolExecution
-  └─ 并发工具：afterConcurrentToolExecution
-       │
-       ├─ 估算“当前 Memory + 待写入工具结果”
-       ├─ 在安全预算内：结果原样返回
-       └─ 超预算：按结果预算截断，并附加明确截断标记
-```
-
-模型调用前压缩解决“历史累积”问题；工具结果治理解决“单次突增”问题。两者缺一不可，否则一个超大工具结果可能在下一次压缩发生前就让 Memory 膨胀，或让下一轮请求没有足够余量。
-
-## 6. 阈值比例模型
-
-### 6.1 配置项
-
-本次复刻只保留以下五个配置字段，比例统一使用 0～100 的整数百分比：
-
-| 配置项 | 建议默认值 | 含义 |
-| --- | ---: | --- |
-| `maxContextTokens` | `16000` | 目标模型最大上下文 Token 数 |
-| `compressThreshold` | `80` | Token 使用率达到该百分比时触发压缩 |
-| `keepRatio` | `40` | 压缩时为最近消息保留的 Token 比例 |
-| `maxSystemRatio` | `30` | 摘要输入及摘要结果允许使用的最大 Token 比例 |
-| `maxOtherRatio` | `50` | 待摘要的 AI、工具等其他消息允许使用的最大 Token 比例 |
-
-对应配置结构固定为：
+配置通过 Builder 构建：
 
 ```java
-public static class CompactConfig {
-    private final int maxContextTokens;
-    private final int compressThreshold;
-    private final int keepRatio;
-    private final int maxSystemRatio;
-    private final int maxOtherRatio;
-}
-```
-
-核心预算计算如下：
-
-```text
-compressThresholdTokens = maxContextTokens × compressThreshold / 100
-keepTokens              = maxContextTokens × keepRatio / 100
-maxSystemTokens         = maxContextTokens × maxSystemRatio / 100
-maxOtherTokens          = maxContextTokens × maxOtherRatio / 100
-```
-
-其中 `compressThreshold` 决定“何时压缩”，`keepRatio` 决定“最近原始消息保留多少”，`maxSystemRatio` 和 `maxOtherRatio` 用于限制摘要阶段各部分的输入及输出规模。
-
-### 6.2 配置约束
-
-构建配置时至少校验：
-
-```text
-maxContextTokens > 0
-0 <= compressThreshold <= 100
-10 <= keepRatio <= 100
-0 <= maxSystemRatio <= 100
-0 <= maxOtherRatio <= 100
-maxSystemRatio + maxOtherRatio <= 100
-```
-
-### 6.3 为什么压缩后不能仍停在触发线附近
-
-如果 80% 触发压缩，压缩后仍占 78%，下一轮稍有工具输出就会再次压缩，形成压缩抖动。默认使用 40% 的 `keepRatio` 保留最近消息，再通过 `maxSystemRatio` 控制摘要长度，使压缩后规模明显低于触发线：
-
-```text
-80% 触发
-40% 最近消息
-最多 30% 摘要
-压缩后通常低于触发阈值
-```
-
-## 7. 消息分区与协议完整性
-
-### 7.1 消息分区
-
-压缩前先把消息划分为三类：
-
-1. **固定消息**：Agent 系统提示，始终原文保留。
-2. **可压缩历史**：较早的用户、模型和工具消息，用于生成摘要。
-3. **最近消息**：从后向前按预算选择，保持原文。
-
-压缩后的顺序固定为：
-
-```text
-[SystemMessage: Agent 原始系统提示]
-[SystemMessage: 历史对话摘要]
-[最近完整消息组...]
-```
-
-历史摘要建议使用带稳定标识的 `SystemMessage`，例如：
-
-```text
-【AgentForge 历史上下文摘要】
-目标：...
-已确认事实：...
-重要决策：...
-工具执行结论：...
-待办与约束：...
-```
-
-稳定标识用于下一次压缩时识别旧摘要。旧摘要不能被当成 Agent 原始系统提示永久叠加；它应与更老的历史一起参与下一轮摘要合并，最终始终只保留一条当前摘要。
-
-### 7.2 工具消息必须原子分组
-
-ReAct 工具协议通常是：
-
-```text
-AiMessage(toolExecutionRequests=[A, B])
-ToolExecutionResultMessage(A)
-ToolExecutionResultMessage(B)
-```
-
-这三条消息必须作为一个组保留或压缩。不能只保留结果而删除发起调用的 AI 消息，也不能保留调用却删除部分结果。否则模型 API 可能拒绝消息序列，或者模型无法理解工具结果对应关系。
-
-`MessageGroupPartitioner` 建议采用以下规则：
-
-- 普通 System、User、无工具调用的 AiMessage 各自为单组。
-- 带工具请求的 AiMessage 与紧随其后、ID 匹配的全部 ToolExecutionResultMessage 合为一组。
-- 遇到不完整工具组时记录告警，并把整个异常段放入可压缩历史，不让它进入最近原文窗口。
-- 从尾部选择最近消息时按组累计 Token，不能按单条消息切割。
-
-### 7.3 当前用户消息无需重复构造
-
-AgentForge 的 `Agent.initMessages` 已在运行开始时把当前 `UserMessage` 写入 Memory，`ReActAgent.think()` 又从 Memory 构建本轮 `ChatRequest`。因此压缩 Middleware 应直接使用请求中的当前用户消息，不应根据 `AgentChatContext.getQuestion()` 再创建一条，否则会产生重复问题。
-
-这一点是当前项目集成时最容易出现的语义错误。
-
-## 8. Token 估算设计
-
-### 8.1 TokenStatsUtil
-
-首版直接提供 `TokenStatsUtil`，不增加估算器接口。工具类至少包含：
-
-```java
-estimateTextTokens(String text)
-estimateMessageTokens(ChatMessage message)
-estimateTotalTokens(List<ChatMessage> messages)
-needCompress(List<ChatMessage> messages, int maxContextTokens, int threshold)
-truncateText(String text, int maxTokens)
-formatConversation(List<ChatMessage> messages, int maxTokens)
-```
-
-这样可保持压缩实现集中，后续若需要精确 Tokenizer，再在不改变五项配置的前提下替换工具类内部算法。
-
-### 8.2 启发式估算注意点
-
-单纯采用“字符数 ÷ 4”对英文较常见，但对中文会明显低估。因此建议按字符类型分别估算：
-
-```text
-中文及全角字符：约 1 字符 = 1 Token
-英文、数字、半角符号：约 4 字符 = 1 Token
-每条消息：增加角色和协议固定开销
-每个工具调用：统计名称、ID、参数 JSON 和固定开销
-工具定义：统计名称、描述和参数 Schema
-```
-
-启发式估算应偏保守，即宁可略高估也不要低估。生产环境若模型适配层能提供官方 Tokenizer，应优先注入精确实现。
-
-模型响应中的 `TokenUsage.inputTokens()` 是调用完成后的真实值，可用于监控和校准估算器，但不能直接用于本次调用前判断，因为它描述的是已经完成的上一请求。
-
-## 9. 摘要生成设计
-
-### 9.1 摘要生成方法
-
-首版不额外抽象摘要器接口，直接在 `CompactSummarizationMiddleware` 中提供 `generateSummary` 私有方法，并复用 `AgentChatContext.getChatModel()` 发起摘要请求：
-
-```java
-private ChatMessage generateSummary(
-        List<ChatMessage> messages,
-        AgentChatContext chatContext) {
-    // 按 maxSystemRatio、maxOtherRatio 截断摘要输入
-    // 调用 chatContext.getChatModel() 生成摘要
-    // 按 maxSystemRatio 限制摘要输出
-}
-```
-
-### 9.2 摘要提示词
-
-摘要应面向 Agent 后续执行，而不是写成普通聊天概述。建议要求模型保留：
-
-- 用户目标、范围和成功条件；
-- 已确认事实、关键实体、参数和标识；
-- 已完成操作及结果；
-- 重要决策及理由；
-- 尚未解决的问题和后续步骤；
-- 用户明确提出的约束、偏好和禁止项；
-- 工具调用的结论，不复制大段原始工具输出；
-- 不推测、不补充历史中没有的信息。
-
-摘要输出长度仍需由 `TokenStatsUtil` 校验。超过 `maxContextTokens × maxSystemRatio / 100` 时，在语义边界进行二次截断，并附加“摘要已裁剪”标记。
-
-### 9.3 防递归与并发
-
-摘要调用必须直接调用 `ChatModel`，不能再次走当前 `ReActAgent`，否则会递归触发 Middleware。
-
-同一个 `memoryId` 可能出现并发请求。压缩是“读取—摘要—替换”的复合操作，需要会话级互斥或版本校验。建议第一阶段在 Middleware 内使用按 `memoryId` 分段的锁；长期方案是在 `ChatMemory` 增加原子 `replaceAll` 或基于版本的 compare-and-set 能力。
-
-不要在持有会话锁时执行长时间摘要调用。推荐流程是：
-
-1. 加锁读取消息快照和版本后释放锁。
-2. 基于快照生成摘要。
-3. 再次加锁，确认 Memory 未发生变化。
-4. 未变化则替换；已变化则放弃本次结果或重新计算一次。
-
-当前 `ChatMemory` 只有 `clear()` 和 `add()`，无法保证通用实现上的原子替换。第一阶段可在压缩 Middleware 内封装 `replaceMemory`，但正式落地建议给 `ChatMemory` 增加默认方法：
-
-```java
-default void replaceAll(List<ChatMessage> messages) {
-    clear();
-    for (ChatMessage message : messages) {
-        add(message);
-    }
-}
-```
-
-并由 `MessageWindowChatMemory` 覆盖为一次 `store.updateMessages`，保证单次持久化和同步语义。
-
-## 10. 核心算法
-
-模型调用前的伪代码如下：
-
-```java
-public ChatRequest beforeModelCall(
-        int currentStep,
-        ChatRequest request,
-        AgentChatContext context) {
-
-    List<ChatMessage> messages = request.messages();
-    if (!TokenStatsUtil.needCompress(
-            messages,
-            config.getMaxContextTokens(),
-            config.getCompressThreshold())) {
-        return request;
-    }
-
-    int keepTokens = config.getMaxContextTokens()
-            * config.getKeepRatio() / 100;
-    Partition partition = selectRecentMessageGroups(messages, keepTokens);
-
-    if (partition.history().isEmpty()) {
-        return request;
-    }
-
-    try {
-        ChatMessage summary = generateSummary(
-                partition.historyMessages(), context);
-
-        List<ChatMessage> compacted = assemble(
-                partition.fixedSystemMessages(),
-                summary,
-                partition.recentMessages());
-
-        validateProtocol(compacted);
-        context.getChatMemory().replaceAll(compacted);
-
-        return ChatRequest.builder()
-                .messages(compacted)
-                .parameters(request.parameters())
-                .build();
-    } catch (Exception exception) {
-        recordFailure(context, currentStep, exception);
-        return request;
-    }
-}
-```
-
-关键要求：
-
-- 重建请求时必须保留原 `parameters()`，否则工具定义、温度等参数会丢失。
-- 先生成并验证完整压缩结果，再替换 Memory，不能先清空后摘要。
-- 压缩后再次估算并记录压缩前后的 Token 使用率；首版不增加多轮压缩配置。
-- 如果最近的单个工具消息组本身超过预算，不应拆组；应优先对该组中的工具结果做有标记截断，再重新估算。
-- 如果连固定系统提示加当前用户消息都超过安全上限，Middleware 无法安全压缩，应抛出明确的上下文过大异常或按配置中断模型调用。
-
-## 11. 工具结果截断策略
-
-工具结果截断不能只做字符串切片。建议输出格式明确告知模型发生了裁剪：
-
-```text
-【工具结果已截断】
-工具：searchDocuments
-原因：上下文预算不足
-原始估算：6200 tokens
-保留估算：1200 tokens
-建议：缩小查询范围、增加筛选条件或分页获取
-
-<截断后的内容>
-```
-
-单工具结果预算：
-
-```text
-targetTotalTokens = maxContextTokens × compressThreshold / 100
-needReduce        = currentTotalTokens - targetTotalTokens
-targetResultTokens = max(resultTokens - needReduce, 100)
-```
-
-并发工具结果不能让每个结果各自占满 `available`。应先计算本批次总预算，再分配给每个结果：
-
-首版并发工具结果按照相同阈值判断，对每个结果执行同一截断函数，并保证返回列表与工具请求列表长度、顺序一致。最少保留 100 Token，该常量属于实现细节，不进入 `CompactConfig`。
-
-结构化 JSON 的截断应尽量保持合法 JSON。第一阶段可以使用文本截断并明确标记；后续增加 JSON 感知截断器，优先保留顶层字段、错误信息、分页信息和前若干数据项。
-
-## 12. Middleware 注册顺序
-
-Middleware 是顺序链式执行，压缩 Middleware 的位置会影响观测结果：
-
-```java
-ReActAgent agent = ReActAgent.builder()
-        .chatModel(chatModel)
-        .chatMemoryProvider(memoryProvider)
-        .middleware(new UserMessageAppendMiddleware(appendService, listener))
-        .middleware(new CompactSummarizationMiddleware(compactConfig))
-        .middleware(new LoggingIAgentMiddleware())
-        .middleware(new AgentTraceMiddleware(traceCollector))
-        .build();
-```
-
-建议顺序：
-
-1. 先执行会改变本轮输入的消息追加、动态提示等 Middleware。
-2. 再执行上下文压缩，让它看到最终候选消息。
-3. 最后执行 Logging 和 Trace，使观测结果对应真正发送给模型的请求。
-
-如果希望同时记录压缩前后的指标，不应依赖放置两个日志 Middleware；应由压缩 Middleware 自己发布 `CompactMetrics`，包含压缩前后 Token、消息数、耗时和失败原因。
-
-## 13. 配置与使用示例
-
-建议 API：
-
-```java
-CompactConfig compactConfig = CompactConfig.builder()
-        .maxContextTokens(32_000)
+CompactConfig config = CompactConfig.builder()
+        .maxContextTokens(1_000_000)
         .compressThreshold(80)
         .keepRatio(40)
         .maxSystemRatio(30)
         .maxOtherRatio(50)
         .build();
-
-ReActAgent agent = ReActAgent.builder()
-        .agentName("long-context-agent")
-        .chatModel(chatModel)
-        .chatMemoryProvider(memoryProvider)
-        .middleware(new CompactSummarizationMiddleware(compactConfig))
-        .build();
 ```
 
-Core 层只提供 Java 配置对象，不直接依赖 Spring。Service 层如需页面化配置，可在自身模块把数据库或 YAML 配置转换为 `CompactConfig`，再由 `ReActAgentFactory` 按开关注册 Middleware。
+### 2.3 核心计算公式
 
-## 14. 失败策略
+所有预算都基于 `maxContextTokens` 按比例换算：
 
-复刻版本不增加失败策略配置。摘要生成或压缩过程抛出异常时，Middleware 记录错误并返回原 `ChatRequest`；只有在完整压缩结果生成成功后才能更新 Memory。工具结果截断失败时返回原工具结果并记录告警。
+```text
+触发压缩 Token = maxContextTokens × compressThreshold / 100
+最近消息预算   = maxContextTokens × keepRatio / 100
+摘要预算       = maxContextTokens × maxSystemRatio / 100
+其他消息预算   = maxContextTokens × maxOtherRatio / 100
+工具截断目标   = maxContextTokens × compressThreshold / 100
+```
 
-该降级行为固定在实现中，不进入 `CompactConfig`，从而确保配置类始终只有五个字段。
+- `compressThreshold` 决定“何时压缩”以及工具结果“截断到多少”。
+- `keepRatio` 决定“最近原始消息保留多少”。
+- `maxSystemRatio`、`maxOtherRatio` 限制摘要阶段的输入与输出规模。
 
-## 15. 可观测性
+### 2.4 默认配置的实际含义
 
-每次触发压缩建议记录以下指标：
+```text
+最大上下文：1000000 Token（100 万）
+达到 800000 Token（80%）时触发压缩
+最多保留最近 400000 Token（40%）原文
+摘要输入/输出最多约 300000 Token（30%）
+待摘要的其他消息最多使用约 500000 Token（50%）
+```
+
+默认参数的设计目标不只是“压到阈值以下”，而是“压到明显低于阈值”。80% 触发后，最近消息最多保留 40%，摘要最多占 30%，压缩后总规模通常远低于触发线。
+
+**重点**：如果压缩后仍停在 78% 附近，下一轮稍有工具输出就会再次触发，形成压缩抖动。比例参数的隐藏目的，是为后续若干轮工具调用预留缓冲。
+
+### 2.5 配置约束与构建期校验
+
+`CompactConfig.Builder` 在 setter 阶段对比例参数做 clamp，在 `build()` 阶段做最终强校验：
+
+```text
+compressThreshold = clamp(value, 0, 100)
+keepRatio         = clamp(value, 10, 100)
+maxSystemRatio    = clamp(value, 0, 100)
+maxOtherRatio     = clamp(value, 0, 100)
+
+build():
+  maxContextTokens > 0
+  maxSystemRatio + maxOtherRatio <= 100
+```
+
+**注意**：比例参数越界时会被静默修正，而 `maxContextTokens <= 0` 或 `maxSystemRatio + maxOtherRatio > 100` 会抛出 `IllegalArgumentException`。
+
+---
+
+## 三、阈值触发逻辑与时机
+
+压缩检查只放在两个进入点，其他位置不判断。
+
+### 3.1 阈值判定规则
+
+`TokenStatsUtil.needCompress` 的判定逻辑：
+
+```text
+总 Token = 所有消息估算 Token 之和
+使用率   = 总 Token / maxContextTokens × 100
+触发条件 = 使用率 >= compressThreshold
+```
+
+即达到阈值（含等于）就触发压缩。
+
+### 3.2 两个检查时机与三种触发来源
+
+| 时机 | 方法 | 输入 | 触发来源 `CompactTrigger` |
+| --- | --- | --- | --- |
+| 模型调用前 | `beforeModelCall` | 本轮 `ChatRequest.messages()` | `MODEL_CALL`（`model_call`） |
+| 单工具结果写回前 | `afterToolExecution` | 当前 Memory + 本次工具结果 | `TOOL_RESULT`（`tool_result`） |
+| 并发工具结果写回前 | `afterConcurrentToolExecution` | 当前 Memory + 本轮全部工具结果 | `CONCURRENT_TOOL_RESULT`（`concurrent_tool_result`） |
+
+```text
+模型调用前检查     → 解决历史累积
+工具结果写回前检查 → 解决单次突增
+```
+
+两个时机的职责不同：
+
+1. **模型调用前**：以本轮真正准备发送给模型的 `ChatRequest.messages()` 为输入估算 Token，比直接读 Memory 更准确。
+2. **工具结果写回前**：计算“当前 Memory + 本次工具结果”，超预算时就地截断，避免大结果先污染 Memory。
+
+**注意**：不要用模型返回的 `TokenUsage.inputTokens()` 做本次调用前判断。它是上一次请求完成后的真实值，只能用于监控和校准估算器，不能代表当前待发送的请求。
+
+### 3.3 工具结果的截断目标
+
+工具触发路径不只是“判断是否超标”，而是把结果压缩回阈值以内：
+
+```text
+目标总 Token   = maxContextTokens × compressThreshold / 100
+需要减少的 Token = 当前总 Token - 目标总 Token
+目标结果 Token  = max(原始结果 Token - 需要减少的 Token, MIN_TOOL_RESULT_TOKENS)
+```
+
+其中 `MIN_TOOL_RESULT_TOKENS = 100`，避免工具结果被截断到不可用的长度。
+
+---
+
+## 四、压缩算法实现
+
+一旦触发压缩，`performCompression` 固定执行以下步骤。
+
+### 4.1 分离系统消息与非系统消息
+
+```text
+systemMessages：所有 SystemMessage，原样永久保留
+otherMessages ：UserMessage、AiMessage、ToolExecutionResultMessage
+```
+
+压缩只针对 `otherMessages`，摘要本身也以新的 `SystemMessage` 形式加入结果。
+
+### 4.2 按工具组切分消息
+
+`groupMessages` 会把消息划分为原子组：
+
+```text
+普通消息：单条为一组
+AiMessage（含 toolExecutionRequests）：与其后连续的 ToolExecutionResultMessage 合为一组
+```
+
+**重点**：工具调用与其结果必须整组保留或整组压缩。按单条消息切割会保留工具结果却丢掉发起调用的 AiMessage，模型侧会直接报协议错误。
+
+### 4.3 从尾部选择最近窗口
+
+`selectRecentGroupsFromEnd` 从最后一组向前累加 Token：
+
+1. 最后一组无条件保留（即使它本身已超过 `keepRatio` 预算）。
+2. 继续向前，只要“已保留 Token + 当前组 Token <= keepRatio 预算”就保留。
+3. 遇到第一个放不下的组即停止。
+4. 如果所有组都能保留（起始索引为 0），则本次不产生摘要，原样返回。
+
+```text
+keepTokens = maxContextTokens × keepRatio / 100
+```
+
+**注意**：由于最后一组无条件保留，实际保留的最近窗口可能略高于 `keepRatio` 预算。这是为了保证当前轮次上下文完整，属于有意取舍。
+
+### 4.4 摘要输入裁剪
+
+待压缩历史先经过 `truncateByCategory`，按类型分配预算：
+
+```text
+系统消息预算   = maxContextTokens × maxSystemRatio / 100
+其他消息预算   = maxContextTokens × maxOtherRatio / 100
+```
+
+规则：
+
+- 系统消息在预算内保留，超出时截断。
+- **UserMessage 始终保留，不占用“其他消息预算”的淘汰判定**（保证用户意图不丢失）。
+- AI 与工具结果按“其他消息预算”依次保留，超出时截断并重建同类型消息。
+
+### 4.5 生成摘要
+
+`generateSummary` 的流程：
+
+1. 用 `truncateByCategory` 裁剪待摘要历史。
+2. 计算摘要预算 `maxSummaryTokens = maxContextTokens × maxSystemRatio / 100`。
+3. 用 `TokenStatsUtil.formatConversation(truncated, maxSummaryTokens)` 拼接对话文本，超出预算的部分按句边界截断。
+4. 调用 `chatContext.getChatModel().chat(prompt)` 生成摘要。
+5. 摘要输出超过 `maxSummaryTokens` 时再次截断。
+6. 包装为带固定标识的 `SystemMessage`。
+
+**注意**：摘要直接调用 `ChatModel`，不再次经过当前 `ReActAgent`，否则会递归触发 Middleware。
+
+### 4.6 重建并替换 Memory
+
+压缩结果顺序固定：
+
+```text
+[SystemMessage: Agent 原始系统提示]      ← 原样保留
+[SystemMessage: AgentForge 上下文摘要]   ← 由较早历史压缩而来
+[最近完整消息组...]                       ← 按 Token 预算保留原文
+```
+
+`replaceMemory` 的替换方式：
+
+```text
+1. 先备份当前 Memory 消息
+2. clear()
+3. 逐条 add 压缩后的消息
+4. 若中途抛异常，回滚为备份内容
+```
+
+压缩成功后：
+
+- `beforeModelCall` 返回携带压缩消息的新 `ChatRequest`，并保留原 `parameters()`。
+- 同时更新 Memory，避免下一轮从未压缩的 Memory 重新构建请求。
+
+**重点**：只改 Request 会让下一轮重复压缩；只改 Memory 会让本轮已构建的 Request 仍携带旧消息。两者必须同步更新。
+
+### 4.7 失败降级
+
+摘要生成或替换过程抛异常时：
+
+- 记录 WARNING 日志。
+- 返回原始 `ChatRequest`，不阻断本轮模型调用。
+- Memory 通过 `replaceMemory` 的回滚机制保持不变。
+
+**重点**：压缩是辅助能力，不能让辅助能力阻断 Agent 主任务。失败时宁可“不压缩”，也不要“压缩坏了”。
+
+### 4.8 当前实现的边界行为
+
+为了行为可预测，当前实现有若干明确的边界约定：
+
+- 若所有消息都能放入最近窗口，则不生成摘要（`KeepResult.keepAll`）。
+- 压缩只执行一次，不做事后“仍超阈值”的循环再压缩。
+- 没有对压缩后的消息序列做额外的协议校验。
+- `afterToolExecution` / `afterConcurrentToolExecution` 只改变工具结果内容，不改变消息条数，因此事件中的前后消息数相同。
+
+---
+
+## 五、压缩 Prompt 与输出结构
+
+### 5.1 实际使用的 Prompt
+
+当前实现只内置英文 Prompt，定义在 `CompactSummarizationMiddleware.SUMMARY_PROMPT` 中：
+
+```text
+You are the context compressor for an Agent. Compress the given conversation
+history into a structured working summary that the Agent can use to continue
+the task in later steps.
+
+Extract information along the following dimensions:
+1. Goal: what the user wants to accomplish, the scope, and success criteria;
+2. State: how far the task has progressed, what is done, and what comes next;
+3. Facts: confirmed key entities, parameters, identifiers, and data locations;
+4. Decisions: important decisions and their rationale, including rejected options;
+5. Results: key conclusions and artifacts from tool calls; do not copy large raw outputs;
+6. Open items: unresolved issues, blockers, risks, and items awaiting confirmation;
+7. Constraints: explicit preferences, prohibitions, and change requests from the user.
+
+Requirements:
+- Use only the provided history; do not speculate or add information that is not present;
+- Keep it concise for simple tasks; for complex tasks, preserve subtasks, status,
+  and dependencies under "Current State";
+- Omit greetings, repetitive content, and irrelevant details;
+- If an old summary exists, merge it with older history instead of stacking it;
+- Strictly use the following fixed structure, and write "None" for empty fields:
+
+[AgentForge Context Summary]
+Goal: ...
+Current State: ...
+Confirmed Facts: ...
+Key Decisions: ...
+Tool Conclusions: ...
+Open Items: ...
+Constraints: ...
+Next Action: ...
+```
+
+最终发给模型的 Prompt 由 `buildSummaryPrompt` 拼接：
+
+```text
+{SUMMARY_PROMPT}
+
+Conversation history to compress:
+{conversation}
+Return only the structured summary. Do not wrap it in code fences.
+```
+
+其中 `{conversation}` 是由 `TokenStatsUtil.formatConversation` 生成的 `role: content` 行文本。
+
+### 5.2 摘要消息结构
+
+摘要生成后包装为：
+
+```text
+[AgentForge Context Summary]
+{模型返回的摘要正文}
+
+---
+Continue the task based on the summary above.
+```
+
+固定标识 `SUMMARY_MARKER = "[AgentForge Context Summary]"` 用于识别历史摘要。下一轮压缩时，旧摘要会作为待压缩历史的一部分重新参与合并，而不是简单叠加，从而保证最终只保留一条当前摘要。
+
+### 5.3 Prompt 设计原则
+
+- **固定骨架**：字段始终是同一组，便于识别与合并历史摘要。
+- **按需展开**：简单任务字段可以很短，复杂任务在 `Current State` 中展开子任务、依赖和进度。
+- **面向续跑**：判断摘要是否合格只看一点——只读摘要，Agent 能否知道做到哪、下一步做什么、有哪些约束。
+- **约束明确**：要求只依据给定历史、不推测、不复制大段原始工具输出。
+
+**注意**：摘要输出长度由 `maxSystemRatio` 统一约束；超长时通过 `TokenStatsUtil.truncateText` 按句边界截断并追加 `...[truncated]` 标记。
+
+---
+
+## 六、Token 估算设计
+
+`TokenStatsUtil` 采用启发式估算，不依赖模型厂商 Tokenizer，核心规则如下。
+
+### 6.1 文本估算
+
+```text
+宽字符（Unicode >= 0x2E80，覆盖中文及全角字符）：4 units / 字符
+ASCII 字符：1 unit / 字符
+Token = max(units / 4, 1)
+```
+
+即中文约 1 字符 = 1 Token，英文约 4 字符 = 1 Token。
+
+### 6.2 消息固定开销
+
+| 消息类型 | 固定开销 |
+| --- | ---: |
+| SystemMessage | 10 |
+| UserMessage | 5 |
+| AiMessage | 15 |
+| 每个工具调用请求 | 额外 20 |
+| ToolExecutionResultMessage | 20 |
+
+### 6.3 主要工具方法
+
+```java
+estimateTextTokens(String text)
+estimateMessageTokens(ChatMessage message)
+estimateTotalTokens(List<ChatMessage> messages)
+calculate(List<ChatMessage> messages, int maxContextTokens)   // 分类统计
+needCompress(List<ChatMessage> messages, int maxContextTokens, int threshold)
+truncateText(String text, int maxTokens)                     // 优先按句边界截断
+formatConversation(List<ChatMessage> messages, int maxTokens)
+createTruncatedMessage(ChatMessage original, String content) // 保留原消息类型
+```
+
+**重点**：启发式估算应偏保守，即宁可略高估也不要低估。模型响应中的真实 `inputTokens` 可用于监控和校准，但不能直接用于本次调用前判断。
+
+---
+
+## 七、工具结果治理
+
+### 7.1 单工具结果
+
+`afterToolExecution` 流程：
+
+```text
+构造 currentMessages = Memory 中已有消息 + 本次 ToolExecutionResultMessage
+估算 currentMessages 总 Token
+未达阈值：原样返回工具结果
+达到阈值：
+  ├─ 触发 beforeCompact(-1, TOOL_RESULT, ...)
+  ├─ 计算目标结果长度并截断
+  ├─ 触发 afterCompact(success)
+  └─ 返回截断后的工具结果
+异常：触发 afterCompact(failure)，返回原始结果
+```
+
+### 7.2 并发工具结果
+
+`afterConcurrentToolExecution` 流程与单工具一致，区别在于：
+
+- 一次性把本轮所有工具结果加入临时消息列表后判断阈值。
+- 对每个结果分别调用 `truncateToolResult`。
+- 返回的列表长度和顺序与入参严格一致。
+- 结果事件中的 `afterTokens` 由“当前 Memory Token + 处理后的各工具结果 Token”估算得出。
+
+### 7.3 截断输出格式
+
+工具结果截断会附加明确标记，告知模型发生了裁剪：
+
+```text
+【工具执行结果已截断】
+上下文使用率: {currentPercent}% (压缩阈值: {compressThreshold}%)，为避免超出上下文限制，工具 "{toolName}" 的结果已被截断。
+原始估算: {resultTokens} tokens，截断后: {targetResultTokens} tokens。
+建议：缩小查询范围、增加筛选条件或分页获取。
+
+截断后的内容：
+{truncatedContent}
+```
+
+**注意**：当前使用文本截断，可能截断结构化 JSON。后续可增加 JSON 感知截断器，优先保留顶层字段、错误信息、分页信息和前若干数据项。
+
+---
+
+## 八、业务层扩展实现
+
+Core 层只负责压缩算法本身，业务层通过 `CompactLifecycleHook` 在不修改 Core 的前提下接入监控、SSE 推送、审计等能力。
+
+### 8.1 扩展点：CompactLifecycleHook
+
+```java
+public interface CompactLifecycleHook {
+
+    default void beforeCompact(
+            int currentStep,
+            CompactTrigger trigger,
+            int beforeMessages,
+            int beforeTokens,
+            int maxContextTokens,
+            AgentChatContext chatContext) {}
+
+    default void afterCompact(CompactEvent event, AgentChatContext chatContext) {}
+}
+```
+
+`CompactSummarizationMiddleware` 同时实现 `IAgentMiddleware` 与 `CompactLifecycleHook`，在压缩前后调用钩子，并对钩子异常做了保护：
+
+```text
+钩子抛出异常时仅记录 WARNING，不影响压缩主流程
+```
+
+因此业务层可以安全地实现自定义钩子，即使监控或推送失败也不会破坏 Agent 执行。
+
+### 8.2 事件模型
+
+`CompactEvent` 携带一次压缩的完整运行时信息：
+
+| 字段 | 含义 |
+| --- | --- |
+| `memoryId` | 会话标识 |
+| `step` | ReAct 步骤；工具触发时为 `-1` |
+| `trigger` | `MODEL_CALL` / `TOOL_RESULT` / `CONCURRENT_TOOL_RESULT` |
+| `success` | 是否成功 |
+| `durationMs` | 压缩耗时 |
+| `beforeMessages` / `afterMessages` | 压缩前后消息数 |
+| `beforeTokens` / `afterTokens` | 压缩前后估算 Token |
+| `maxContextTokens` | 最大上下文 Token |
+| `errorMessage` | 失败原因 |
+| `getBeforeUsagePercent()` / `getAfterUsagePercent()` | 计算得到的前后使用率 |
+
+`CompactTrigger` 同时提供 `code` 和中文 `description`：
+
+```text
+MODEL_CALL              model_call              模型调用前压缩
+TOOL_RESULT             tool_result             单工具结果截断
+CONCURRENT_TOOL_RESULT  concurrent_tool_result  并发工具结果截断
+```
+
+### 8.3 Service 层适配示例
+
+> Service 侧的完整交互设计（事件协议、参数示例、前端调试/发布展示）见：[Agent 上下文阈值压缩交互设计](../../agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent%20上下文阈值压缩交互设计.md)。
+
+Service 层通过继承 `CompactSummarizationMiddleware` 并重写两个钩子，把压缩事件转换为 SSE：
+
+```java
+public class ServiceCompactSummarizationMiddleware
+        extends CompactSummarizationMiddleware {
+
+    private final ServiceStreamingMiddleware streamingMiddleware;
+    private final SessionLifecycleMiddleware sessionLifecycleMiddleware;
+    private final boolean detailed;
+
+    @Override
+    public void beforeCompact(
+            int currentStep,
+            CompactTrigger trigger,
+            int beforeMessages,
+            int beforeTokens,
+            int maxContextTokens,
+            AgentChatContext chatContext) {
+        CompactResult result = new CompactResult();
+        result.setStatus("compacting");
+        result.setTrigger(trigger == null ? null : trigger.getCode());
+        if (detailed) {
+            result.setCurrentStep(currentStep);
+            result.setBeforeMessages(beforeMessages);
+            result.setBeforeTokens(beforeTokens);
+            result.setMaxContextTokens(maxContextTokens);
+            result.setBeforeUsagePercent(...);
+            result.setTriggerDescription(trigger.getDescription());
+        }
+        publish(chatContext, AiCompactProcessor.compacting(result));
+    }
+
+    @Override
+    public void afterCompact(CompactEvent event, AgentChatContext chatContext) {
+        CompactResult result = new CompactResult();
+        result.setStatus(event.isSuccess() ? "compacted" : "compact_failed");
+        result.setSuccess(event.isSuccess());
+        result.setDuration(event.getDurationMs());
+        result.setTrigger(event.getTrigger().getCode());
+        if (detailed) {
+            result.setCurrentStep(event.getStep());
+            result.setBeforeMessages(event.getBeforeMessages());
+            result.setAfterMessages(event.getAfterMessages());
+            result.setBeforeTokens(event.getBeforeTokens());
+            result.setAfterTokens(event.getAfterTokens());
+            result.setMaxContextTokens(event.getMaxContextTokens());
+            result.setBeforeUsagePercent(event.getBeforeUsagePercent());
+            result.setAfterUsagePercent(event.getAfterUsagePercent());
+            result.setSavedTokens(event.getBeforeTokens() - event.getAfterTokens());
+            result.setSavedPercent(...);
+            result.setTriggerDescription(event.getTrigger().getDescription());
+        }
+        publish(chatContext, event.isSuccess()
+                ? AiCompactProcessor.compacted(result)
+                : AiCompactProcessor.failed(result));
+    }
+
+    private void publish(AgentChatContext context, StreamEventResponse response) {
+        Object memoryId = context == null ? null : context.getMemoryId();
+        streamingMiddleware.publish(memoryId, response);
+        if (sessionLifecycleMiddleware != null) {
+            sessionLifecycleMiddleware.collectEvent(memoryId, response);
+        }
+    }
+}
+```
+
+关键点：
+
+- 业务层不重写 `beforeModelCall` / `afterToolExecution`，只实现钩子，保持 Core 算法稳定。
+- `detailed` 由会话是否为调试态决定（`ReActAgentFactory` 中传入 `isDebug`）。
+- 事件既推送给实时流（`ServiceStreamingMiddleware`），也交给会话生命周期收集（`SessionLifecycleMiddleware`），保证历史回放可用。
+
+### 8.4 SSE 事件协议
+
+`AiCompactProcessor` 负责把 `CompactResult` 转为统一 `StreamEventResponse`：
+
+| 事件类型 | title | 触发时机 |
+| --- | --- | --- |
+| `compacting` | 正在压缩上下文 | 压缩开始前 |
+| `compacted` | 上下文已压缩 | 压缩成功后 |
+| `compact_failed` | 上下文压缩失败 | 压缩失败后 |
+
+调试模式（`detailed = true`）示例：
+
+```text
+data:{"event":"compact","type":"compacting","title":"正在压缩上下文","content":{"success":null,"status":"compacting","currentStep":-1,"trigger":"concurrent_tool_result","duration":null,"beforeMessages":9,"afterMessages":null,"beforeTokens":9180,"afterTokens":null,"maxContextTokens":10000,"beforeUsagePercent":91.8,"triggerDescription":"并发工具结果截断","errorMessage":null},"isFinish":false}
+
+data:{"event":"compact","type":"compacted","title":"上下文已压缩","content":{"success":true,"status":"compacted","currentStep":-1,"trigger":"concurrent_tool_result","duration":19,"beforeMessages":9,"afterMessages":9,"beforeTokens":9180,"afterTokens":7263,"maxContextTokens":10000,"beforeUsagePercent":91.8,"afterUsagePercent":72.63,"savedTokens":1917,"savedPercent":20.88,"triggerDescription":"并发工具结果截断","errorMessage":null},"isFinish":false}
+```
+
+发布模式（`detailed = false`）只填充状态、触发来源、耗时和失败原因，其余调试字段为 `null`：
+
+```json
+{
+  "success": true,
+  "status": "compacted",
+  "currentStep": null,
+  "trigger": "concurrent_tool_result",
+  "duration": 19,
+  "beforeMessages": null,
+  "afterMessages": null,
+  "beforeTokens": null,
+  "afterTokens": null,
+  "maxContextTokens": null,
+  "beforeUsagePercent": null,
+  "afterUsagePercent": null,
+  "savedTokens": null,
+  "savedPercent": null,
+  "triggerDescription": null,
+  "errorMessage": null
+}
+```
+
+**注意**：调试模式额外包含步骤、前后消息数、前后 Token、使用率、节省 Token、触发来源描述；发布模式有意不填充这些字段，前端也不会展示，避免向终端用户泄露上下文规模等信息。若希望进一步精简网络载荷，可为 `CompactResult` 增加 `@JsonInclude(NON_NULL)`。
+
+### 8.5 前端展示约定
+
+- 调试模式：后端会产生 `compacting` 与 `compacted` 两条事件，前端保留为“压缩前上下文”“压缩后上下文”两条记录，Token 统一按 K/M 单位展示，并显示使用率与节省比例。
+- 发布模式：前端把两条事件合并为一条状态记录，仅展示状态与耗时。
+- 该行为由前端 `reduceCompactEvent(answer, event, detailed)` 的 `detailed` 参数控制。
+
+### 8.6 装配与注册顺序
+
+Service 层在 `ReActAgentFactory` 中构建压缩 Middleware，`maxContextTokens` 来自模型配置：
+
+```java
+CompactSummarizationMiddleware compact =
+        new ServiceCompactSummarizationMiddleware(
+                CompactSummarizationMiddleware.CompactConfig.builder()
+                        .maxContextTokens(
+                                toActualTokens(
+                                        chatModelConfig.getMaxInputKTokens(),
+                                        modelAdvancedConfig.getMaxInputTokens()))
+                        .build(),
+                streamingMiddleware,
+                sessionLifecycleMiddleware,
+                isDebug);
+
+List<IAgentMiddleware> middlewares = Arrays.asList(
+        userMessageAppendMiddleware,
+        compact,
+        new LoggingIAgentMiddleware(),
+        sessionLifecycleMiddleware,
+        streamingMiddleware,
+        agentTraceMiddleware);
+```
+
+建议顺序：
+
+1. 先执行会改变本轮输入的消息追加、动态提示等 Middleware（如 `UserMessageAppendMiddleware`）。
+2. 再执行上下文压缩，让它看到最终候选消息。
+3. 最后执行 Logging、流式和 Trace，使观测结果对应真正发送给模型的请求。
+
+**注意**：如需同时记录压缩前后指标，不要让压缩 Middleware 依赖两个日志 Middleware；应像 Service 层一样通过 `CompactLifecycleHook` 发布结构化事件。
+
+### 8.7 自定义扩展步骤
+
+业务层接入新能力时，推荐按以下步骤：
+
+1. 继承 `CompactSummarizationMiddleware`，重写 `beforeCompact` / `afterCompact`。
+2. 在钩子中读取 `CompactEvent`，转换为业务事件（SSE、消息队列、审计日志、指标等）。
+3. 通过构造参数控制输出详略（如 `detailed`），不要把调试细节硬编码进发布链路。
+4. 不要吞掉异常后继续执行危险操作；Core 已保证钩子异常不影响压缩。
+5. 不要在日志中打印完整用户内容、工具结果或摘要正文；完整内容只允许在明确开启的安全调试环境中输出。
+
+---
+
+## 九、失败策略与可观测性
+
+### 9.1 失败降级
+
+- 摘要生成或 Memory 替换异常：返回原 `ChatRequest`，Memory 回滚，记录 WARNING。
+- 工具结果截断异常：返回原工具结果，记录 WARNING。
+- 钩子异常：记录 WARNING，不阻断压缩。
+
+降级行为固定在实现中，不进入 `CompactConfig`，确保配置类始终只有五个字段。
+
+### 9.2 指标
+
+每次压缩建议关注：
 
 - `memoryId` 的脱敏值；
 - 当前 ReAct step；
-- 触发原因：历史阈值、单工具结果、并发工具结果；
-- 压缩前后消息数和估算 Token；
-- 历史、摘要、最近消息各自 Token；
+- 触发来源；
+- 压缩前后消息数与估算 Token；
+- 压缩前后使用率；
+- 节省 Token 与节省比例（调试态）；
 - 摘要模型耗时；
-- 压缩轮次；
-- 是否截断工具结果；
 - 成功、降级或失败原因。
 
-不要在 INFO 日志打印完整用户内容、工具结果或摘要正文。完整内容只允许在明确开启的安全调试环境中输出。
+**注意**：不要在 INFO 日志打印完整用户内容、工具结果或摘要正文。
 
-运行期可把本次指标放入 `AgentChatContext.extensions`：
+---
 
-```text
-agentforge.compact.lastResult
-agentforge.compact.totalCount
-agentforge.compact.failureCount
-```
+## 十、当前实现边界与后续演进
 
-Trace Middleware 可选择读取这些字段，将压缩事件纳入执行快照，但压缩 Middleware 不直接依赖 Trace 实现。
+为避免文档与代码脱节，以下列出当前实现的已知边界：
 
-## 16. 测试方案
+| 边界 | 当前行为 | 后续建议 |
+| --- | --- | --- |
+| 并发控制 | 未实现会话级互斥或 CAS，`replaceMemory` 仅做本地回滚 | 为 `ChatMemory` 增加原子 `replaceAll` 或基于版本的 compare-and-set |
+| 摘要模型 | 复用 `AgentChatContext.getChatModel()` | 支持独立摘要模型与独立超时配置 |
+| Token 估算 | 启发式，中文按宽字符、英文按 4 字符 | 接入模型厂商 Tokenizer |
+| Prompt 语言 | 仅内置英文版 | 按会话语言选择中英文 Prompt |
+| 压缩轮次 | 单次压缩，不循环收敛 | 增加“仍超阈值”的二次收缩策略 |
+| 协议校验 | 未对压缩结果做额外校验 | 增加工具调用—结果配对校验 |
+| 工具结果截断 | 纯文本截断，可能破坏 JSON | 增加 JSON、表格、代码感知截断器 |
+| 配置来源 | Core 只提供 Java 配置对象 | Service 层按页面/YAML 配置转换 |
 
-### 16.1 单元测试
+**重点**：以上边界大多属于生产化增强项，不影响当前“阈值比例压缩”主流程的正确性。
 
-`TokenStatsUtilTest`：
+---
 
-- 空文本、中文、英文、混合文本；
-- 工具参数 JSON 和工具 Schema；
-- 各类消息固定开销；
-- 估算结果单调增长且不溢出。
+## 十一、测试
 
-`MessageGroupPartitionerTest`：
+当前已有针对钩子行为的单元测试，覆盖工具结果截断触发时：
 
-- 普通消息分组；
-- 单工具调用及结果；
-- 同轮多个工具调用及结果；
-- 缺失结果、结果 ID 不匹配；
-- 从尾部选取时不会拆散工具组。
+- `beforeCompact` 被调用且收到正确的触发来源、消息数、Token、最大上下文；
+- `afterCompact` 收到成功事件；
+- 工具结果包含截断标记。
 
-`CompactSummarizationMiddlewareTest`：
+建议继续补充：
 
-- 未达到阈值时返回原请求且不调用摘要模型；
-- 达到阈值后保留系统提示和最近消息；
-- 旧摘要会合并而不是重复堆叠；
-- 重建请求完整保留 `parameters()`；
-- 压缩成功后 Request 与 Memory 一致；
-- 摘要失败时 Memory 不被清空；
-- 压缩后仍过大时执行二次收缩；
-- 单个超大消息组的降级行为。
+- `TokenStatsUtil`：空文本、中文、英文、混合文本、消息固定开销、截断边界。
+- `CompactSummarizationMiddleware`：
+  - 未达阈值不调用摘要模型；
+  - 达到阈值保留系统提示与最近消息；
+  - 旧摘要合并而非重复堆叠；
+  - 重建请求完整保留 `parameters()`；
+  - 摘要失败时 Memory 不被清空；
+  - 单个超大工具组的处理行为；
+  - 并发工具结果返回顺序与长度一致。
+- 集成测试：
+  - 同步与流式链路结果一致；
+  - 与消息追加 Middleware 组合时顺序正确；
+  - 历史回放时压缩事件可还原。
 
-`ToolResultCompactionTest`：
+---
 
-- 单工具结果不超限时原样返回；
-- 超限时带截断标记；
-- 并发结果共享总预算；
-- 返回列表长度和顺序与请求严格一致；
-- Unicode 和 JSON 内容截断不产生字符串异常。
+## 十二、分阶段落地计划
 
-### 16.2 集成测试
+### 12.1 已落地
 
-- 使用脚本模型构造多轮 think → act，验证同步链路。
-- 使用流式脚本模型验证流式链路与同步链路结果一致。
-- 与 `UserMessageAppendMiddleware` 组合，验证追加消息先进入再压缩。
-- 与 Logging、Trace 组合，验证注册顺序和指标。
-- 使用持久化 `ChatMemoryStore`，验证压缩后重新加载会话仍只有一份摘要。
-- 模拟同一 `memoryId` 并发压缩，验证不会覆盖新消息。
+- `CompactSummarizationMiddleware` + `CompactConfig` 五项配置。
+- `TokenStatsUtil` 启发式估算、分类统计、截断与格式化。
+- `beforeModelCall` 历史摘要与请求重建。
+- 单工具、并发工具结果截断。
+- `CompactLifecycleHook`、`CompactEvent`、`CompactTrigger`。
+- Service 层 `ServiceCompactSummarizationMiddleware` 与 SSE 事件。
 
-## 17. 分阶段落地计划
+### 12.2 第二阶段：一致性与生产化
 
-### 第一阶段：复刻核心能力
+- `ChatMemory` 原子批量替换与会话版本控制。
+- 结构化指标接入 Trace。
+- Service 层配置化开关与参数校验。
 
-- 新增带静态内部类 `CompactConfig` 的 `CompactSummarizationMiddleware`。
-- 配置严格限定为五项：`maxContextTokens`、`compressThreshold`、`keepRatio`、`maxSystemRatio`、`maxOtherRatio`。
-- 新增 `TokenStatsUtil`，实现启发式 Token 估算、统计和截断。
-- 在 Middleware 内实现工具协议消息分组。
-- 实现 `beforeModelCall` 历史摘要与请求重建。
-- 实现单工具和并发工具结果文本截断。
-- 增加单元测试和同步/流式集成测试。
-
-### 第二阶段：一致性与生产化
-
-- 为 `ChatMemory` 增加原子批量替换能力。
-- 增加会话版本或 compare-and-set，解决跨实例并发覆盖。
-- 发布结构化 `CompactMetrics` 并接入 Trace。
-- Service 层增加配置开关和参数校验。
-
-### 第三阶段：精确与智能治理
+### 12.3 第三阶段：精确与智能治理
 
 - 按模型注入精确 Tokenizer。
-- 统计工具定义的真实协议 Token。
-- 增加 JSON、表格和代码感知的工具结果截断器。
-- 支持关键消息固定、摘要质量评估和长期记忆下沉。
+- 独立摘要模型与超时控制。
+- JSON / 表格 / 代码感知的工具结果截断。
+- 关键消息固定、摘要质量评估、长期记忆下沉。
 
-## 18. 关键设计取舍
+---
 
-### 18.1 为什么同时更新 Request 和 Memory
+## 十三、总结
 
-只改 Request 可以让当前调用成功，但下一轮又会从未压缩的 Memory 构建请求，造成重复压缩；只改 Memory 则当前已经构建好的 Request 仍携带旧消息。因此压缩成功后必须同步更新两者。
+AgentForge 的上下文压缩能力以 `CompactSummarizationMiddleware` 为核心：
 
-### 18.2 为什么不能只依赖 MessageWindowChatMemory
-
-消息条数与 Token 数没有稳定关系，窗口无法识别一个超大工具结果，也无法把被淘汰的长期历史转换为摘要。两者职责不同：消息窗口做硬数量兜底，压缩 Middleware 做 Token 预算和语义保留。
-
-### 18.3 为什么不把压缩放进 ChatMemory
-
-摘要需要调用模型，并依赖当前模型、运行上下文、配置和观测信息。如果直接放进 Memory，会让存储抽象承担模型调用和业务策略，破坏职责边界。Memory 只负责状态，Middleware 负责何时以及如何压缩。
-
-### 18.4 为什么工具结果要提前治理
-
-工具结果是在一次模型调用之后、下一次模型调用之前进入上下文的。提前改写可以避免超大结果污染 Memory，并让同步和流式执行自然复用同一治理逻辑。
-
-## 19. 最终方案
-
-AgentForge 的上下文压缩能力应以 `CompactSummarizationMiddleware` 为入口，使用 `beforeModelCall` 完成阈值检测、历史摘要、Memory 替换和 Request 重建，使用工具执行后的两个回调治理单个及并发工具结果。
+- 使用 `beforeModelCall` 完成阈值检测、历史摘要、Memory 替换与 Request 重建。
+- 使用 `afterToolExecution`、`afterConcurrentToolExecution` 治理单个及并发工具结果。
+- 通过 `CompactLifecycleHook` 向业务层暴露压缩前后事件，Service 层无需修改 Core 即可推送 SSE、记录审计或接入监控。
 
 最终上下文保持三层结构：
 
@@ -598,4 +794,8 @@ AgentForge 的上下文压缩能力应以 `CompactSummarizationMiddleware` 为�
 按 Token 预算保留的最近完整消息组
 ```
 
-该方案不侵入 ReAct 主循环，兼容 AgentForge 现有 Middleware 链、同步/流式执行和 ChatMemory 抽象，同时为后续精确 Tokenizer、独立摘要模型、持久化一致性及可观测性留出了清晰扩展点。
+该方案不侵入 ReAct 主循环，兼容 AgentForge 现有 Middleware 链、同步/流式执行与 ChatMemory 抽象，同时为精确 Tokenizer、独立摘要模型、持久化一致性与可观测性留出了清晰扩展点。
+
+---
+
+整理者：长路 创建时间：2026.11.4 更新时间：2026.11.6

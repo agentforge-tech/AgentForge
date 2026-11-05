@@ -15,6 +15,12 @@ public final class StreamEventEnums {
         RESP("resp", "AI回答事件", TypeEnum.TEXT),
         TOOL_CALL("tool_call", "工具调用事件", TypeEnum.TOOL_CARD),
         RETRY("retry", "AI调用重试事件", TypeEnum.RETRY),
+        COMPACT(
+                "compact",
+                "上下文压缩事件",
+                TypeEnum.COMPACTING,
+                TypeEnum.COMPACTED,
+                TypeEnum.COMPACT_FAILED),
         USER_MESSAGE(
                 "user_message",
                 "运行时追加用户消息",
@@ -61,6 +67,9 @@ public final class StreamEventEnums {
         TEXT("text", "文本内容"),
         TOOL_CARD("tool_card", "工具调用卡片"),
         RETRY("retry", "模型调用重试"),
+        COMPACTING("compacting", "正在压缩上下文"),
+        COMPACTED("compacted", "上下文已压缩"),
+        COMPACT_FAILED("compact_failed", "上下文压缩失败"),
         APPEND_QUEUED("append_queued", "追加已排队"),
         APPEND_EFFECTIVE("append_effective", "追加已生效"),
         APPEND_DEFERRED("append_deferred", "追加未赶上本轮"),

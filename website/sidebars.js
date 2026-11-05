@@ -36,7 +36,7 @@ const sidebars = {
       label: 'Agent Tool 扩展',
       collapsed: false,
       items: [
-        {type: 'doc', id: 'sdk/tool/java-local', label: 'JavaLocalTool 对接'},
+        {type: 'doc', id: 'sdk/tool/java-local', label: 'Java本地Tool 对接'},
         {type: 'doc', id: 'sdk/tool/http', label: 'HTTP 对接'},
         {type: 'doc', id: 'sdk/tool/mcp', label: 'MCP 对接'},
       ],
@@ -49,6 +49,7 @@ const sidebars = {
         {type: 'doc', id: 'sdk/middleware/logging', label: '日志 Middleware'},
         {type: 'doc', id: 'sdk/middleware/trace', label: 'Trace Middleware'},
         {type: 'doc', id: 'sdk/middleware/append', label: '对话追加 Middleware'},
+        {type: 'doc', id: 'sdk/middleware/compact', label: '上下文阈值压缩 Middleware'},
       ],
     },
   ],
@@ -60,6 +61,7 @@ const sidebars = {
       items: ['service/introduction', 'service/quick-deploy'],
     },
   ],
+  changelogSidebar: ['changelog'],
   roadmapSidebar: ['roadmap/roadmap'],
 };
 

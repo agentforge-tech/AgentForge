@@ -121,6 +121,7 @@ import { fetchSessionList, fetchSessionMessages } from '../../utils/sessionApi'
 import { replaySession } from '../../utils/sessionReplay'
 import { postSse } from '../../utils/sse'
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
+import { reduceCompactEvent } from '../../utils/compactEventReducer'
 
 const MODE_KEY = 'agentforge.render.mode'
 export default {
@@ -267,7 +268,7 @@ export default {
       this.sessionId = item.sessionId
       try {
         const records = await fetchSessionMessages(item.id)
-        const replay = replaySession(records)
+        const replay = replaySession(records, this.mode === 'debug')
         this.messages = replay.messages
         this.pendingAppends = replay.pendingAppends
         this.deferredAppends = replay.deferredAppends
@@ -297,7 +298,7 @@ export default {
         this.remotePollTimer = null
         if (!this.running || this.sessionId !== expectedSessionId) return
         try {
-          const replay = replaySession(await fetchSessionMessages(sessionRefId))
+          const replay = replaySession(await fetchSessionMessages(sessionRefId), this.mode === 'debug')
           if (this.sessionId !== expectedSessionId) return
           this.messages = replay.messages
           this.pendingAppends = replay.pendingAppends
@@ -347,6 +348,7 @@ export default {
         case 'tool_call': this.clearRetryNotice(answer); this.closeOpenThink(answer); this.applyTool(answer, event); break
         case 'user_message': this.applyAppendEvent(answer, event); break
         case 'retry': this.applyRetryEvent(answer, event); break
+        case 'compact': reduceCompactEvent(answer, event, this.mode === 'debug'); break
         case 'resp_end': this.clearRetryNotice(answer); answer.status = 'success'; this.finishParts(answer); break
         case 'error': this.clearRetryNotice(answer); answer.status = 'error'; answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '调试失败'); this.finishParts(answer); break
         default: break
