@@ -74,6 +74,12 @@
         where id = #{id} and is_deleted = 0
     </update>
 
+    <update id="updateEvents">
+        update ai_agent_session_message
+        set events = #{events}, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0
+    </update>
+
     <update id="logicDeleteBySessionId">
         update ai_agent_session_message
         set is_deleted = 1, modify_time = #{modifyTime}

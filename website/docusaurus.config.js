@@ -10,7 +10,7 @@ const config = {
   themeConfig: {
     colorMode: {defaultMode: 'dark', disableSwitch: false, respectPrefersColorScheme: true},
     navbar: {title: 'AgentForge', logo: {alt: 'AgentForge logo', src: 'img/agentforge-logo.webp'}, items: [
-      {to: '/', label: 'Home', position: 'left'}, {type: 'doc', docId: 'roadmap/roadmap', label: 'RoadMap', position: 'left'}, {type: 'doc', docId: 'about/introduction', label: 'SDK', position: 'left'}, {type: 'doc', docId: 'service/introduction', label: 'Service', position: 'left'}, {to: '/blog', label: 'Blog', position: 'left'},
+      {to: '/', label: 'Home', position: 'left'}, {type: 'doc', docId: 'roadmap/roadmap', label: 'RoadMap', position: 'left'}, {type: 'doc', docId: 'about/introduction', label: 'SDK', position: 'left'}, {type: 'doc', docId: 'service/introduction', label: 'Service', position: 'left'}, {type: 'doc', docId: 'changelog', label: '更新日志', position: 'left'}, {to: '/blog', label: 'Blog', position: 'left'},
       {to: '/community', label: 'Community', position: 'right'}, {type: 'docsVersionDropdown', position: 'right'}, {type: 'localeDropdown', position: 'right'}, {href: 'https://github.com/agentforge-tech/AgentForge', position: 'right', className: 'header-github-link', 'aria-label': 'GitHub repository'}]},
     footer: {style: 'dark', links: [
       {title: 'SDK 文档', items: [{label: '2026 RoadMap', to: '/docs/roadmap/roadmap'}, {label: 'AgentForge 介绍', to: '/docs/about/introduction'}, {label: '快速开始', to: '/docs/quickstart/getting-started'}, {label: 'Model 模型协议层', to: '/docs/sdk/model'}, {label: 'Agent 智能体', to: '/docs/sdk/agent'}, {label: 'Tool 扩展设计', to: '/docs/sdk/tool'}]},

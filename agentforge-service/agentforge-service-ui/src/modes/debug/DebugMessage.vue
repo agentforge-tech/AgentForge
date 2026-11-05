@@ -15,6 +15,8 @@
           <template v-for="(part, idx) in processParts">
             <ThinkBlock v-if="part.type === 'think'" :key="'t' + idx" :part="part" />
             <ToolCard v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
+            <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
+            <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" detailed />
           </template>
         </div>
       </el-collapse-transition>
@@ -30,8 +32,11 @@
       />
     </div>
 
-    <!-- 运行中占位 -->
-    <div v-if="message.status === 'running' && !message.content" class="typing">
+    <!-- 模型调用重试提示：跟在 AI 正文末尾，由前端自行倒计时 -->
+    <RetryNotice v-if="retryNotice" :part="retryNotice" />
+
+    <!-- 运行中占位：只要本轮仍在执行就保留在底部，包括已产生部分正文时 -->
+    <div v-if="message.status === 'running' && !retryNotice" class="typing">
       <span></span><span></span><span></span>
     </div>
 
@@ -48,10 +53,13 @@ import MarkdownView from '../../components/MarkdownView.vue'
 import { formatElapsedDuration } from '../../utils/formatDuration'
 import ThinkBlock from './ThinkBlock.vue'
 import ToolCard from './ToolCard.vue'
+import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
+import RetryNotice from '../../components/RetryNotice.vue'
+import CompactNotice from '../../components/CompactNotice.vue'
 
 export default {
   name: 'DebugMessage',
-  components: { MarkdownView, ThinkBlock, ToolCard },
+  components: { MarkdownView, ThinkBlock, ToolCard, AppendedUserMessage, RetryNotice, CompactNotice },
   props: {
     message: { type: Object, required: true }
   },
@@ -62,7 +70,14 @@ export default {
   },
   computed: {
     processParts() {
-      return (this.message.parts || []).filter((p) => p.type !== 'text')
+      return (this.message.parts || []).filter((p) => p.type !== 'text' && p.type !== 'retry_notice')
+    },
+    retryNotice() {
+      const parts = this.message.parts || []
+      for (let index = parts.length - 1; index >= 0; index--) {
+        if (parts[index].type === 'retry_notice') return parts[index]
+      }
+      return null
     },
     thinkCount() {
       return this.processParts.filter((p) => p.type === 'think').length

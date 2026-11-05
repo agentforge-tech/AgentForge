@@ -2,9 +2,9 @@ package cloud.changlu.agentforge.service.modules.agent.service;
 
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigPublishedMapper;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPojo;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigPublishedPojo;
-import cloud.changlu.agentforge.service.modules.agent.domain.AgentRuntimeConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigPojo;
+import cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigPublishedPojo;
 import cloud.changlu.agentforge.service.modules.agent.exception.AgentUnavailableException;
 
 import org.springframework.stereotype.Service;
@@ -34,13 +34,16 @@ public class AgentRuntimeConfigResolver {
                 throw new AgentUnavailableException("该 Agent 不存在或已被删除，暂时无法对话。");
             }
             return new AgentRuntimeConfig(
-                    config.getAid(), config.getType(), config.getAgentConfig());
+                    config.getAid(), config.getName(), config.getType(), config.getAgentConfig());
         }
         AgentConfigPublishedPojo published = agentConfigPublishedMapper.selectByAid(normalizedAid);
         if (published == null) {
             throw new AgentUnavailableException("该 Agent 尚未发布或已停止发布，暂时无法对话。请联系创建者重新发布后再试。");
         }
         return new AgentRuntimeConfig(
-                published.getAid(), published.getType(), published.getAgentConfig());
+                published.getAid(),
+                published.getName(),
+                published.getType(),
+                published.getAgentConfig());
     }
 }

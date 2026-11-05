@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigVersionMapper">
 
-    <resultMap id="AgentConfigVersionResult" type="cloud.changlu.agentforge.service.modules.agent.domain.AgentConfigVersionPojo">
+    <resultMap id="AgentConfigVersionResult" type="cloud.changlu.agentforge.service.modules.agent.domain.pojo.AgentConfigVersionPojo">
         <id property="id" column="id"/>
         <result property="versionNo" column="version_no"/>
         <result property="name" column="name"/>

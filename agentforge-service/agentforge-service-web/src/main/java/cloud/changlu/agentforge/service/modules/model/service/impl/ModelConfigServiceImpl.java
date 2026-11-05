@@ -1,5 +1,8 @@
 package cloud.changlu.agentforge.service.modules.model.service.impl;
 
+import cloud.changlu.agentforge.agent.config.LlmModelConfig;
+import cloud.changlu.agentforge.agent.config.LlmModelConfigRegistry;
+import cloud.changlu.agentforge.agent.config.LlmModelConfigRegistryApi;
 import cloud.changlu.agentforge.model.chat.ChatModel;
 import cloud.changlu.agentforge.model.chat.message.UserMessage;
 import cloud.changlu.agentforge.model.chat.request.ChatRequest;
@@ -16,11 +19,13 @@ import cloud.changlu.agentforge.service.modules.model.domain.req.ModelConfigQuer
 import cloud.changlu.agentforge.service.modules.model.domain.req.ModelConfigTestReq;
 import cloud.changlu.agentforge.service.modules.model.domain.req.ModelConfigUpsertReq;
 import cloud.changlu.agentforge.service.modules.model.domain.transfer.ModelConfigTransfer;
+import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelCapabilityOptionVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigDetailVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigOptionVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigOptionsVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigTestVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigVo;
+import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelSelectionOptionVo;
 import cloud.changlu.agentforge.service.modules.model.enums.LlmModelTypeEnum;
 import cloud.changlu.agentforge.service.modules.model.enums.LlmProviderEnum;
 import cloud.changlu.agentforge.service.modules.model.service.IModelConfigService;
@@ -41,6 +46,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ModelConfigServiceImpl implements IModelConfigService {
+
+    private static final LlmModelConfigRegistryApi MODEL_CONFIG_REGISTRY =
+            LlmModelConfigRegistry.registry();
 
     private static final long DEFAULT_USER_ID = 1L;
     private static final int CREATE_TYPE_USER = 1;
@@ -135,6 +143,29 @@ public class ModelConfigServiceImpl implements IModelConfigService {
                 new ModelConfigOptionVo(
                         modelType.getCode(), modelType.getDesc(), modelType.getName()));
         return new ModelConfigOptionsVo(providers, modelTypes);
+    }
+
+    @Override
+    public List<ModelSelectionOptionVo> modelOptions(Integer modelType) {
+        ModelConfigQueryReq query = new ModelConfigQueryReq();
+        query.setModelType(modelType);
+        return modelConfigMapper.selectList(query).stream()
+                .map(this::toSelectionOption)
+                .collect(Collectors.toList());
+    }
+
+    private ModelSelectionOptionVo toSelectionOption(ModelConfigPojo pojo) {
+        LlmModelConfig capability =
+                MODEL_CONFIG_REGISTRY.getConfig(pojo.getUrl(), pojo.getModelname());
+        ModelSelectionOptionVo option = new ModelSelectionOptionVo();
+        option.setId(pojo.getId());
+        option.setName(pojo.getName());
+        option.setModelName(pojo.getModelname());
+        option.setModelType(pojo.getModelType());
+        option.setModelConfig(
+                new ModelCapabilityOptionVo(
+                        capability.getMaxInputKTokens(), capability.getMaxOutputKTokens()));
+        return option;
     }
 
     @Override

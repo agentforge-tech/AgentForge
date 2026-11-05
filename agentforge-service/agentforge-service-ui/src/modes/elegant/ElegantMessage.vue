@@ -14,6 +14,8 @@
           <template v-for="(part, idx) in thinkParts">
             <ElegantThinkItem v-if="part.type === 'think'" :key="'t' + idx" :part="part" />
             <ElegantToolItem v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
+            <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
+            <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" />
           </template>
         </div>
       </el-collapse-transition>
@@ -29,7 +31,11 @@
       />
     </div>
 
-    <div v-if="message.status === 'running' && !message.content" class="elegant-typing">
+    <!-- 模型调用重试提示：跟在 AI 正文末尾，由前端自行倒计时 -->
+    <RetryNotice v-if="retryNotice" :part="retryNotice" />
+
+    <!-- 只要本轮仍在执行，底部持续保留“正在处理...”，包括已产生部分正文、正在思考或调用工具时 -->
+    <div v-if="message.status === 'running' && !retryNotice" class="elegant-typing">
       <span class="elegant-typing-text">正在处理</span>
     </div>
 
@@ -45,10 +51,13 @@ import MarkdownView from '../../components/MarkdownView.vue'
 import { formatElapsedDuration } from '../../utils/formatDuration'
 import ElegantThinkItem from './ElegantThinkItem.vue'
 import ElegantToolItem from './ElegantToolItem.vue'
+import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
+import RetryNotice from '../../components/RetryNotice.vue'
+import CompactNotice from '../../components/CompactNotice.vue'
 
 export default {
   name: 'ElegantMessage',
-  components: { MarkdownView, ElegantThinkItem, ElegantToolItem },
+  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice },
   props: {
     message: { type: Object, required: true }
   },
@@ -57,7 +66,14 @@ export default {
   },
   computed: {
     thinkParts() {
-      return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card')
+      return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice')
+    },
+    retryNotice() {
+      const parts = this.message.parts || []
+      for (let index = parts.length - 1; index >= 0; index--) {
+        if (parts[index].type === 'retry_notice') return parts[index]
+      }
+      return null
     },
     elapsed() {
       return formatElapsedDuration(this.message.elapsedMs)

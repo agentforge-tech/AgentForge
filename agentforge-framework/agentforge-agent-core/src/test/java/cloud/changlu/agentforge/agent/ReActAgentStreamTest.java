@@ -127,7 +127,12 @@ public class ReActAgentStreamTest {
                 new ScriptedStreamingChatModel()
                         .enqueueError(new IllegalStateException("stream boom"));
         ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
-        ReActAgent agent = agent(streamingModel, memoryProvider, AgentSettings.builder().build());
+        // 显式关闭重试，验证错误直接透传
+        ReActAgent agent =
+                agent(
+                        streamingModel,
+                        memoryProvider,
+                        AgentSettings.builder().aiCallRetry(0).build());
         final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
         final AtomicReference<ChatResponse> complete = new AtomicReference<ChatResponse>();
 
@@ -150,6 +155,71 @@ public class ReActAgentStreamTest {
     }
 
     @Test
+    public void shouldRetryStreamingErrorBeforeAnyPartialThenSucceed() {
+        ScriptedStreamingChatModel streamingModel =
+                new ScriptedStreamingChatModel()
+                        .enqueueError(new IllegalStateException("temporary"))
+                        .enqueueText("恢复", "成功");
+        AgentSettings settings = AgentSettings.builder().aiCallRetry(3).aiCallRetryDelay(0).build();
+        final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+        final AtomicReference<ChatResponse> complete = new AtomicReference<ChatResponse>();
+
+        agent(streamingModel, new MessageWindowChatMemoryProvider(100), settings)
+                .runStream(request("一个问题"))
+                .onError(capture(error))
+                .onCompleteResponse(consumer(complete))
+                .start();
+
+        assertNull("重试成功后不应报错: " + error.get(), error.get());
+        assertEquals("恢复成功", complete.get().aiMessage().text());
+        assertEquals(2, streamingModel.callCount());
+    }
+
+    @Test
+    public void shouldExhaustStreamingRetriesAndReportLastError() {
+        ScriptedStreamingChatModel streamingModel =
+                new ScriptedStreamingChatModel()
+                        .enqueueError(new IllegalStateException("e1"))
+                        .enqueueError(new IllegalStateException("e2"))
+                        .enqueueError(new IllegalStateException("e3"))
+                        .enqueueError(new IllegalStateException("e4"));
+        AgentSettings settings = AgentSettings.builder().aiCallRetry(3).aiCallRetryDelay(0).build();
+        final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+
+        agent(streamingModel, new MessageWindowChatMemoryProvider(100), settings)
+                .runStream(request("一个问题"))
+                .onError(capture(error))
+                .start();
+
+        assertTrue(error.get() instanceof IllegalStateException);
+        assertEquals("e4", error.get().getMessage());
+        // 首次调用 + 3 次重试
+        assertEquals(4, streamingModel.callCount());
+    }
+
+    @Test
+    public void shouldNotRetryStreamingErrorAfterPartialOutput() {
+        ScriptedStreamingChatModel streamingModel =
+                new ScriptedStreamingChatModel()
+                        .enqueuePartialThenError("已输出内容", new IllegalStateException("mid-stream"));
+        AgentSettings settings = AgentSettings.builder().aiCallRetry(3).aiCallRetryDelay(0).build();
+        final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+        final AtomicReference<ChatResponse> complete = new AtomicReference<ChatResponse>();
+
+        agent(streamingModel, new MessageWindowChatMemoryProvider(100), settings)
+                .runStream(request("一个问题"))
+                .onError(capture(error))
+                .onCompleteResponse(consumer(complete))
+                .start();
+
+        assertTrue(error.get() instanceof IllegalStateException);
+        assertEquals("mid-stream", error.get().getMessage());
+        assertNull(complete.get());
+        // 已经有增量下发，不能再重试造成内容重复
+        assertEquals(1, streamingModel.callCount());
+    }
+
+    @Test
     public void shouldIgnoreErrorsWhenRequested() {
         ScriptedStreamingChatModel streamingModel =
                 new ScriptedStreamingChatModel().enqueueError(new IllegalStateException("ignored"));
@@ -157,7 +227,7 @@ public class ReActAgentStreamTest {
         agent(
                         streamingModel,
                         new MessageWindowChatMemoryProvider(100),
-                        AgentSettings.builder().build())
+                        AgentSettings.builder().aiCallRetry(0).build())
                 .runStream(request("一个问题"))
                 .ignoreErrors()
                 .start();

@@ -41,6 +41,12 @@ public interface AgentSessionMessageMapper {
             @Param("finishedAt") Date finishedAt,
             @Param("modifyTime") Date modifyTime);
 
+    /** 运行中增量写入事件快照，供其他页面恢复当前 Agent Run 的页面状态。 */
+    int updateEvents(
+            @Param("id") Long id,
+            @Param("events") String events,
+            @Param("modifyTime") Date modifyTime);
+
     int logicDeleteBySessionId(
             @Param("sessionId") Long sessionId, @Param("modifyTime") Date modifyTime);
 

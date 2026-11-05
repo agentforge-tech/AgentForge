@@ -8,6 +8,7 @@ import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigDetai
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigOptionsVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigTestVo;
 import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelConfigVo;
+import cloud.changlu.agentforge.service.modules.model.domain.vo.ModelSelectionOptionVo;
 import cloud.changlu.agentforge.service.modules.model.service.IModelConfigService;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -46,6 +48,12 @@ public class ModelConfigController {
     @GetMapping("/options")
     public ModelConfigOptionsVo options() {
         return modelConfigService.options();
+    }
+
+    @GetMapping("/options/models")
+    public List<ModelSelectionOptionVo> modelOptions(
+            @RequestParam(value = "modelType", required = false) Integer modelType) {
+        return modelConfigService.modelOptions(modelType);
     }
 
     @GetMapping("/list")

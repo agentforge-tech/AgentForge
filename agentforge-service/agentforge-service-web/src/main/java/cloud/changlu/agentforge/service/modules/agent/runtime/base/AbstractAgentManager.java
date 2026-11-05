@@ -91,6 +91,7 @@ public abstract class AbstractAgentManager<T, F> implements IAgentManager<T, F> 
     private AgentInitContext defaultContext(String aid, String config, boolean debug) {
         return AgentInitContext.builder()
                 .aid(aid)
+                .agentName(aid)
                 .agentConfig(config)
                 .debug(debug)
                 .channelId(AgentInitContext.WEBSITE_CHANNEL_ID)
