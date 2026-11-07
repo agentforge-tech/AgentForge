@@ -222,9 +222,13 @@ public class LoggingIAgentMiddleware implements IAgentMiddleware {
                         + stats.totalOutputTokens.get()
                         + "/"
                         + stats.totalTokens.get()
-                        + ", runRes: "
+                        + ", result: "
                         + truncate(
-                                stopResult == null ? null : stopResult.getRunRes(),
+                                stopResult == null ? null : stopResult.getResult(),
+                                MAX_CONTENT_LENGTH)
+                        + ", reason: "
+                        + truncate(
+                                stopResult == null ? null : stopResult.getReason(),
                                 MAX_CONTENT_LENGTH)
                         + ", memoryId: "
                         + memoryId(chatContext));

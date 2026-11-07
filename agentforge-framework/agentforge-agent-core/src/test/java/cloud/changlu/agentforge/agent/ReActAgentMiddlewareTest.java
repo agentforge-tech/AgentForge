@@ -146,7 +146,7 @@ public class ReActAgentMiddlewareTest {
                 new Runnable() {
                     @Override
                     public void run() {
-                        agent.cancel(MEMORY_ID);
+                        agent.cancel(MEMORY_ID, "test-execution");
                     }
                 });
 
@@ -244,7 +244,11 @@ public class ReActAgentMiddlewareTest {
     }
 
     private static AgentRequest request(String question) {
-        return AgentRequest.builder().memoryId(MEMORY_ID).question(question).build();
+        return AgentRequest.builder()
+                .memoryId(MEMORY_ID)
+                .executionId("test-execution")
+                .question(question)
+                .build();
     }
 
     private static AgentSettings settings(int aiCallRetry) {

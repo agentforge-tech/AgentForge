@@ -13,6 +13,9 @@ import java.util.Map;
  */
 public class AgentChatContext {
 
+    // Framework 单次执行标识，创建后不可修改
+    private String executionId;
+
     // 本次运行的请求参数
     private AgentRequest request;
     private ChatMemory chatMemory;
@@ -24,6 +27,7 @@ public class AgentChatContext {
     public AgentChatContext() {}
 
     private AgentChatContext(Builder builder) {
+        this.executionId = builder.executionId;
         this.request = builder.request;
         this.chatMemory = builder.chatMemory;
         this.chatModel = builder.chatModel;
@@ -37,6 +41,10 @@ public class AgentChatContext {
 
     public AgentRequest getRequest() {
         return request;
+    }
+
+    public String getExecutionId() {
+        return executionId;
     }
 
     public void setRequest(AgentRequest request) {
@@ -94,12 +102,18 @@ public class AgentChatContext {
     }
 
     public static class Builder {
+        private String executionId;
         private AgentRequest request;
         private ChatMemory chatMemory;
         private ChatModel chatModel;
         private Map<String, Object> extensions;
 
         private Builder() {}
+
+        public Builder executionId(String executionId) {
+            this.executionId = executionId;
+            return this;
+        }
 
         public Builder request(AgentRequest request) {
             this.request = request;

@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent;
 
+import cloud.changlu.agentforge.agent.component.state.control.AgentRunControl;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.ThinkResult;
@@ -63,20 +64,22 @@ public abstract class BaseReActAgent extends Agent {
     }
 
     @Override
-    protected TokenStream stepStream(AgentChatContext chatContext) {
+    protected TokenStream stepStream(AgentChatContext chatContext, AgentRunControl control) {
         return new ReActTokenStream(
                 chatContext,
                 getStreamChatModel(),
                 getToolExecutor(),
                 getToolSpecifications(),
                 getAgentSettings(),
-                cancelFlags,
-                getMiddlewareManager());
+                getMiddlewareManager(),
+                control,
+                runRegistry);
     }
 
     // check任务是否被取消
     private void checkIsCancelled(AgentChatContext chatContext) {
-        if (isCancelled(chatContext.getMemoryId())) {
+        AgentRunControl control = runControl(chatContext);
+        if (control != null && control.isCancellationRequested()) {
             throw new CancelException(
                     String.format(
                             "会话：%s 进行问答：%s 在此步think前中断",

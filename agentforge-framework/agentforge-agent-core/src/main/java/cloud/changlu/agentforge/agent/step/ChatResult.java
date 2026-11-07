@@ -9,6 +9,8 @@ import cloud.changlu.agentforge.agent.domain.AgentRunState;
  */
 public class ChatResult {
 
+    private String executionId;
+
     private String question;
     private String res;
     private ChatResultState chatResultState;
@@ -17,6 +19,7 @@ public class ChatResult {
     public ChatResult() {}
 
     private ChatResult(Builder builder) {
+        this.executionId = builder.executionId;
         this.question = builder.question;
         this.res = builder.res;
         this.chatResultState = builder.chatResultState;
@@ -38,6 +41,25 @@ public class ChatResult {
                 .runState(runState)
                 .chatResultState(ChatResultState.FINISHED)
                 .build();
+    }
+
+    public static ChatResult toFinished(
+            String executionId, String question, String res, AgentRunState runState) {
+        return builder()
+                .executionId(executionId)
+                .question(question)
+                .res(res)
+                .runState(runState)
+                .chatResultState(ChatResultState.FINISHED)
+                .build();
+    }
+
+    public String getExecutionId() {
+        return executionId;
+    }
+
+    public void setExecutionId(String executionId) {
+        this.executionId = executionId;
     }
 
     public String getQuestion() {
@@ -94,10 +116,16 @@ public class ChatResult {
     }
 
     public static class Builder {
+        private String executionId;
         private String question;
         private String res;
         private ChatResultState chatResultState;
         private AgentRunState runState;
+
+        public Builder executionId(String executionId) {
+            this.executionId = executionId;
+            return this;
+        }
 
         public Builder question(String question) {
             this.question = question;

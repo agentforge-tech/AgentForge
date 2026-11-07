@@ -12,6 +12,9 @@ import java.util.function.Consumer;
  */
 public interface TokenStream {
 
+    /** Framework 单次执行标识，可在 start() 前读取。 */
+    String executionId();
+
     /** 每次模型产生新的增量文本时回调 */
     TokenStream onPartialResponse(Consumer<String> partialResponseHandler);
 

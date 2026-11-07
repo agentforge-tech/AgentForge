@@ -150,8 +150,9 @@ public class ReActAgentStreamTest {
         assertTrue(error.get() instanceof IllegalStateException);
         assertTrue(error.get().getMessage().contains("stream boom"));
         assertNull(complete.get());
-        // 错误结束后取消标志被清理
-        assertFalse(agent.isCancelled(MEMORY_ID));
+        assertEquals(
+                cloud.changlu.agentforge.agent.component.state.domain.AgentExecutionStatus.FAILED,
+                agent.getExecutionState(MEMORY_ID, "test-execution").get().getStatus());
     }
 
     @Test
@@ -280,7 +281,7 @@ public class ReActAgentStreamTest {
                 new Runnable() {
                     @Override
                     public void run() {
-                        agent.cancel(MEMORY_ID);
+                        agent.cancel(MEMORY_ID, "test-execution");
                     }
                 });
         final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
@@ -316,6 +317,26 @@ public class ReActAgentStreamTest {
         }
     }
 
+    @Test
+    public void shouldResumeCompletedStreamingRunWithoutCallingModelAgain() {
+        ScriptedStreamingChatModel streamingModel =
+                new ScriptedStreamingChatModel().enqueueText("done");
+        ReActAgent agent =
+                agent(
+                        streamingModel,
+                        new MessageWindowChatMemoryProvider(100),
+                        AgentSettings.builder().aiCallRetry(0).build());
+
+        agent.runStream(request("一个问题")).start();
+        final AtomicReference<ChatResponse> complete = new AtomicReference<ChatResponse>();
+        agent.resumeStream(MEMORY_ID, "test-execution")
+                .onCompleteResponse(consumer(complete))
+                .start();
+
+        assertEquals("done", complete.get().aiMessage().text());
+        assertEquals(1, streamingModel.callCount());
+    }
+
     private static Consumer<Throwable> capture(final AtomicReference<Throwable> target) {
         return new Consumer<Throwable>() {
             @Override
@@ -335,7 +356,11 @@ public class ReActAgentStreamTest {
     }
 
     private static AgentRequest request(String question) {
-        return AgentRequest.builder().memoryId(MEMORY_ID).question(question).build();
+        return AgentRequest.builder()
+                .memoryId(MEMORY_ID)
+                .executionId("test-execution")
+                .question(question)
+                .build();
     }
 
     private static ReActAgent agent(
