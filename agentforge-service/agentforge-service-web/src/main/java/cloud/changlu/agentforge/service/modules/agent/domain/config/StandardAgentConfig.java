@@ -13,6 +13,7 @@ public class StandardAgentConfig {
     private AgentModelConfig chatModel;
     private ChatMemoryConfig chatMemoryConfig;
     private PluginConfig pluginConfig;
+    private AgentCapabilityConfig capabilityConfig;
 
     public String getSystemPrompt() {
         return systemPrompt;
@@ -44,6 +45,21 @@ public class StandardAgentConfig {
 
     public void setPluginConfig(PluginConfig pluginConfig) {
         this.pluginConfig = pluginConfig;
+    }
+
+    public AgentCapabilityConfig getCapabilityConfig() {
+        return capabilityConfig;
+    }
+
+    public void setCapabilityConfig(AgentCapabilityConfig capabilityConfig) {
+        this.capabilityConfig = capabilityConfig;
+    }
+
+    /** 是否开启任务计划。没有配置或未显式关闭时默认开启。 */
+    public boolean isPlanEnabled() {
+        return capabilityConfig == null
+                || capabilityConfig.getPlanEnabled() == null
+                || Boolean.TRUE.equals(capabilityConfig.getPlanEnabled());
     }
 
     public static String toJson(StandardAgentConfig config, ObjectMapper objectMapper) {

@@ -32,5 +32,7 @@ public interface IAgentManager<T, F> {
 
     TokenStream stream(T agent, AgentChatReq req);
 
-    void cancel(T agent, String sessionId);
+    String createExecutionId(T agent);
+
+    void cancel(T agent, String sessionId, String executionId);
 }

@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.model.chat;
 
+import cloud.changlu.agentforge.model.cancel.CancellationHandle;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.UserMessage;
 import cloud.changlu.agentforge.model.chat.request.ChatRequest;
@@ -28,6 +29,12 @@ public interface StreamingChatModel {
      * @param handler handler receiving partial text, the final response, or an error
      */
     void chat(ChatRequest chatRequest, StreamingChatResponseHandler handler);
+
+    default CancellationHandle chatCancellable(
+            ChatRequest chatRequest, StreamingChatResponseHandler handler) {
+        chat(chatRequest, handler);
+        return CancellationHandle.NONE;
+    }
 
     /** Convenience API for a one-turn user message. */
     default void chat(String userMessage, StreamingChatResponseHandler handler) {

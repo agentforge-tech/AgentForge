@@ -1,5 +1,6 @@
 import { createAppendState, reduceAppendEvent } from './appendEventReducer'
 import { reduceCompactEvent } from './compactEventReducer'
+import { buildTodoCardPart } from './todoEventReducer'
 
 /**
  * 历史消息事件重放：把后端 events 字段（SSE 事件 JSON 数组字符串）还原成渲染所需的 message 结构。
@@ -42,7 +43,7 @@ function closeOpenThink(message) {
   }
 }
 
-function applyTool(message, event) {
+function applyTool(message, event, detailed = false) {
   const content = event.content || {}
   let part = message.parts.find(
     (p) => p.type === 'tool_card' && p.toolCallId && p.toolCallId === content.toolCallId
@@ -71,21 +72,32 @@ function applyTool(message, event) {
   const duration = Number(content.duration)
   if (Number.isFinite(duration) && duration > 0) part.duration = duration
   part.isFinish = !!event.isFinish
+  if (!detailed && part.isFinish) replaceWithTodoCard(message, part)
+}
+
+function replaceWithTodoCard(message, part) {
+  const todoPart = buildTodoCardPart(part)
+  if (!todoPart) return
+  const index = message.parts.indexOf(part)
+  if (index >= 0) message.parts.splice(index, 1, todoPart)
 }
 
 /** 把一条 AI 消息记录（含 events）还原为渲染用 message 对象 */
 export function replayMessage(record, appendState = createAppendState(), detailed = false) {
   const message = {
     role: 'assistant',
+    messageId: record.id,
     status: 'success',
     parts: [],
     content: '',
     error: '',
     startedAt: record.startedAt || 0,
     finishedAt: record.finishedAt || null,
-    elapsedMs: record.elapsedMs || null
+    elapsedMs: record.elapsedMs || null,
+    lastEventSeq: 0
   }
   parseEvents(record.events).forEach((event) => {
+    message.lastEventSeq = Math.max(message.lastEventSeq, Number(event.eventSeq || 0))
     switch (event.event) {
       case 'think':
         applyThink(message, event)
@@ -95,7 +107,7 @@ export function replayMessage(record, appendState = createAppendState(), detaile
         break
       case 'tool_call':
         closeOpenThink(message)
-        applyTool(message, event)
+        applyTool(message, event, detailed)
         break
       case 'user_message':
         reduceAppendEvent(appendState, message, event)
@@ -115,10 +127,11 @@ export function replayMessage(record, appendState = createAppendState(), detaile
   if (record.status === 3) {
     message.status = 'error'
     if (!message.error) message.error = record.contentText || '生成失败'
-  } else if (record.status === 4) {
-    message.status = 'error'
-    if (!message.error) message.error = '本轮已取消'
-  } else if (record.status === 1 || record.status === 2) {
+  } else if (record.status === 4 || record.status === 6) {
+    // 4=CANCELLED，6=TIMEOUT_CANCELLED：都属于取消，不是失败。
+    message.status = 'cancelled'
+  } else if (record.status === 1 || record.status === 2 || record.status === 7) {
+    // 1=CREATED，2=RUNNING，7=CANCELLING。
     message.status = 'running'
   }
   if (!message.content && record.contentText) message.content = record.contentText

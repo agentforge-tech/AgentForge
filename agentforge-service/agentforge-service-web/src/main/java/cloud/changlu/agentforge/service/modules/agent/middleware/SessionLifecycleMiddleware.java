@@ -58,7 +58,6 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
     private final AgentSessionMapper agentSessionMapper;
     private final AgentSessionMessageMapper agentSessionMessageMapper;
     private final ObjectMapper objectMapper;
-
     private final Map<Object, RunState> states = new ConcurrentHashMap<>();
 
     public SessionLifecycleMiddleware(
@@ -70,6 +69,12 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
         this.objectMapper = objectMapper;
     }
 
+    /** 二段式任务入队前预注册运行状态，使线程池拒绝或初始化异常也能可靠收口占位消息。 */
+    public void registerRun(Object memoryId, String sessionId, Long sessionPk, Long aiMessageId) {
+        if (memoryId == null || aiMessageId == null) return;
+        states.putIfAbsent(memoryId, new RunState(memoryId, sessionId, sessionPk, aiMessageId));
+    }
+
     @Override
     public void onInitComplete(AgentChatContext chatContext) {
         RunState state = state(chatContext);
@@ -77,12 +82,15 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
             return;
         }
         Date now = new Date();
+        // 把本轮 Framework executionId 落到消息上，停止时可用 (memoryId, executionId) 精确定位 Agent Run
+        String executionId = chatContext.getExecutionId();
         safeRun(
                 "mark running",
                 () -> {
                     agentSessionMessageMapper.updateStarted(
                             state.aiMessageId,
                             SessionMessageStatusEnum.RUNNING.getCode(),
+                            executionId,
                             now,
                             now);
                     agentSessionMapper.updateStatusBySessionId(
@@ -181,10 +189,20 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
 
     @Override
     public void onStop(int currentStep, StopResult stopResult, AgentChatContext chatContext) {
+        RunState state = state(chatContext);
+        if (state != null) {
+            // 正常、取消和最大步数停止都使用同一结束事件，保证历史事件以 resp_end 收尾。
+            state.collect(AiResponseProcessor.respEnd(true));
+        }
         SessionMessageStatusEnum status =
                 SessionStatusTransfer.fromStopResult(
                         stopResult == null ? null : stopResult.getStopResultState());
-        String fallback = stopResult == null ? null : stopResult.getRunRes();
+        String fallback =
+                stopResult == null
+                        ? null
+                        : (stopResult.getResult() != null
+                                ? stopResult.getResult()
+                                : stopResult.getReason());
         finish(chatContext, status, fallback);
     }
 

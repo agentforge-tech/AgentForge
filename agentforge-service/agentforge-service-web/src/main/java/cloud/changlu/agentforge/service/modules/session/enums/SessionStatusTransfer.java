@@ -47,6 +47,17 @@ public final class SessionStatusTransfer {
     public static boolean isTerminal(SessionMessageStatusEnum status) {
         return status == SessionMessageStatusEnum.SUCCEEDED
                 || status == SessionMessageStatusEnum.FAILED
-                || status == SessionMessageStatusEnum.CANCELLED;
+                || status == SessionMessageStatusEnum.CANCELLED
+                || status == SessionMessageStatusEnum.TIMEOUT_CANCELLED;
+    }
+
+    /** 消息状态编码是否终态。 */
+    public static boolean isTerminal(Integer statusCode) {
+        return isTerminal(SessionMessageStatusEnum.getByCode(statusCode));
+    }
+
+    /** 是否处于“已请求取消、尚未收口”状态。 */
+    public static boolean isCancelling(SessionMessageStatusEnum status) {
+        return status == SessionMessageStatusEnum.CANCELLING;
     }
 }

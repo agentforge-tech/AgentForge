@@ -2,16 +2,20 @@ package cloud.changlu.agentforge.agent;
 
 import cloud.changlu.agentforge.agent.component.middleware.AgentMiddlewareManager;
 import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
+import cloud.changlu.agentforge.agent.component.state.compensation.MessageChainRepairer;
+import cloud.changlu.agentforge.agent.component.state.control.AgentRunControl;
 import cloud.changlu.agentforge.agent.constant.AgentPromptConstants;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.domain.ThinkResult;
+import cloud.changlu.agentforge.agent.exception.CancelException;
 import cloud.changlu.agentforge.agent.memory.ChatMemory;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
 import cloud.changlu.agentforge.agent.retry.AiCallRetrySupport;
 import cloud.changlu.agentforge.agent.step.StepResult;
 import cloud.changlu.agentforge.agent.tool.AgentToolExecutor;
+import cloud.changlu.agentforge.model.chat.ChatCall;
 import cloud.changlu.agentforge.model.chat.ChatModel;
 import cloud.changlu.agentforge.model.chat.StreamingChatModel;
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
@@ -32,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * @description ReAct Agent：一轮think（模型推理是否要调用工具）+ 一轮act（执行工具并写回记忆），循环到结束或步长上限
@@ -39,6 +44,8 @@ import java.util.Map;
  * @date 2026/9/16
  */
 public class ReActAgent extends BaseReActAgent {
+
+    private static final Logger log = Logger.getLogger(ReActAgent.class.getName());
 
     private final String agentName;
     private final String description;
@@ -118,15 +125,29 @@ public class ReActAgent extends BaseReActAgent {
 
     @Override
     protected void initMessages(AgentChatContext chatContext) {
+        rebuildSystemMessages(chatContext, false);
+        super.initMessages(chatContext);
+    }
+
+    @Override
+    protected void prepareMessagesForResume(AgentChatContext chatContext) {
+        rebuildSystemMessages(chatContext, true);
+    }
+
+    private void rebuildSystemMessages(AgentChatContext chatContext, boolean stripSyntheticAi) {
         ChatMemory chatMemory = chatContext.getChatMemory();
         List<ChatMessage> messages = chatMemory.messages();
 
-        // 过滤掉所有系统消息，保留其他类型的消息
+        // 过滤掉所有系统消息，保留其他类型的消息；恢复时额外剔除框架写入的合成 AiMessage
         List<ChatMessage> nonSystemMessages = new ArrayList<ChatMessage>();
         for (ChatMessage message : messages) {
-            if (message.type() != ChatMessageType.SYSTEM) {
-                nonSystemMessages.add(message);
+            if (message.type() == ChatMessageType.SYSTEM) {
+                continue;
             }
+            if (stripSyntheticAi && MessageChainRepairer.isSyntheticAiMessage(message)) {
+                continue;
+            }
+            nonSystemMessages.add(message);
         }
 
         // 重新构建消息列表：新系统消息 + 其他非系统消息
@@ -141,14 +162,21 @@ public class ReActAgent extends BaseReActAgent {
         for (ChatMessage message : newMessages) {
             chatMemory.add(message);
         }
-
-        super.initMessages(chatContext);
     }
 
     @Override
     protected ThinkResult think(int currentStep, AgentChatContext chatContext) {
+        AgentRunControl control = runControl(chatContext);
+        if (control != null) control.modelCall(currentStep);
         ChatMemory chatMemory = chatContext.getChatMemory();
         List<ChatMessage> curCallMessages = chatMemory.messages();
+        log.fine(
+                "ReAct think 请求模型 executionId="
+                        + chatContext.getExecutionId()
+                        + ", step="
+                        + currentStep
+                        + ", messages="
+                        + curCallMessages.size());
 
         int retryCount = getAgentSettings().getAiCallRetry();
         long aiCallRetryDelay = getAgentSettings().getAiCallRetryDelay();
@@ -183,19 +211,48 @@ public class ReActAgent extends BaseReActAgent {
         try {
             chatResponse =
                     AiCallRetrySupport.execute(
-                            () -> getChatModel().chat(processedRequest),
+                            () -> {
+                                // 进入调用前先确认没有取消，避免创建无意义的底层请求。
+                                if (control != null && control.isCancellationRequested()) {
+                                    throw new CancelException("模型调用已取消");
+                                }
+                                ChatCall call = getChatModel().newCall(processedRequest);
+                                if (control != null) {
+                                    // registerModelHandle 内部会处理“取消先到、句柄后到”的竞态，并立即 cancel。
+                                    control.registerModelHandle(call);
+                                    // 注册后可能刚好被取消，此时不再真正发起 execute。
+                                    if (control.isCancellationRequested()) {
+                                        throw new CancelException("模型调用已取消");
+                                    }
+                                }
+                                return call.execute();
+                            },
                             retryCount,
                             aiCallRetryDelay,
-                            (attempt, maxRetries, lastException, delayMs) ->
-                                    middlewareManager.triggerOnAiCallRetry(
-                                            currentStep,
-                                            processedRequest,
-                                            chatContext,
-                                            attempt,
-                                            maxRetries,
-                                            delayMs,
-                                            lastException));
+                            (attempt, maxRetries, lastException, delayMs) -> {
+                                // 取消后不再触发重试回调和退避等待。
+                                if (control != null && control.isCancellationRequested()) {
+                                    throw new CancelException("模型调用已取消");
+                                }
+                                if (control != null) control.retryWait();
+                                middlewareManager.triggerOnAiCallRetry(
+                                        currentStep,
+                                        processedRequest,
+                                        chatContext,
+                                        attempt,
+                                        maxRetries,
+                                        delayMs,
+                                        lastException);
+                            });
         } catch (Exception e) {
+            if (control != null && control.isCancellationRequested()) {
+                log.fine(
+                        "ReAct think 模型调用已取消 executionId="
+                                + chatContext.getExecutionId()
+                                + ", step="
+                                + currentStep);
+                throw new CancelException("模型调用已取消", e);
+            }
             // 触发模型调用错误的中间件
             middlewareManager.triggerOnModelCallError(
                     currentStep, processedRequest, e, chatContext);
@@ -209,12 +266,24 @@ public class ReActAgent extends BaseReActAgent {
                     .build();
         }
 
+        // 取消可能在模型返回后才到达，迟到结果不能再写入记忆
+        if (control != null && control.isCancellationRequested()) {
+            throw new CancelException("模型调用已取消");
+        }
+
         // 触发模型调用后的中间件
         chatResponse =
                 middlewareManager.triggerAfterModelCall(
                         currentStep, processedRequest, chatResponse, chatContext);
 
         AiMessage aiMessage = chatResponse.aiMessage();
+        log.fine(
+                "ReAct think 收到模型响应 executionId="
+                        + chatContext.getExecutionId()
+                        + ", step="
+                        + currentStep
+                        + ", toolCalls="
+                        + aiMessage.toolExecutionRequests().size());
 
         // 添加message消息
         addMessage(chatContext, aiMessage);
@@ -251,6 +320,15 @@ public class ReActAgent extends BaseReActAgent {
     @Override
     protected StepResult act(
             int currentStep, List<ToolExecutionRequest> curActTools, AgentChatContext chatContext) {
+        AgentRunControl control = runControl(chatContext);
+        if (control != null) control.beginTools(curActTools, currentStep);
+        log.fine(
+                "ReAct act 开始执行工具 executionId="
+                        + chatContext.getExecutionId()
+                        + ", step="
+                        + currentStep
+                        + ", tools="
+                        + (curActTools == null ? 0 : curActTools.size()));
         List<ToolExecutionResultMessage> toolMessages =
                 getToolExecutor()
                         .execute(
@@ -259,7 +337,8 @@ public class ReActAgent extends BaseReActAgent {
                                 chatContext,
                                 null,
                                 getMiddlewareManager(),
-                                getAgentSettings().isEnableConcurrentToolExecution());
+                                getAgentSettings().isEnableConcurrentToolExecution(),
+                                control);
         return StepResult.toFinished(toolMessages.toString());
     }
 

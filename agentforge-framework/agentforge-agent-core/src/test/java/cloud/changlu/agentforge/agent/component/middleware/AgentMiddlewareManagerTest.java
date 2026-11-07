@@ -148,7 +148,7 @@ public class AgentMiddlewareManagerTest {
                 1, null, CONTEXT, 1, 2, 100L, new IllegalStateException("boom"));
         manager.triggerOnStop(
                 1,
-                StopResult.builder().stopResultState(StopResultState.NORMAL).runRes("x").build(),
+                StopResult.builder().stopResultState(StopResultState.NORMAL).result("x").build(),
                 CONTEXT);
         manager.triggerOnStopWithError(1, new IllegalStateException("boom"), CONTEXT);
         manager.triggerOnPartialResponse(1, "delta", CONTEXT);

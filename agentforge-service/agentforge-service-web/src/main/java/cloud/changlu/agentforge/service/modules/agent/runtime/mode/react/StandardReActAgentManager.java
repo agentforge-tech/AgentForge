@@ -59,8 +59,13 @@ public class StandardReActAgentManager
     }
 
     @Override
-    public void cancel(ReActAgent agent, String sessionId) {
-        agent.cancel(sessionId);
+    public String createExecutionId(ReActAgent agent) {
+        return agent.createExecutionId();
+    }
+
+    @Override
+    public void cancel(ReActAgent agent, String sessionId, String executionId) {
+        agent.cancel(sessionId, executionId);
     }
 
     private AgentRequest toAgentRequest(AgentChatReq req) {
@@ -81,6 +86,7 @@ public class StandardReActAgentManager
         }
         return AgentRequest.builder()
                 .memoryId(sessionId)
+                .executionId(req.getExecutionId())
                 .question(req.getMessage().trim())
                 .extensions(extensions)
                 .build();

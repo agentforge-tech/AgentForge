@@ -30,8 +30,28 @@ export function fetchSessionList(aid, limit, debug) {
 }
 
 /** 置顶会话，按置顶序号倒序 */
-export function fetchTopSessionList(aid) {
-  return request(SESSION_BASE, '/topList', { aid })
+export function fetchTopSessionList(aid, debug) {
+  return request(SESSION_BASE, '/topList', { aid, debug })
+}
+
+/** 调试态普通会话列表（接口固定 debug=true）。 */
+export function fetchDebugSessionList(aid, limit) {
+  return request(SESSION_BASE, '/debug/sessionList', { aid, limit })
+}
+
+/** 发布态普通会话列表（接口固定 debug=false）。 */
+export function fetchPublishedSessionList(aid, limit) {
+  return request(SESSION_BASE, '/published/sessionList', { aid, limit })
+}
+
+/** 调试态置顶会话列表。 */
+export function fetchDebugTopSessionList(aid) {
+  return request(SESSION_BASE, '/debug/topList', { aid })
+}
+
+/** 发布态置顶会话列表。 */
+export function fetchPublishedTopSessionList(aid) {
+  return request(SESSION_BASE, '/published/topList', { aid })
 }
 
 export function setSessionTop(sessionId, isTop) {

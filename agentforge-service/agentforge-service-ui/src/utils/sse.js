@@ -1,10 +1,4 @@
-export async function postSse(url, body, { signal, onEvent }) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-    body: JSON.stringify(body),
-    signal
-  })
+async function consumeSse(response, onEvent) {
   if (!response.ok) throw new Error((await response.text()) || `HTTP ${response.status}`)
   if (!response.body) throw new Error('浏览器不支持流式响应')
 
@@ -24,4 +18,19 @@ export async function postSse(url, body, { signal, onEvent }) {
     })
     if (done) break
   }
+}
+
+export async function postSse(url, body, { signal, onEvent }) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+    body: JSON.stringify(body),
+    signal
+  })
+  return consumeSse(response, onEvent)
+}
+
+export async function getSse(url, { signal, onEvent }) {
+  const response = await fetch(url, { headers: { Accept: 'text/event-stream' }, signal })
+  return consumeSse(response, onEvent)
 }

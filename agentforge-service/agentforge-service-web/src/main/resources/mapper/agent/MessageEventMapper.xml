@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cloud.changlu.agentforge.service.modules.agent.event.store.mysql.MessageEventMapper">
+    <resultMap id="EventResult" type="cloud.changlu.agentforge.service.modules.agent.event.store.StoredMessageEvent">
+        <id property="id" column="id"/><result property="messageId" column="message_id"/>
+        <result property="eventSeq" column="event_seq"/><result property="eventType" column="event_type"/>
+        <result property="payload" column="payload"/><result property="createTime" column="create_time"/>
+    </resultMap>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into ai_agent_session_message_event (message_id, event_seq, event_type, payload, create_time)
+        values (#{messageId}, #{eventSeq}, #{eventType}, #{payload}, #{createTime})
+    </insert>
+    <select id="selectAfter" resultMap="EventResult">
+        select id, message_id, event_seq, event_type, payload, create_time
+        from ai_agent_session_message_event where message_id = #{messageId} and event_seq &gt; #{afterSeq}
+        order by event_seq asc limit #{limit}
+    </select>
+    <select id="selectAll" resultMap="EventResult">
+        select id, message_id, event_seq, event_type, payload, create_time
+        from ai_agent_session_message_event where message_id = #{messageId} order by event_seq asc
+    </select>
+    <select id="selectMaxSeq" resultType="java.lang.Long">
+        select max(event_seq) from ai_agent_session_message_event where message_id = #{messageId}
+    </select>
+    <delete id="deleteByMessageId">delete from ai_agent_session_message_event where message_id = #{messageId}</delete>
+</mapper>

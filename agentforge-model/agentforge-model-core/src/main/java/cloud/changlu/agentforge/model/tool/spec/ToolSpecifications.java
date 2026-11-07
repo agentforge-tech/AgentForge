@@ -3,12 +3,18 @@ package cloud.changlu.agentforge.model.tool.spec;
 import cloud.changlu.agentforge.model.tool.P;
 import cloud.changlu.agentforge.model.tool.Tool;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -113,32 +119,147 @@ public final class ToolSpecifications {
                                         ? pAnnotation.value()
                                         : null);
             }
-            String jsonType = jsonType(parameter.getType());
-            builder.addProperty(parameterName, jsonType, description, true);
+            Map<String, Object> definition =
+                    schemaFor(parameter.getParameterizedType(), new HashSet<Class<?>>());
+            if (description != null) {
+                definition.put("description", description);
+            }
+            builder.addProperty(parameterName, definition, true);
         }
         return builder.build();
     }
 
-    private static String jsonType(Class<?> type) {
-        if (type == String.class) return "string";
-        if (type == int.class
-                || type == Integer.class
-                || type == long.class
-                || type == Long.class
-                || type == short.class
-                || type == Short.class
-                || type == byte.class
-                || type == Byte.class) return "integer";
-        if (type == double.class
-                || type == Double.class
-                || type == float.class
-                || type == Float.class) return "number";
-        if (type == boolean.class || type == Boolean.class) return "boolean";
-        if (type.isEnum()) return "string";
-        if (type.isArray() || List.class.isAssignableFrom(type) || Set.class.isAssignableFrom(type))
-            return "array";
-        if (Map.class.isAssignableFrom(type)) return "object";
-        return "object";
+    private static Map<String, Object> schemaFor(Type type, Set<Class<?>> visiting) {
+        Class<?> rawType = rawClass(type);
+        if (rawType == null || rawType == Object.class) {
+            return typeSchema("object");
+        }
+        if (rawType == String.class
+                || rawType == char.class
+                || rawType == Character.class
+                || rawType == java.util.UUID.class) {
+            return typeSchema("string");
+        }
+        if (rawType == int.class
+                || rawType == Integer.class
+                || rawType == long.class
+                || rawType == Long.class
+                || rawType == short.class
+                || rawType == Short.class
+                || rawType == byte.class
+                || rawType == Byte.class
+                || rawType == java.math.BigInteger.class) {
+            return typeSchema("integer");
+        }
+        if (rawType == double.class
+                || rawType == Double.class
+                || rawType == float.class
+                || rawType == Float.class
+                || rawType == java.math.BigDecimal.class
+                || Number.class.isAssignableFrom(rawType)) {
+            return typeSchema("number");
+        }
+        if (rawType == boolean.class || rawType == Boolean.class) {
+            return typeSchema("boolean");
+        }
+        if (rawType.isEnum()) {
+            Map<String, Object> schema = typeSchema("string");
+            List<String> values = new ArrayList<String>();
+            Object[] constants = rawType.getEnumConstants();
+            if (constants != null) {
+                for (Object constant : constants) {
+                    values.add(((Enum<?>) constant).name().toLowerCase(Locale.ROOT));
+                }
+            }
+            schema.put("enum", values);
+            return schema;
+        }
+        if (rawType.isArray()) {
+            Map<String, Object> schema = typeSchema("array");
+            schema.put("items", schemaFor(rawType.getComponentType(), visiting));
+            return schema;
+        }
+        if (java.util.Collection.class.isAssignableFrom(rawType)) {
+            Map<String, Object> schema = typeSchema("array");
+            Type elementType = typeArgument(type, 0);
+            if (elementType != null) {
+                schema.put("items", schemaFor(elementType, visiting));
+            }
+            return schema;
+        }
+        if (Map.class.isAssignableFrom(rawType)) {
+            Map<String, Object> schema = typeSchema("object");
+            schema.put("additionalProperties", Boolean.TRUE);
+            return schema;
+        }
+        if (!visiting.add(rawType)) {
+            return typeSchema("object");
+        }
+        try {
+            Map<String, Object> properties = new LinkedHashMap<String, Object>();
+            List<String> required = new ArrayList<String>();
+            for (Field field : rawType.getDeclaredFields()) {
+                int modifiers = field.getModifiers();
+                if (Modifier.isStatic(modifiers)
+                        || Modifier.isTransient(modifiers)
+                        || Modifier.isFinal(modifiers)
+                        || field.isSynthetic()) {
+                    continue;
+                }
+                Map<String, Object> definition = schemaFor(field.getGenericType(), visiting);
+                P fieldAnnotation = field.getAnnotation(P.class);
+                if (fieldAnnotation != null) {
+                    String description =
+                            !isNullOrBlank(fieldAnnotation.description())
+                                    ? fieldAnnotation.description()
+                                    : (!isNullOrBlank(fieldAnnotation.value())
+                                            ? fieldAnnotation.value()
+                                            : null);
+                    if (description != null) {
+                        definition.put("description", description);
+                    }
+                }
+                properties.put(field.getName(), definition);
+                required.add(field.getName());
+            }
+            Map<String, Object> schema = typeSchema("object");
+            schema.put("properties", properties);
+            if (!required.isEmpty()) {
+                schema.put("required", required);
+            }
+            return schema;
+        } finally {
+            visiting.remove(rawType);
+        }
+    }
+
+    private static Map<String, Object> typeSchema(String type) {
+        Map<String, Object> schema = new LinkedHashMap<String, Object>();
+        schema.put("type", type);
+        return schema;
+    }
+
+    private static Type typeArgument(Type type, int index) {
+        if (type instanceof ParameterizedType) {
+            Type[] arguments = ((ParameterizedType) type).getActualTypeArguments();
+            if (index < arguments.length) {
+                return arguments[index];
+            }
+        }
+        return null;
+    }
+
+    private static Class<?> rawClass(Type type) {
+        if (type instanceof Class) {
+            return (Class<?>) type;
+        }
+        if (type instanceof ParameterizedType) {
+            Type raw = ((ParameterizedType) type).getRawType();
+            if (raw instanceof Class) {
+                return (Class<?>) raw;
+            }
+        }
+        return null;
     }
 
     private static String joinAndNullIfBlank(String[] values) {

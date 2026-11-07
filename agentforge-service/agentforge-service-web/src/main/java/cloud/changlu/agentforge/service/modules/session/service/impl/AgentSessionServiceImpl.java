@@ -97,7 +97,12 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
         agentSessionMessageMapper.insert(aiMessage);
 
         return new SessionInitResult(
-                resolvedSessionId, session.getId(), aiMessage.getId(), aiSeq, session.getTitle());
+                resolvedSessionId,
+                session.getId(),
+                userMessage.getId(),
+                aiMessage.getId(),
+                aiSeq,
+                session.getTitle());
     }
 
     @Override
@@ -114,8 +119,14 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
     }
 
     @Override
-    public List<SessionVo> listTop(String aid, Long createUserId) {
-        return toVoList(agentSessionMapper.selectTopList(aid, userId(createUserId)));
+    public List<SessionVo> listTop(String aid, Long createUserId, Boolean debug) {
+        Integer debugFilter =
+                debug == null
+                        ? null
+                        : (debug
+                                ? SessionDebugEnum.DEBUG.getCode()
+                                : SessionDebugEnum.FORMAL.getCode());
+        return toVoList(agentSessionMapper.selectTopList(aid, userId(createUserId), debugFilter));
     }
 
     @Override

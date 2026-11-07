@@ -5,6 +5,7 @@ public class AgentChatReq {
 
     private String aid;
     private String sessionId;
+    private String executionId;
     private String message;
     private Boolean isDebug;
 
@@ -31,6 +32,14 @@ public class AgentChatReq {
 
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
+    }
+
+    public String getExecutionId() {
+        return executionId;
+    }
+
+    public void setExecutionId(String executionId) {
+        this.executionId = executionId;
     }
 
     public String getMessage() {

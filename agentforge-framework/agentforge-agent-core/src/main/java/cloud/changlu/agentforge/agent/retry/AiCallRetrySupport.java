@@ -1,5 +1,7 @@
 package cloud.changlu.agentforge.agent.retry;
 
+import cloud.changlu.agentforge.agent.exception.CancelException;
+
 import java.util.function.Supplier;
 
 /**
@@ -45,6 +47,10 @@ public class AiCallRetrySupport {
                 return callable.get();
             } catch (RuntimeException e) {
                 lastError = e;
+                // 取消或线程被中断时立即停止重试，不能等待退避后再发起请求
+                if (e instanceof CancelException || Thread.currentThread().isInterrupted()) {
+                    throw e;
+                }
                 if (attempt == attempts) {
                     break;
                 }
@@ -66,7 +72,7 @@ public class AiCallRetrySupport {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("AI调用重试等待被中断", e);
+            throw new CancelException("AI调用重试等待被取消", e);
         }
     }
 }

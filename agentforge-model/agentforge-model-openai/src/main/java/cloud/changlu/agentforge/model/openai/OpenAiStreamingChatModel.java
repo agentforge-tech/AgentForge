@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.model.openai;
 
+import cloud.changlu.agentforge.model.cancel.CancellationHandle;
 import cloud.changlu.agentforge.model.chat.StreamingChatModel;
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
@@ -77,6 +78,12 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
 
     @Override
     public void chat(ChatRequest chatRequest, StreamingChatResponseHandler handler) {
+        chatCancellable(chatRequest, handler);
+    }
+
+    @Override
+    public CancellationHandle chatCancellable(
+            ChatRequest chatRequest, StreamingChatResponseHandler handler) {
         if (chatRequest == null) {
             throw new IllegalArgumentException("chatRequest must not be null");
         }
@@ -105,9 +112,10 @@ public class OpenAiStreamingChatModel implements StreamingChatModel {
 
         final OpenAiStreamState state = new OpenAiStreamState(handler, returnThinking);
         try {
-            httpTransport.executeStreaming(request, state);
+            return httpTransport.executeStreamingCancellable(request, state);
         } catch (Throwable error) {
             state.onError(error);
+            return CancellationHandle.NONE;
         }
     }
 
