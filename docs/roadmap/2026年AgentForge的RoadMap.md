@@ -230,7 +230,7 @@ AgentForge
 
 - [x] Agent工具调用思考参数与前端优雅交互设计：[Agent工具调用思考参数与前端优雅交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent工具调用思考参数与前端优雅交互设计.md)
 - [x] Agent追加事件 + 插入Agent loop对话交互设计：[Agent追加事件 + 插入Agent loop对话设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent追加事件%20%2B%20插入Agent%20loop对话设计.md)
-- [x] Agent支持任务计划todo列表展示：
+- [x] Agent支持任务计划todo列表展示：[Agent支持任务计划todo列表展示](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent支持任务计划todo列表展示.md)
 
 
 
