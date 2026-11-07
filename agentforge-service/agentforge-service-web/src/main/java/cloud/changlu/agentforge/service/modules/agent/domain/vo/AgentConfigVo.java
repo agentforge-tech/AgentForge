@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.service.modules.agent.domain.vo;
 
+import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentCapabilityConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.PluginConfig;
 
 import java.util.Date;
@@ -19,6 +20,7 @@ public class AgentConfigVo {
     private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
     private PluginConfig pluginConfig;
+    private AgentCapabilityConfig capabilityConfig;
     private Integer publish;
     private Date lastPublishTime;
     private Long submittedVersionNo;
@@ -122,6 +124,14 @@ public class AgentConfigVo {
 
     public void setPluginConfig(PluginConfig pluginConfig) {
         this.pluginConfig = pluginConfig;
+    }
+
+    public AgentCapabilityConfig getCapabilityConfig() {
+        return capabilityConfig;
+    }
+
+    public void setCapabilityConfig(AgentCapabilityConfig capabilityConfig) {
+        this.capabilityConfig = capabilityConfig;
     }
 
     public Integer getPublish() {

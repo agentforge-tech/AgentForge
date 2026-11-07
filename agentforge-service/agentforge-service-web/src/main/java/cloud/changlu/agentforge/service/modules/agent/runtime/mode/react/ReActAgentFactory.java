@@ -8,6 +8,8 @@ import cloud.changlu.agentforge.agent.config.LlmModelConfigRegistryApi;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.extend.middlewares.LoggingIAgentMiddleware;
 import cloud.changlu.agentforge.agent.extend.middlewares.compact.CompactSummarizationMiddleware;
+import cloud.changlu.agentforge.agent.extend.middlewares.todoplan.tool.TodoPlanTool;
+import cloud.changlu.agentforge.agent.tool.local.LocalToolFactory;
 import cloud.changlu.agentforge.model.registry.LlmFactory;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
 import cloud.changlu.agentforge.model.registry.constant.ChatModelProperties;
@@ -21,6 +23,7 @@ import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamin
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.append.UserMessageAppendMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.compact.ServiceCompactSummarizationMiddleware;
+import cloud.changlu.agentforge.service.modules.agent.middleware.todoplan.ServiceTodoPlanMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.runtime.mode.react.memory.factory.ChatMemoryProviderFactory;
 import cloud.changlu.agentforge.service.modules.model.dao.ModelConfigMapper;
 import cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo;
@@ -32,7 +35,8 @@ import cloud.changlu.agentforge.service.plugins.openreach.OpenReachTools;
 
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -52,6 +56,8 @@ public class ReActAgentFactory {
     private final ChatMemoryProviderFactory chatMemoryProviderFactory;
     private final McpAgentToolLoader mcpAgentToolLoader;
     private final HttpAgentToolLoader httpAgentToolLoader;
+    private final TodoPlanTool todoPlanTool;
+    private final ServiceTodoPlanMiddleware todoPlanMiddleware;
 
     public ReActAgentFactory(
             ModelConfigMapper modelConfigMapper,
@@ -62,7 +68,9 @@ public class ReActAgentFactory {
             AgentForgeTraceMiddleware agentTraceMiddleware,
             ChatMemoryProviderFactory chatMemoryProviderFactory,
             McpAgentToolLoader mcpAgentToolLoader,
-            HttpAgentToolLoader httpAgentToolLoader) {
+            HttpAgentToolLoader httpAgentToolLoader,
+            TodoPlanTool todoPlanTool,
+            ServiceTodoPlanMiddleware todoPlanMiddleware) {
         this.modelConfigMapper = modelConfigMapper;
         this.openReachTools = openReachTools;
         this.userMessageAppendMiddleware = userMessageAppendMiddleware;
@@ -72,6 +80,8 @@ public class ReActAgentFactory {
         this.chatMemoryProviderFactory = chatMemoryProviderFactory;
         this.mcpAgentToolLoader = mcpAgentToolLoader;
         this.httpAgentToolLoader = httpAgentToolLoader;
+        this.todoPlanTool = todoPlanTool;
+        this.todoPlanMiddleware = todoPlanMiddleware;
     }
 
     public ReActAgent createReActAgent(String agentName, StandardAgentConfig standardAgentConfig) {
@@ -113,26 +123,34 @@ public class ReActAgentFactory {
                         streamingMiddleware,
                         sessionLifecycleMiddleware,
                         isDebug);
-        List<IAgentMiddleware> middlewares =
-                Arrays.<IAgentMiddleware>asList(
-                        userMessageAppendMiddleware,
-                        compactSummarizationMiddleware,
-                        new LoggingIAgentMiddleware(),
-                        sessionLifecycleMiddleware,
-                        streamingMiddleware,
-                        agentTraceMiddleware);
+        List<IAgentMiddleware> middlewares = new ArrayList<IAgentMiddleware>();
+        middlewares.add(userMessageAppendMiddleware);
+        middlewares.add(compactSummarizationMiddleware);
+        middlewares.add(new LoggingIAgentMiddleware());
+        middlewares.add(streamingMiddleware);
+        middlewares.add(sessionLifecycleMiddleware);
+        boolean todoEnabled = standardAgentConfig.isPlanEnabled();
+        if (todoEnabled) {
+            middlewares.add(todoPlanMiddleware);
+        }
+        middlewares.add(agentTraceMiddleware);
+        String systemPrompt = standardAgentConfig.getSystemPrompt();
+        if (todoEnabled) {
+            systemPrompt = TodoPlanTool.appendSystemPrompt(systemPrompt);
+        }
         ReActAgent.ReActAgentBuilder builder =
                 ReActAgent.builder()
                         .agentName(agentName)
-                        .agentSettings(AgentSettings.builder().aiCallRetry(3).build())
-                        .systemPrompt(standardAgentConfig.getSystemPrompt())
+                        .agentSettings(
+                                AgentSettings.builder().maxSteps(10000).aiCallRetry(3).build())
+                        .systemPrompt(systemPrompt)
                         .chatModel(LlmFactory.buildChatModel(llmConfig))
                         .streamingChatModel(LlmFactory.buildStreamChatModel(llmConfig))
                         .chatMemoryProvider(
                                 chatMemoryProviderFactory.getChatMemoryProvider(
                                         standardAgentConfig.getChatMemoryConfig()))
                         .middlewares(middlewares)
-                        .toolService(buildToolService(standardAgentConfig));
+                        .toolService(buildToolService(standardAgentConfig, todoEnabled));
         return builder.build();
     }
 
@@ -144,12 +162,18 @@ public class ReActAgentFactory {
         return actual > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) actual;
     }
 
-    private ToolService buildToolService(StandardAgentConfig standardAgentConfig) {
+    private ToolService buildToolService(
+            StandardAgentConfig standardAgentConfig, boolean todoEnabled) {
         ToolService toolService = new ToolService();
         // 本地内置插件工具
         //        toolService.tools(
         //                LocalToolFactory.buildLocalToolsWithThought(
         //                        Collections.<Object>singletonList(openReachTools), true));
+        if (todoEnabled) {
+            toolService.tools(
+                    LocalToolFactory.buildLocalToolsWithThought(
+                            Collections.<Object>singletonList(todoPlanTool), true));
+        }
         PluginConfig pluginConfig = standardAgentConfig.getPluginConfig();
         // HTTP 插件工具加载
         Map<ToolSpecification, ToolExecutor> httpTools =

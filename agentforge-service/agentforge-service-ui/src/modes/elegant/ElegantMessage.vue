@@ -1,5 +1,11 @@
 <template>
   <div class="elegant-message">
+    <!-- 刚开始就取消：还没有任何思考片段或正文时，也要有顶部状态提示，避免空白 -->
+    <div v-if="message.status === 'cancelled' && !thinkParts.length" class="elegant-status-box cancelled">
+      <i class="el-icon-remove-outline"></i>
+      <span>已取消</span>
+    </div>
+
     <!-- 思考过程：模型思考 + 工具调用，统一收拢为轻量事件流 -->
     <div v-if="thinkParts.length" class="elegant-thinking" :class="{ running: message.status === 'running' }">
       <div class="elegant-thinking-head" @click="open = !open">
@@ -16,6 +22,7 @@
             <ElegantToolItem v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
             <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
             <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" />
+            <TodoBoard v-else-if="part.type === 'todo_card'" :key="'d' + idx" :state="part" />
           </template>
         </div>
       </el-collapse-transition>
@@ -54,10 +61,11 @@ import ElegantToolItem from './ElegantToolItem.vue'
 import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
 import RetryNotice from '../../components/RetryNotice.vue'
 import CompactNotice from '../../components/CompactNotice.vue'
+import TodoBoard from '../../components/TodoBoard.vue'
 
 export default {
   name: 'ElegantMessage',
-  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice },
+  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice, TodoBoard },
   props: {
     message: { type: Object, required: true }
   },
@@ -66,7 +74,7 @@ export default {
   },
   computed: {
     thinkParts() {
-      return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice')
+      return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice' || p.type === 'todo_card')
     },
     retryNotice() {
       const parts = this.message.parts || []
@@ -81,6 +89,7 @@ export default {
     statusTitle() {
       if (this.message.status === 'running') return '正在处理'
       if (this.message.status === 'error') return '处理失败'
+      if (this.message.status === 'cancelled') return '已取消'
       return '已完成'
     },
     doneElapsed() {
@@ -157,5 +166,21 @@ export default {
   border-radius: 8px;
   font-size: 12.5px;
   margin-bottom: 8px;
+}
+
+.elegant-status-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  margin-bottom: 10px;
+}
+
+.elegant-status-box.cancelled {
+  background: #f0f3f8;
+  color: #6b7280;
+  border: 1px solid #e2e7ef;
 }
 </style>

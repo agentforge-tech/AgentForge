@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.service.modules.agent.service;
+package cloud.changlu.agentforge.service.modules.agent.service.impl;
 
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigMapper;
 import cloud.changlu.agentforge.service.modules.agent.dao.AgentConfigPublishedMapper;

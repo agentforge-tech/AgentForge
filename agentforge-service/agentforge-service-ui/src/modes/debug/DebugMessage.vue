@@ -1,5 +1,11 @@
 <template>
   <div class="agent-message">
+    <!-- 刚开始就取消：还没有执行过程或正文时，也要有顶部状态提示，避免空白 -->
+    <div v-if="message.status === 'cancelled' && !processParts.length" class="status-box cancelled">
+      <i class="el-icon-remove-outline"></i>
+      <span>已取消</span>
+    </div>
+
     <!-- 执行过程时间线 -->
     <div v-if="processParts.length" class="process">
       <div class="process-head" @click="processOpen = !processOpen">
@@ -147,5 +153,21 @@ export default {
   border-radius: 8px;
   font-size: 12.5px;
   margin-bottom: 8px;
+}
+
+.status-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  margin-bottom: 10px;
+}
+
+.status-box.cancelled {
+  background: #f0f3f8;
+  color: #6b7280;
+  border: 1px solid #e2e7ef;
 }
 </style>

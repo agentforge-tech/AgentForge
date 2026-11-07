@@ -10,6 +10,7 @@
         <result property="seqNum" column="seq_num"/>
         <result property="roleType" column="role_type"/>
         <result property="status" column="status"/>
+        <result property="executionId" column="execution_id"/>
         <result property="startedAt" column="started_at"/>
         <result property="finishedAt" column="finished_at"/>
         <result property="elapsedMs" column="elapsed_ms"/>
@@ -22,7 +23,7 @@
     </resultMap>
 
     <sql id="columns">
-        id, session_id, seq_num, role_type, status, started_at, finished_at,
+        id, session_id, seq_num, role_type, status, execution_id, started_at, finished_at,
         elapsed_ms, content, events, create_user_id, is_deleted, create_time, modify_time
     </sql>
 
@@ -59,7 +60,9 @@
 
     <update id="updateStarted">
         update ai_agent_session_message
-        set status = #{status}, started_at = #{startedAt}, modify_time = #{modifyTime}
+        set status = #{status},
+        <if test="executionId != null">execution_id = #{executionId},</if>
+        started_at = #{startedAt}, modify_time = #{modifyTime}
         where id = #{id} and is_deleted = 0
     </update>
 
@@ -71,7 +74,22 @@
         <if test="elapsedMs != null">elapsed_ms = #{elapsedMs},</if>
         finished_at = #{finishedAt},
         modify_time = #{modifyTime}
-        where id = #{id} and is_deleted = 0
+        where id = #{id} and is_deleted = 0 and status in (1, 2, 7)
+    </update>
+
+    <update id="markCancelling">
+        update ai_agent_session_message
+        set status = #{status}, modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0 and status in (1, 2)
+    </update>
+
+    <update id="timeoutCancelIfRunning">
+        update ai_agent_session_message
+        set status = #{status},
+        finished_at = #{finishedAt},
+        elapsed_ms = #{elapsedMs},
+        modify_time = #{modifyTime}
+        where id = #{id} and is_deleted = 0 and status in (1, 2, 7)
     </update>
 
     <update id="updateEvents">

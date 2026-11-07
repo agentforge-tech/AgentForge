@@ -241,6 +241,14 @@
                 </div>
               </div>
             </el-form-item>
+
+            <el-form-item label="任务计划">
+              <div class="agent-plan-setting">
+                <el-switch v-model="form.planEnabled" />
+                <span class="af-form-tip">{{ form.planEnabled ? '已开启' : '已关闭' }}</span>
+              </div>
+              <div class="af-form-tip">开启后 Agent 可在多步骤任务中调用 todoplan 维护任务列表</div>
+            </el-form-item>
           </el-form>
           </template>
         </div>
@@ -599,6 +607,7 @@ export default {
         systemPrompt: '',
         chatMemoryType: 1,
         chatMemoryMaxMessages: 1000,
+        planEnabled: true,
         mcpPlugins: [],
         httpPlugins: []
       },
@@ -687,6 +696,7 @@ export default {
         systemPrompt: detail.systemPrompt || '',
         chatMemoryType: detail.chatMemoryType || 1,
         chatMemoryMaxMessages: detail.chatMemoryMaxMessages || 1000,
+        planEnabled: !(detail.capabilityConfig && detail.capabilityConfig.planEnabled === false),
         mcpPlugins: ((detail.pluginConfig && detail.pluginConfig.mcpPlugins) || []).map((item) => ({ pluginId: item.pluginId, serverIds: item.serverIds || [] })),
         httpPlugins: ((detail.pluginConfig && detail.pluginConfig.httpPlugins) || []).map((item) => ({ pluginId: item.pluginId, pluginMethodIds: item.pluginMethodIds || [] }))
       }
@@ -819,8 +829,8 @@ export default {
       }
       this.saving = true
       try {
-        const { mcpPlugins, httpPlugins, ...basicForm } = this.form
-        const detail = await upsertAgent({ ...basicForm, pluginConfig: { mcpPlugins, httpPlugins }, submitVersion, versionRemark: submitVersion ? this.versionRemarkDraft : '' })
+        const { mcpPlugins, httpPlugins, planEnabled, ...basicForm } = this.form
+        const detail = await upsertAgent({ ...basicForm, capabilityConfig: { planEnabled }, pluginConfig: { mcpPlugins, httpPlugins }, submitVersion, versionRemark: submitVersion ? this.versionRemarkDraft : '' })
         this.applyDetail(detail)
         this.toast(submitVersion ? 'Agent 配置已保存并提交 V' + detail.submittedVersionNo : 'Agent 配置已保存')
         if (this.historyVisible) await this.loadVersions()
@@ -953,7 +963,8 @@ export default {
         maxOutputToken: config.maxOutputToken,
         systemPrompt: config.systemPrompt,
         chatMemoryType: config.chatMemoryType,
-        chatMemoryMaxMessages: config.chatMemoryMaxMessages
+        chatMemoryMaxMessages: config.chatMemoryMaxMessages,
+        planEnabled: config.planEnabled
       }
     },
     async compareWithCurrent(version) {
@@ -990,7 +1001,8 @@ export default {
         maxInputToken: current.maxInputToken,
         maxOutputToken: current.maxOutputToken,
         chatMemoryType: current.chatMemoryType || 1,
-        chatMemoryMaxMessages: current.chatMemoryMaxMessages || 1000
+        chatMemoryMaxMessages: current.chatMemoryMaxMessages || 1000,
+        planEnabled: !(current.capabilityConfig && current.capabilityConfig.planEnabled === false)
       }
       const fields = [
         { key: 'name', label: 'Agent 名称', versionValue: historical.name || '', currentValue: current.name || '' },
@@ -1000,7 +1012,8 @@ export default {
         { key: 'maxInputToken', label: '最大上下文(k)', versionValue: versionConfig.maxInputToken, currentValue: currentConfig.maxInputToken },
         { key: 'maxOutputToken', label: '最大输出(k)', versionValue: versionConfig.maxOutputToken, currentValue: currentConfig.maxOutputToken },
         { key: 'chatMemoryType', label: '记忆类型', versionValue: this.memoryTypeLabel(versionConfig.chatMemoryType), currentValue: this.memoryTypeLabel(currentConfig.chatMemoryType) },
-        { key: 'chatMemoryMaxMessages', label: '最大记忆消息数', versionValue: String(versionConfig.chatMemoryMaxMessages), currentValue: String(currentConfig.chatMemoryMaxMessages) }
+        { key: 'chatMemoryMaxMessages', label: '最大记忆消息数', versionValue: String(versionConfig.chatMemoryMaxMessages), currentValue: String(currentConfig.chatMemoryMaxMessages) },
+        { key: 'planEnabled', label: '任务计划', versionValue: versionConfig.planEnabled ? '开启' : '关闭', currentValue: currentConfig.planEnabled ? '开启' : '关闭' }
       ]
       return fields.map((field) => ({
         ...field,
@@ -1026,10 +1039,11 @@ export default {
           maxInputToken: chatModel.maxInputToken ?? null,
           maxOutputToken: chatModel.maxOutputToken ?? null,
           chatMemoryType: memory.type || 1,
-          chatMemoryMaxMessages: memoryConfig.maxMessage || 1000
+          chatMemoryMaxMessages: memoryConfig.maxMessage || 1000,
+          planEnabled: !(config.capabilityConfig && config.capabilityConfig.planEnabled === false)
         }
       } catch (_e) {
-        return { systemPrompt: '', modelId: null, maxInputToken: null, maxOutputToken: null, chatMemoryType: 1, chatMemoryMaxMessages: 1000 }
+        return { systemPrompt: '', modelId: null, maxInputToken: null, maxOutputToken: null, chatMemoryType: 1, chatMemoryMaxMessages: 1000, planEnabled: true }
       }
     },
     modelLabel(modelId) {
@@ -1098,6 +1112,7 @@ export default {
 .agent-config-fields { display: flex; flex-direction: column; gap: 18px; padding: 18px; overflow-y: auto; }
 .agent-config-form { display: flex; flex-direction: column; gap: 4px; }
 .agent-model-settings { margin-top: 10px; }
+.agent-plan-setting { display: flex; align-items: center; gap: 10px; }
 .agent-memory-settings { margin-top: 10px; overflow: hidden; border: 1px solid #dce7f3; border-radius: 9px; background: #f8fbff; }
 .agent-memory-settings__head { display: flex; width: 100%; height: 40px; align-items: center; gap: 8px; padding: 0 10px; border: 0; background: #f1f6fc; cursor: pointer; font-family: inherit; line-height: 1.4; text-align: left; transition: background .15s; > div { min-width: 0; flex: 1; } b { display: block; color: $color-text-secondary; font-size: 12.5px; } &:hover, &:focus { outline: 0; background: #eaf2fb; } }
 .agent-memory-settings__icon { display: inline-flex; width: 24px; height: 24px; flex: 0 0 24px; align-items: center; justify-content: center; border-radius: 6px; background: #fff; color: $color-brand; box-shadow: 0 1px 3px rgba(45, 82, 128, .09); font-size: 13px; }

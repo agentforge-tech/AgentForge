@@ -26,6 +26,26 @@ public interface ChatModel {
      */
     ChatResponse chat(ChatRequest chatRequest);
 
+    default ChatCall newCall(final ChatRequest chatRequest) {
+        final ChatModel model = this;
+        return new ChatCall() {
+            @Override
+            public ChatResponse execute() {
+                return model.chat(chatRequest);
+            }
+
+            @Override
+            public boolean cancel() {
+                return false;
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return false;
+            }
+        };
+    }
+
     /** Convenience API for the most common one-turn user message. */
     default String chat(String userMessage) {
         Objects.requireNonNull(userMessage, "userMessage");

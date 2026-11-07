@@ -108,7 +108,13 @@
         @compositionend="composing = false"
         @keydown.enter="onEnter"
       ></textarea>
-      <button class="af-btn af-btn--primary" :disabled="!draft.trim()" @click="send">{{ running ? '追加' : '发送' }}</button>
+      <button
+        class="af-btn af-btn--primary"
+        :class="{ 'af-btn--stop': running && !draft.trim() }"
+        :disabled="!running && !draft.trim()"
+        :title="running && draft.trim() ? '发送追加消息' : (running ? '停止' : '发送')"
+        @click="running && !draft.trim() ? stop() : send()"
+      >{{ running && !draft.trim() ? '停止' : (running ? '追加' : '发送') }}</button>
     </div>
   </aside>
 </template>
@@ -117,11 +123,12 @@
 import { RENDER_MODES, DEFAULT_RENDER_MODE } from '../../modes'
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
 import chatAutoScroll from '../../utils/chatAutoScroll'
-import { fetchSessionList, fetchSessionMessages } from '../../utils/sessionApi'
+import { fetchDebugSessionList, fetchSessionMessages } from '../../utils/sessionApi'
 import { replaySession } from '../../utils/sessionReplay'
-import { postSse } from '../../utils/sse'
+import { chatTransportMode, setChatTransportMode, runChatStream, resumeChatStream } from '../../utils/chatTransport'
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
 import { reduceCompactEvent } from '../../utils/compactEventReducer'
+import { buildTodoCardPart } from '../../utils/todoEventReducer'
 
 const MODE_KEY = 'agentforge.render.mode'
 export default {
@@ -133,13 +140,14 @@ export default {
     agentName: { type: String, default: '' },
     agentAvatar: { type: String, default: '/logo.png' }
   },
-  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, draft: '', composing: false, running: false, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [], pendingAppends: [], deferredAppends: [], remotePollTimer: null, historyOpen: false, historyLoading: false, historySessions: [] } },
+  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, transportMode: chatTransportMode(), draft: '', composing: false, running: false, stopping: false, currentMessageId: null, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [], pendingAppends: [], deferredAppends: [], remotePollTimer: null, historyOpen: false, historyLoading: false, historySessions: [] } },
   computed: {
     renderModes() { return RENDER_MODES },
     displayAgentName() { return this.agentName || 'AgentForge' }
   },
   watch: {
     mode(value) { localStorage.setItem(MODE_KEY, value) },
+    transportMode(value) { setChatTransportMode(value) },
     aid() { this.closeHistory() }
   },
   created() { localStorage.setItem(MODE_KEY, this.mode) },
@@ -162,14 +170,52 @@ export default {
       const requestVersion = ++this.requestVersion
       this.draft = ''; this.messages.push({ role: 'user', text }); const answer = { role: 'assistant', status: 'running', parts: [], content: '', error: '', startedAt: Date.now(), finishedAt: null, elapsedMs: null }; this.messages.push(answer); this.running = true; this.controller = new AbortController(); const controller = this.controller; this.resetScrollFollow(); this.scroll()
       try {
-        await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: true }, { signal: controller.signal, onEvent: (event) => this.handleEvent(answer, event) })
+        await runChatStream({ aid: this.aid, sessionId: this.sessionId, message: text, isDebug: true }, {
+          signal: controller.signal,
+          onSubmitted: (task) => { this.currentMessageId = task.messageId; this.sessionId = task.sessionId },
+          onEvent: (event) => this.handleEvent(answer, event)
+        })
       } catch (e) {
         if (e.name !== 'AbortError') { answer.status = 'error'; answer.error = e.message || '调试失败'; this.finishParts(answer) }
       } finally {
         if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
-        if (requestVersion === this.requestVersion) { this.running = false; this.controller = null; this.restoreDeferredAppends(); this.scroll() }
+        if (requestVersion === this.requestVersion) { this.running = false; this.currentMessageId = null; this.controller = null; this.restoreDeferredAppends(); this.scroll() }
         if (this.historyOpen) this.loadHistory()
       }
+    },
+    async stop() {
+      if (!this.running || this.stopping) return
+      this.stopping = true
+      this.scroll()
+      let result = null
+      try {
+        // 同步等待后端真正停止：停止接口会轮询消息到终态后返回权威状态，不能一点击就直接显示已取消。
+        if (this.transportMode === 'detached' && this.currentMessageId) {
+          const response = await fetch(`/api/chat/tasks/stop?messageId=${encodeURIComponent(this.currentMessageId)}`, { method: 'POST' })
+          result = await response.json().catch(() => null)
+        } else if (this.sessionId) {
+          const response = await fetch(`/api/chat/stop?sessionId=${encodeURIComponent(this.sessionId)}`, { method: 'POST' })
+          result = await response.json().catch(() => null)
+        }
+      } catch (_error) {
+        result = null
+      }
+      this.applyStopResult(result)
+      if (this.controller) this.controller.abort()
+      this.running = false
+      this.stopping = false
+      this.stopRemotePoll()
+    },
+    /** 根据停止接口返回的真实终态渲染，未拿到状态时才按取消兜底。 */
+    applyStopResult(result) {
+      // 停止等待期间 SSE 可能已把消息标成 success/error，这里以本轮最后一条 assistant 消息为准。
+      const answer = [...this.messages].reverse().find((m) => m.role === 'assistant')
+      if (!answer) return
+      const name = result && result.statusName
+      if (name === 'SUCCEEDED') answer.status = 'success'
+      else if (name === 'FAILED') { answer.status = 'error'; if (!answer.error) answer.error = '生成失败' }
+      else answer.status = 'cancelled'
+      this.finishParts(answer)
     },
     async sendAppend(text) {
       try {
@@ -230,8 +276,12 @@ export default {
       const oldSessionId = this.sessionId
       ++this.requestVersion
       if (this.controller) this.controller.abort()
-      if (this.running && oldSessionId) fetch(`/api/chat/stop?sessionId=${encodeURIComponent(oldSessionId)}`, { method: 'POST' }).catch(() => {})
-      this.controller = null; this.running = false; this.messages = []; this.pendingAppends = []; this.deferredAppends = []; this.stopRemotePoll(); this.draft = ''; this.sessionId = this.createSessionId(); this.resetScrollFollow()
+      if (this.running && this.transportMode === 'detached' && this.currentMessageId) {
+        fetch(`/api/chat/tasks/stop?messageId=${encodeURIComponent(this.currentMessageId)}`, { method: 'POST' }).catch(() => {})
+      } else if (this.running && oldSessionId) {
+        fetch(`/api/chat/stop?sessionId=${encodeURIComponent(oldSessionId)}`, { method: 'POST' }).catch(() => {})
+      }
+      this.controller = null; this.currentMessageId = null; this.running = false; this.messages = []; this.pendingAppends = []; this.deferredAppends = []; this.stopRemotePoll(); this.draft = ''; this.sessionId = this.createSessionId(); this.resetScrollFollow()
       this.$message.success('已新建会话')
     },
     toggleHistory() {
@@ -252,7 +302,7 @@ export default {
       if (!this.aid) { this.historySessions = []; return }
       this.historyLoading = true
       try {
-        const list = await fetchSessionList(this.aid, 20, true)
+        const list = await fetchDebugSessionList(this.aid, 20)
         this.historySessions = (list || []).filter((item) => item.isDebug === 1)
       } catch (e) {
         this.$message.error(e.message || '历史会话加载失败')
@@ -285,10 +335,34 @@ export default {
       const running = !!(last && last.status === 'running')
       if (running && !this.controller) {
         this.running = true
-        this.startRemotePoll(sessionRefId)
+        if (this.transportMode === 'detached' && last.messageId) this.resumeDetachedRun(last)
+        else this.startRemotePoll(sessionRefId)
       } else if (!this.controller) {
         this.stopRemotePoll()
         this.running = false
+      }
+    },
+    async resumeDetachedRun(answer) {
+      const requestVersion = ++this.requestVersion
+      this.controller = new AbortController(); this.currentMessageId = answer.messageId
+      answer.parts = []; answer.content = ''; answer.error = ''; answer.lastEventSeq = 0
+      try {
+        await resumeChatStream(answer.messageId, 0, {
+          signal: this.controller.signal,
+          onEvent: (event) => {
+            if (requestVersion !== this.requestVersion) return
+            answer.lastEventSeq = Math.max(answer.lastEventSeq || 0, Number(event.eventSeq || 0))
+            this.handleEvent(answer, event)
+          }
+        })
+      } catch (error) {
+        if (error.name !== 'AbortError') this.$message.error(error.message || '恢复流式对话失败')
+      } finally {
+        if (requestVersion === this.requestVersion) {
+          if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
+          this.running = false; this.controller = null; this.currentMessageId = null
+          if (this.historyOpen) this.loadHistory()
+        }
       }
     },
     startRemotePoll(sessionRefId) {
@@ -341,16 +415,18 @@ export default {
       return text.slice(0, 16)
     },
     handleEvent(answer, event) {
+      // 停止受理后由 applyStopResult 统一决定终态，避免 resp_end/error 抢先写成成功/失败。
+      if (this.stopping) return
       switch (event.event) {
         case 'session': if (event.content) this.sessionId = event.content; break
         case 'think': this.clearRetryNotice(answer); this.applyThink(answer, event); break
         case 'resp': this.clearRetryNotice(answer); answer.content += event.content || ''; break
-        case 'tool_call': this.clearRetryNotice(answer); this.closeOpenThink(answer); this.applyTool(answer, event); break
+        case 'tool_call': this.clearRetryNotice(answer); this.closeOpenThink(answer); this.applyTool(answer, event, this.mode === 'debug'); break
         case 'user_message': this.applyAppendEvent(answer, event); break
         case 'retry': this.applyRetryEvent(answer, event); break
         case 'compact': reduceCompactEvent(answer, event, this.mode === 'debug'); break
-        case 'resp_end': this.clearRetryNotice(answer); answer.status = 'success'; this.finishParts(answer); break
-        case 'error': this.clearRetryNotice(answer); answer.status = 'error'; answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '调试失败'); this.finishParts(answer); break
+        case 'resp_end': this.clearRetryNotice(answer); answer.status = 'success'; this.finishParts(answer); this.running = false; this.stopRemotePoll(); break
+        case 'error': this.clearRetryNotice(answer); answer.status = 'error'; answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '调试失败'); this.finishParts(answer); this.running = false; this.stopRemotePoll(); break
         default: break
       }
       this.scroll()
@@ -371,7 +447,7 @@ export default {
       const last = answer.parts[answer.parts.length - 1]
       if (last && last.type === 'think' && last.status === 'thinking') { last.status = 'end'; last.duration = Date.now() - (last.startedAt || Date.now()) }
     },
-    applyTool(answer, event) {
+    applyTool(answer, event, detailed = false) {
       const content = event.content || {}
       let part = answer.parts.find((p) => p.type === 'tool_card' && p.toolCallId && p.toolCallId === content.toolCallId)
       if (!part) {
@@ -384,7 +460,17 @@ export default {
       if (content.outputResult != null) part.outputResult = content.outputResult
       const duration = Number(content.duration); if (Number.isFinite(duration) && duration > 0) part.duration = duration
       part.isFinish = !!event.isFinish
-      if (part.isFinish) { part.finishedAt = Date.now(); if (!(part.duration > 0)) part.duration = Math.max(100, part.finishedAt - (part.startedAt || part.finishedAt)) }
+      if (part.isFinish) {
+        part.finishedAt = Date.now()
+        if (!(part.duration > 0)) part.duration = Math.max(100, part.finishedAt - (part.startedAt || part.finishedAt))
+        if (!detailed) {
+          const todoPart = buildTodoCardPart(part)
+          if (todoPart) {
+            const index = answer.parts.indexOf(part)
+            if (index >= 0) answer.parts.splice(index, 1, todoPart)
+          }
+        }
+      }
     },
     finishParts(answer) {
       answer.parts.forEach((part) => {

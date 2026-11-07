@@ -10,6 +10,7 @@ public class AgentSessionMessagePojo {
     private Integer seqNum;
     private Integer roleType;
     private Integer status;
+    private String executionId;
     private Date startedAt;
     private Date finishedAt;
     private Long elapsedMs;
@@ -58,6 +59,14 @@ public class AgentSessionMessagePojo {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public String getExecutionId() {
+        return executionId;
+    }
+
+    public void setExecutionId(String executionId) {
+        this.executionId = executionId;
     }
 
     public Date getStartedAt() {

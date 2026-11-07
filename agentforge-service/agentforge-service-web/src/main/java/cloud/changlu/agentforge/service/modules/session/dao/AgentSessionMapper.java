@@ -30,7 +30,9 @@ public interface AgentSessionMapper {
 
     /** 置顶会话：按置顶序号倒序全量返回。 */
     List<AgentSessionPojo> selectTopList(
-            @Param("aid") String aid, @Param("createUserId") Long createUserId);
+            @Param("aid") String aid,
+            @Param("createUserId") Long createUserId,
+            @Param("debug") Integer debug);
 
     /** 当前用户已有置顶最大序号，无置顶返回 null。 */
     Integer selectMaxPinOrder(@Param("createUserId") Long createUserId);

@@ -23,6 +23,9 @@ public class EnvironmentContext {
     private static final String DEFAULT_UPLOAD_VISIT_HOST = "127.0.0.1";
     private static final String DEFAULT_UPLOAD_MAX_SIZE = "10MB";
     private static final String DEFAULT_SERVER_PORT = "8080";
+    private static final String DEFAULT_CHAT_EVENT_STORE_TYPE = "inmemory";
+    private static final long DEFAULT_CHAT_CANCEL_WAIT_TIMEOUT_MS = 15_000L;
+    private static final long DEFAULT_CHAT_CANCEL_POLL_INTERVAL_MS = 200L;
 
     private final Environment environment;
 
@@ -77,6 +80,40 @@ public class EnvironmentContext {
 
     public String getServerPort() {
         return environment.getProperty("server.port", DEFAULT_SERVER_PORT);
+    }
+
+    /**
+     * Detached chat event storage mode: {@code mysql}, {@code inmemory}, or reserved {@code redis}.
+     */
+    public String getChatEventStoreType() {
+        return environment
+                .getProperty("agentforge.chat.event-store.type", DEFAULT_CHAT_EVENT_STORE_TYPE)
+                .trim()
+                .toLowerCase();
+    }
+
+    /** 停止接口等待 Agent 正常收口的最长时间，单位毫秒。 */
+    public long getChatCancelWaitTimeoutMs() {
+        long value =
+                environment.getProperty(
+                        "agentforge.chat.cancel.wait-timeout-ms",
+                        Long.class,
+                        DEFAULT_CHAT_CANCEL_WAIT_TIMEOUT_MS);
+        return value > 0L ? value : DEFAULT_CHAT_CANCEL_WAIT_TIMEOUT_MS;
+    }
+
+    /** 停止接口轮询消息状态的间隔，单位毫秒；必须小于等待超时。 */
+    public long getChatCancelPollIntervalMs() {
+        long value =
+                environment.getProperty(
+                        "agentforge.chat.cancel.poll-interval-ms",
+                        Long.class,
+                        DEFAULT_CHAT_CANCEL_POLL_INTERVAL_MS);
+        if (value <= 0L) {
+            return DEFAULT_CHAT_CANCEL_POLL_INTERVAL_MS;
+        }
+        long timeout = getChatCancelWaitTimeoutMs();
+        return value < timeout ? value : Math.max(1L, timeout / 2);
     }
 
     /**

@@ -1,8 +1,11 @@
 package cloud.changlu.agentforge.agent;
 
+import cloud.changlu.agentforge.agent.component.state.domain.AgentExecutionState;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.stream.TokenStream;
+
+import java.util.Optional;
 
 /**
  * @description IAgent agent接口实现
@@ -33,7 +36,11 @@ public interface IAgent {
      * @param memoryId 会话ID，用于标识要取消的任务
      * @return boolean 是否成功取消
      */
-    boolean cancel(Object memoryId);
+    boolean cancel(Object memoryId, String executionId);
+
+    String createExecutionId();
+
+    Optional<AgentExecutionState> getExecutionState(Object memoryId, String executionId);
 
     /**
      * 清理会话上下文，释放资源

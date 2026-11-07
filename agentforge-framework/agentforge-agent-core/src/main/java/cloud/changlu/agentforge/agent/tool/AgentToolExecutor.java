@@ -1,7 +1,9 @@
 package cloud.changlu.agentforge.agent.tool;
 
 import cloud.changlu.agentforge.agent.component.middleware.AgentMiddlewareManager;
+import cloud.changlu.agentforge.agent.component.state.control.AgentRunControl;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
+import cloud.changlu.agentforge.agent.exception.CancelException;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionResultMessage;
 import cloud.changlu.agentforge.model.tool.ToolExecutor;
@@ -20,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 /**
  * @description act阶段工具批次的执行器：查找执行器、执行工具、把结果写回ChatMemory，供流式与非流式共用
@@ -27,6 +30,8 @@ import java.util.function.Consumer;
  * @date 2026/9/16
  */
 public class AgentToolExecutor {
+
+    private static final Logger log = Logger.getLogger(AgentToolExecutor.class.getName());
 
     private static final String EMPTY_RESULT_TEXT = "tool exec success, but no result";
 
@@ -95,15 +100,51 @@ public class AgentToolExecutor {
             Consumer<ToolExecution> listener,
             AgentMiddlewareManager middlewareManager,
             boolean enableConcurrent) {
+        return execute(
+                currentStep,
+                toolRequests,
+                chatContext,
+                listener,
+                middlewareManager,
+                enableConcurrent,
+                null);
+    }
+
+    public List<ToolExecutionResultMessage> execute(
+            int currentStep,
+            List<ToolExecutionRequest> toolRequests,
+            AgentChatContext chatContext,
+            Consumer<ToolExecution> listener,
+            AgentMiddlewareManager middlewareManager,
+            boolean enableConcurrent,
+            AgentRunControl runControl) {
+        if (runControl != null) {
+            runControl.registerExecutionThread(Thread.currentThread());
+            runControl.beginTools(toolRequests, currentStep);
+        }
+        log.fine(
+                "工具批次开始 executionId="
+                        + (chatContext == null ? null : chatContext.getExecutionId())
+                        + ", step="
+                        + currentStep
+                        + ", tools="
+                        + (toolRequests == null ? 0 : toolRequests.size())
+                        + ", concurrent="
+                        + enableConcurrent);
         if (enableConcurrent
                 && toolRequests != null
                 && toolRequests.size() > 1
                 && chatContext != null) {
             return executeConcurrently(
-                    currentStep, toolRequests, chatContext, listener, middlewareManager);
+                    currentStep,
+                    toolRequests,
+                    chatContext,
+                    listener,
+                    middlewareManager,
+                    runControl);
         }
         return executeSequentially(
-                currentStep, toolRequests, chatContext, listener, middlewareManager);
+                currentStep, toolRequests, chatContext, listener, middlewareManager, runControl);
     }
 
     private List<ToolExecutionResultMessage> executeSequentially(
@@ -111,7 +152,8 @@ public class AgentToolExecutor {
             List<ToolExecutionRequest> toolRequests,
             AgentChatContext chatContext,
             Consumer<ToolExecution> listener,
-            AgentMiddlewareManager middlewareManager) {
+            AgentMiddlewareManager middlewareManager,
+            AgentRunControl runControl) {
         List<ToolExecutionResultMessage> toolMessages = new ArrayList<ToolExecutionResultMessage>();
         if (toolRequests == null || toolRequests.isEmpty()) {
             return toolMessages;
@@ -119,6 +161,16 @@ public class AgentToolExecutor {
         Map<String, ToolExecutor> executorMap = toolService.toolExecutors();
 
         for (ToolExecutionRequest toolRequest : toolRequests) {
+            if (runControl != null && runControl.isCancellationRequested()) {
+                log.fine(
+                        "工具批次已取消，停止提交剩余工具 executionId="
+                                + (chatContext == null ? null : chatContext.getExecutionId())
+                                + ", tool="
+                                + toolRequest.name());
+                throw new CancelException("工具执行已取消");
+            }
+            log.fine("工具开始执行 requestId=" + toolRequest.id() + ", tool=" + toolRequest.name());
+            if (runControl != null) runControl.toolRunning(toolRequest.id());
             // 触发工具执行前的中间件
             if (middlewareManager != null) {
                 middlewareManager.triggerBeforeToolExecution(toolRequest, chatContext);
@@ -128,6 +180,10 @@ public class AgentToolExecutor {
             ToolExecutionResult result =
                     executeTool(executorMap, toolRequest, chatContext, middlewareManager);
             LocalDateTime finishTime = LocalDateTime.now();
+            if (runControl != null) {
+                if (result.isError()) runControl.toolFailed(toolRequest.id());
+                else runControl.toolCompleted(toolRequest.id());
+            }
 
             String text = result.text();
             if (!result.isError() && middlewareManager != null) {
@@ -178,6 +234,12 @@ public class AgentToolExecutor {
         try {
             return toolExecutor.executeWithResult(toolRequest, chatContext.getMemoryId());
         } catch (Exception e) {
+            if (Thread.currentThread().isInterrupted()
+                    || e instanceof CancelException
+                    || hasInterruptedCause(e)) {
+                Thread.currentThread().interrupt();
+                throw new CancelException("工具执行已取消", e);
+            }
             // 触发工具执行异常的中间件
             if (middlewareManager != null) {
                 middlewareManager.triggerOnToolExecutionError(toolRequest, e, chatContext);
@@ -192,7 +254,8 @@ public class AgentToolExecutor {
             List<ToolExecutionRequest> toolRequests,
             AgentChatContext chatContext,
             Consumer<ToolExecution> listener,
-            AgentMiddlewareManager middlewareManager) {
+            AgentMiddlewareManager middlewareManager,
+            final AgentRunControl runControl) {
         List<ToolExecutionResultMessage> toolMessages = new ArrayList<ToolExecutionResultMessage>();
         Map<String, ToolExecutor> executorMap = toolService.toolExecutors();
 
@@ -223,11 +286,19 @@ public class AgentToolExecutor {
         try {
             List<Future<ToolTaskOutcome>> futures = new ArrayList<Future<ToolTaskOutcome>>();
             for (final ToolExecutionRequest toolRequest : toolRequests) {
-                futures.add(
+                Future<ToolTaskOutcome> future =
                         pool.submit(
                                 new Callable<ToolTaskOutcome>() {
                                     @Override
                                     public ToolTaskOutcome call() {
+                                        if (runControl != null) {
+                                            if (runControl.isCancellationRequested()) {
+                                                throw new CancelException("工具执行已取消");
+                                            }
+                                            runControl.registerExecutionThread(
+                                                    Thread.currentThread());
+                                            runControl.toolRunning(toolRequest.id());
+                                        }
                                         LocalDateTime start = LocalDateTime.now();
                                         ToolExecutionResult result =
                                                 executeTool(
@@ -236,6 +307,13 @@ public class AgentToolExecutor {
                                                         chatContext,
                                                         middlewareManager);
                                         LocalDateTime finish = LocalDateTime.now();
+                                        if (runControl != null) {
+                                            if (result.isError()) {
+                                                runControl.toolFailed(toolRequest.id());
+                                            } else {
+                                                runControl.toolCompleted(toolRequest.id());
+                                            }
+                                        }
                                         if (middlewareManager != null) {
                                             Throwable error =
                                                     result.isError()
@@ -253,13 +331,18 @@ public class AgentToolExecutor {
                                         return new ToolTaskOutcome(
                                                 toolRequest, result, start, finish);
                                     }
-                                }));
+                                });
+                futures.add(future);
+                if (runControl != null) runControl.registerFuture(future);
             }
 
             for (Future<ToolTaskOutcome> future : futures) {
                 try {
                     outcomes.add(future.get());
                 } catch (Exception e) {
+                    if (runControl != null && runControl.isCancellationRequested()) {
+                        throw new CancelException("并发工具执行已取消", e);
+                    }
                     // executeTool 内部已兜底，这里仅防御性处理线程池异常
                     outcomes.add(null);
                 }
@@ -323,6 +406,15 @@ public class AgentToolExecutor {
             pool.shutdown();
         }
         return toolMessages;
+    }
+
+    private static boolean hasInterruptedCause(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            if (current instanceof InterruptedException) return true;
+            current = current.getCause();
+        }
+        return false;
     }
 
     /** 并发批次中单个工具的执行结果与耗时 */

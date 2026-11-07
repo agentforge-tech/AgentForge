@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.model.openai;
 
+import cloud.changlu.agentforge.model.chat.ChatCall;
 import cloud.changlu.agentforge.model.chat.ChatModel;
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
@@ -10,6 +11,7 @@ import cloud.changlu.agentforge.model.chat.response.ChatResponse;
 import cloud.changlu.agentforge.model.chat.response.FinishReason;
 import cloud.changlu.agentforge.model.chat.response.TokenUsage;
 import cloud.changlu.agentforge.model.exception.ModelException;
+import cloud.changlu.agentforge.model.http.HttpCall;
 import cloud.changlu.agentforge.model.http.HttpRequest;
 import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
@@ -69,6 +71,11 @@ public final class OpenAiChatModel implements ChatModel {
 
     @Override
     public ChatResponse chat(ChatRequest chatRequest) {
+        return newCall(chatRequest).execute();
+    }
+
+    @Override
+    public ChatCall newCall(ChatRequest chatRequest) {
         if (chatRequest == null) {
             throw new IllegalArgumentException("chatRequest must not be null");
         }
@@ -92,18 +99,34 @@ public final class OpenAiChatModel implements ChatModel {
             request = copyWithHeader(request, "Authorization", "Bearer " + apiKey);
         }
 
-        try {
-            HttpResponse response = httpTransport.execute(request);
-            if (!response.isSuccessful()) {
-                throw new ModelException(
-                        "OpenAI request failed with HTTP " + response.statusCode(),
-                        response.statusCode(),
-                        response.body());
+        final HttpCall httpCall = httpTransport.newCall(request);
+        return new ChatCall() {
+            @Override
+            public ChatResponse execute() {
+                try {
+                    HttpResponse response = httpCall.execute();
+                    if (!response.isSuccessful()) {
+                        throw new ModelException(
+                                "OpenAI request failed with HTTP " + response.statusCode(),
+                                response.statusCode(),
+                                response.body());
+                    }
+                    return parseResponse(response.body(), returnThinking);
+                } catch (IOException e) {
+                    throw new ModelException("OpenAI request failed", e);
+                }
             }
-            return parseResponse(response.body(), returnThinking);
-        } catch (IOException e) {
-            throw new ModelException("OpenAI request failed", e);
-        }
+
+            @Override
+            public boolean cancel() {
+                return httpCall.cancel();
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return httpCall.isCancelled();
+            }
+        };
     }
 
     private static Map<String, Object> buildPayload(

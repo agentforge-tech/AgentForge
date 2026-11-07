@@ -1,5 +1,8 @@
 package cloud.changlu.agentforge.agent;
 
+import cloud.changlu.agentforge.agent.component.state.control.AgentRunControl;
+import cloud.changlu.agentforge.agent.component.state.control.AgentRunRegistry;
+import cloud.changlu.agentforge.agent.component.state.domain.AgentExecutionState;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.exception.AgentException;
@@ -9,9 +12,8 @@ import cloud.changlu.agentforge.model.chat.ChatModel;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.UserMessage;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * @description 抽象 计划 -> 思考 + 行动 执行Agent
@@ -20,9 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class BaseAgent implements IAgent {
 
-    // 存储每个会话的取消标志
-    protected final Map<Object, AtomicBoolean> cancelFlags =
-            new ConcurrentHashMap<Object, AtomicBoolean>();
+    protected final AgentRunRegistry runRegistry = new AgentRunRegistry();
 
     protected abstract ChatModel getChatModel();
 
@@ -38,10 +38,16 @@ public abstract class BaseAgent implements IAgent {
         return chatContext;
     }
 
-    private AgentChatContext initParams(AgentRequest request) {
+    protected AgentChatContext initParams(AgentRequest request) {
         ChatMemory chatMemory = getChatMemoryProvider().get(request.getMemoryId());
+        String executionId = request.getExecutionId();
+        if (executionId == null || executionId.trim().isEmpty()) {
+            executionId = createExecutionId();
+            request.setExecutionId(executionId);
+        }
 
         return AgentChatContext.builder()
+                .executionId(executionId)
                 .request(request)
                 .chatModel(getChatModel())
                 .chatMemory(chatMemory)
@@ -75,48 +81,36 @@ public abstract class BaseAgent implements IAgent {
     }
 
     /**
-     * 检查指定会话是否已被取消
+     * 恢复执行前准备已存在的消息：默认不做处理，由具体 Agent 决定是否刷新系统消息等。
      *
-     * @param memoryId 会话ID
-     * @return true 如果已取消
+     * @param chatContext 已绑定会话记忆的上下文
      */
-    protected boolean isCancelled(Object memoryId) {
-        AtomicBoolean flag = cancelFlags.get(memoryId);
-        return flag != null && flag.get();
-    }
+    protected void prepareMessagesForResume(AgentChatContext chatContext) {}
 
-    /**
-     * 清理取消标志
-     *
-     * @param memoryId 会话ID
-     */
-    protected void clearCancelFlag(Object memoryId) {
-        cancelFlags.remove(memoryId);
-    }
-
-    /**
-     * Agent 实例会被缓存复用，同一个 memoryId 在上一轮被 cancel 后， cancelFlags 里的取消标记可能残留到下一轮正式启动前。
-     * 这里在“新一轮启动入口”做一次清理，前提是上层已保证同一 memoryId 不会并发运行。
-     */
-    protected void prepareForNewRun(Object memoryId) {
-        if (memoryId == null) {
-            return;
-        }
-        clearCancelFlag(memoryId);
+    @Override
+    public boolean cancel(Object memoryId, String executionId) {
+        return runRegistry.cancel(memoryId, executionId, "任务已被用户取消");
     }
 
     @Override
-    public boolean cancel(Object memoryId) {
-        // 任务还未开始时同样先落标记，运行中的循环会在下一步think/act前检查到取消信号
-        AtomicBoolean flag = cancelFlags.get(memoryId);
-        if (flag == null) {
-            flag = new AtomicBoolean(false);
-            AtomicBoolean previous = cancelFlags.putIfAbsent(memoryId, flag);
-            if (previous != null) {
-                flag = previous;
-            }
-        }
-        return !flag.getAndSet(true);
+    public String createExecutionId() {
+        return UUID.randomUUID().toString();
+    }
+
+    @Override
+    public Optional<AgentExecutionState> getExecutionState(Object memoryId, String executionId) {
+        return runRegistry.snapshot(memoryId, executionId);
+    }
+
+    protected AgentRunControl registerRun(AgentChatContext context) {
+        return runRegistry.register(context.getExecutionId(), context.getMemoryId());
+    }
+
+    protected AgentRunControl runControl(AgentChatContext context) {
+        AgentRunControl control = runRegistry.current(context.getMemoryId());
+        return control != null && control.getExecutionId().equals(context.getExecutionId())
+                ? control
+                : null;
     }
 
     @Override
@@ -127,7 +121,7 @@ public abstract class BaseAgent implements IAgent {
         }
         ChatMemory chatMemory = chatMemoryProvider.get(memoryId);
         chatMemory.clear();
-        clearCancelFlag(memoryId);
+        runRegistry.clear(memoryId);
         return true;
     }
 }

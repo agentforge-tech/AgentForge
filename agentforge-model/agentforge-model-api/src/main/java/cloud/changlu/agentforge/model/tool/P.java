@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
  * @since 2026-09-13
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.PARAMETER)
+@Target({ElementType.PARAMETER, ElementType.FIELD})
 public @interface P {
 
     /**

@@ -1,8 +1,10 @@
 package cloud.changlu.agentforge.agent;
 
+import cloud.changlu.agentforge.agent.component.state.domain.AgentExecutionStatus;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
+import cloud.changlu.agentforge.agent.exception.AgentException;
 import cloud.changlu.agentforge.agent.extend.memory.window.MessageWindowChatMemoryProvider;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
@@ -161,7 +163,7 @@ public class ReActAgentTest {
                 new Runnable() {
                     @Override
                     public void run() {
-                        agent.cancel(MEMORY_ID);
+                        agent.cancel(MEMORY_ID, "test-execution");
                     }
                 });
 
@@ -170,8 +172,9 @@ public class ReActAgentTest {
         assertEquals(AgentRunState.CANCEL, result.getRunState());
         assertEquals("任务已被用户取消", result.getRes());
         assertEquals(Integer.valueOf(1002), result.getRunStateCode());
-        // 运行结束后取消标志被清理，不会串扰下一轮
-        assertFalse(agent.isCancelled(MEMORY_ID));
+        assertEquals(
+                AgentExecutionStatus.CANCELLED,
+                agent.getExecutionState(MEMORY_ID, "test-execution").get().getStatus());
         assertEquals(1, chatModel.callCount());
     }
 
@@ -280,6 +283,93 @@ public class ReActAgentTest {
         }
     }
 
+    @Test
+    public void shouldResumeAfterMaxStepsWithoutAppendingUserMessage() {
+        ScriptedChatModel chatModel =
+                new ScriptedChatModel()
+                        .enqueueToolCall("call_1", "getWeather", "{\"city\":\"Hangzhou\"}");
+        AgentSettings settings =
+                AgentSettings.builder().maxSteps(1).aiCallRetry(0).aiCallRetryDelay(0).build();
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
+        ReActAgent agent =
+                agent(chatModel, toolService(new WeatherTools()), memoryProvider, settings);
+
+        ChatResult first = agent.run(request("杭州天气怎么样？"));
+        assertEquals(AgentRunState.MAX_STEPS, first.getRunState());
+        int userCountBefore =
+                countType(memoryProvider.get(MEMORY_ID).messages(), ChatMessageType.USER);
+
+        chatModel.enqueueText("Hangzhou今天22度，晴。");
+        ChatResult resumed = agent.resume(MEMORY_ID, first.getExecutionId());
+
+        assertEquals(AgentRunState.SUCCESS, resumed.getRunState());
+        assertEquals("Hangzhou今天22度，晴。", resumed.getRes());
+        assertFalse(first.getExecutionId().equals(resumed.getExecutionId()));
+        assertEquals(
+                userCountBefore,
+                countType(memoryProvider.get(MEMORY_ID).messages(), ChatMessageType.USER));
+        assertEquals(2, chatModel.callCount());
+    }
+
+    @Test
+    public void shouldReturnExistingAnswerWhenResumeAfterSuccess() {
+        ScriptedChatModel chatModel = new ScriptedChatModel().enqueueText("done");
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
+        ReActAgent agent =
+                agent(
+                        chatModel,
+                        toolService(new WeatherTools()),
+                        memoryProvider,
+                        defaultSettings());
+
+        ChatResult first = agent.run(request("一个问题"));
+        ChatResult resumed = agent.resume(MEMORY_ID, first.getExecutionId());
+
+        assertEquals(AgentRunState.SUCCESS, resumed.getRunState());
+        assertEquals("done", resumed.getRes());
+        assertEquals(1, chatModel.callCount());
+        assertFalse(first.getExecutionId().equals(resumed.getExecutionId()));
+    }
+
+    @Test
+    public void shouldResumeAfterModelCallError() {
+        ScriptedChatModel chatModel = new ScriptedChatModel().alwaysFail("boom");
+        ChatMemoryProvider memoryProvider = new MessageWindowChatMemoryProvider(100);
+        ReActAgent agent =
+                agent(
+                        chatModel,
+                        toolService(new WeatherTools()),
+                        memoryProvider,
+                        AgentSettings.builder().aiCallRetry(0).aiCallRetryDelay(0).build());
+
+        ChatResult first = agent.run(request("一个问题"));
+        assertEquals(AgentRunState.MODEL_CALL_ERROR, first.getRunState());
+
+        chatModel.failFirst(0).enqueueText("recovered");
+        ChatResult resumed = agent.resume(MEMORY_ID, first.getExecutionId());
+
+        assertEquals(AgentRunState.SUCCESS, resumed.getRunState());
+        assertEquals("recovered", resumed.getRes());
+        assertEquals(1, countType(memoryProvider.get(MEMORY_ID).messages(), ChatMessageType.USER));
+    }
+
+    @Test
+    public void shouldRejectResumeWithoutRecoverableMemory() {
+        ReActAgent agent =
+                agent(
+                        new ScriptedChatModel(),
+                        toolService(new WeatherTools()),
+                        new MessageWindowChatMemoryProvider(100),
+                        defaultSettings());
+
+        try {
+            agent.resume("missing-session", "some-exec");
+            fail("Expected resume rejection");
+        } catch (AgentException e) {
+            assertTrue(e.getMessage().contains("没有可恢复"));
+        }
+    }
+
     private static int countType(List<ChatMessage> messages, ChatMessageType type) {
         int count = 0;
         for (ChatMessage message : messages) {
@@ -291,7 +381,11 @@ public class ReActAgentTest {
     }
 
     private static AgentRequest request(String question) {
-        return AgentRequest.builder().memoryId(MEMORY_ID).question(question).build();
+        return AgentRequest.builder()
+                .memoryId(MEMORY_ID)
+                .executionId("test-execution")
+                .question(question)
+                .build();
     }
 
     private static AgentSettings defaultSettings() {
