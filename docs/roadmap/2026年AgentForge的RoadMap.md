@@ -67,11 +67,13 @@ AgentForge
 >
 > ​    middleware设计：[agentforge-agent-core](../../agentforge-framework/agentforge-agent-core)的src源码包cloud.changlu.agentforge.agent.component.middleware
 
-- [x] 核心ReAct 框架设计，支持非流式、流式 一套调用：
-  - 实现：`ReActAgent` 承载非流式主循环，`stream.ReActTokenStream` 承载流式主循环，二者共用 think→act→写回记忆 的步进语义与中断、步长上限控制 → `agentforge-agent-core` / `cloud.changlu.agentforge.agent`
-  - [x] Agent state状态持久化设计：
-  - [x] AgentForge Agent运行恢复设计方案：
-  - [x] AgentForge ReAct Agent停止设计方案：
+- [x] 核心ReAct 框架设计，支持非流式、流式 一套调用：[核心ReAct 框架设计，支持非流式、流式 一套调用](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/核心ReAct%20框架设计，支持非流式、流式%20一套调用.md)
+  
+  实现：`ReActAgent` 承载非流式主循环，`stream.ReActTokenStream` 承载流式主循环，二者共用 think→act→写回记忆 的步进语义与中断、步长上限控制 → `agentforge-agent-core` / `cloud.changlu.agentforge.agent`
+  
+  - [x] Agent state状态持久化设计：[AgentForge Agent State 持久化设计实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/agent状态/AgentForge%20Agent%20State%20持久化设计实现.md)
+  - [x] AgentForge Agent运行恢复设计方案：[AgentForge Agent运行恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/agent状态/AgentForge%20Agent运行恢复设计方案.md)
+  - [x] AgentForge ReAct Agent停止设计方案：[AgentForge ReAct Agent主动停止与消息补偿设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/agent停止/AgentForge%20ReAct%20Agent主动停止与消息补偿设计方案.md)
 - [x] middleware接口扩展实现：
   - 实现：`IAgentMiddleware` 定义 loop、AI重试、工具执行等阶段回调，`IStreamingIAgentMiddleware` 承载流式事件，`AgentMiddlewareManager` 负责注册排序与分发 → `...agent.component.middleware`
 - [x] agent标准会话记忆设计与实现：[Agent会话记忆接口设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/会话记忆/Agent会话记忆接口设计与实现.md)
