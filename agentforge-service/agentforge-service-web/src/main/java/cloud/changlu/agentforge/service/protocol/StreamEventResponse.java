@@ -6,9 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Objects;
 
-/**
- * Service unified SSE event. eventId and deliveryId are intentionally omitted for the first phase.
- */
+/** Service unified SSE event. eventSeq is the stable sequence within one AI message. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StreamEventResponse {
 
@@ -17,6 +15,7 @@ public class StreamEventResponse {
     private String title;
     private Object content;
     private Boolean isFinish;
+    private Long eventSeq;
 
     public StreamEventResponse() {}
 
@@ -101,5 +100,13 @@ public class StreamEventResponse {
 
     public void setIsFinish(Boolean finish) {
         isFinish = finish;
+    }
+
+    public Long getEventSeq() {
+        return eventSeq;
+    }
+
+    public void setEventSeq(Long eventSeq) {
+        this.eventSeq = eventSeq;
     }
 }

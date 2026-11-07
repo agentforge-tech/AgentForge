@@ -20,8 +20,8 @@ public interface IAgentSessionService {
     /** 普通历史会话列表（未置顶）。 */
     List<SessionVo> listNormal(String aid, Long createUserId, Boolean debug, Integer limit);
 
-    /** 置顶会话列表。 */
-    List<SessionVo> listTop(String aid, Long createUserId);
+    /** 置顶会话列表；debug 为空表示不区分调试/发布态。 */
+    List<SessionVo> listTop(String aid, Long createUserId, Boolean debug);
 
     /** 添加或取消置顶。 */
     boolean setTop(Long sessionId, Long createUserId, boolean top);
@@ -41,14 +41,21 @@ public interface IAgentSessionService {
     final class SessionInitResult {
         private final String sessionId;
         private final Long sessionPk;
+        private final Long userMessageId;
         private final Long aiMessageId;
         private final Integer seqNum;
         private final String title;
 
         public SessionInitResult(
-                String sessionId, Long sessionPk, Long aiMessageId, Integer seqNum, String title) {
+                String sessionId,
+                Long sessionPk,
+                Long userMessageId,
+                Long aiMessageId,
+                Integer seqNum,
+                String title) {
             this.sessionId = sessionId;
             this.sessionPk = sessionPk;
+            this.userMessageId = userMessageId;
             this.aiMessageId = aiMessageId;
             this.seqNum = seqNum;
             this.title = title;
@@ -64,6 +71,10 @@ public interface IAgentSessionService {
 
         public Long getAiMessageId() {
             return aiMessageId;
+        }
+
+        public Long getUserMessageId() {
+            return userMessageId;
         }
 
         public Integer getSeqNum() {

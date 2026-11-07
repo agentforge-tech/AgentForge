@@ -28,6 +28,7 @@ public interface AgentSessionMessageMapper {
     int updateStarted(
             @Param("id") Long id,
             @Param("status") Integer status,
+            @Param("executionId") String executionId,
             @Param("startedAt") Date startedAt,
             @Param("modifyTime") Date modifyTime);
 
@@ -37,6 +38,20 @@ public interface AgentSessionMessageMapper {
             @Param("status") Integer status,
             @Param("content") String content,
             @Param("events") String events,
+            @Param("elapsedMs") Long elapsedMs,
+            @Param("finishedAt") Date finishedAt,
+            @Param("modifyTime") Date modifyTime);
+
+    /** 停止受理：仅当消息仍为 CREATED(1)/RUNNING(2) 时标记为 CANCELLING(7)，用于幂等。 */
+    int markCancelling(
+            @Param("id") Long id,
+            @Param("status") Integer status,
+            @Param("modifyTime") Date modifyTime);
+
+    /** 停止等待超时兜底：仅当消息仍为 CREATED(1)/RUNNING(2)/CANCELLING(7) 时收口为超时取消。 */
+    int timeoutCancelIfRunning(
+            @Param("id") Long id,
+            @Param("status") Integer status,
             @Param("elapsedMs") Long elapsedMs,
             @Param("finishedAt") Date finishedAt,
             @Param("modifyTime") Date modifyTime);

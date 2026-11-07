@@ -35,10 +35,41 @@ public class AgentSessionController {
                 query.getAid(), currentUserId(), query.getDebug(), query.getLimit());
     }
 
+    /** 调试态普通会话列表：上下文由接口固定为 debug=true。 */
+    @PostMapping("/debug/sessionList")
+    public List<SessionVo> debugSessionList(@RequestBody(required = false) SessionListReq req) {
+        SessionListReq query = req == null ? new SessionListReq() : req;
+        return agentSessionService.listNormal(
+                query.getAid(), currentUserId(), Boolean.TRUE, query.getLimit());
+    }
+
+    /** 发布态普通会话列表：上下文由接口固定为 debug=false。 */
+    @PostMapping("/published/sessionList")
+    public List<SessionVo> publishedSessionList(@RequestBody(required = false) SessionListReq req) {
+        SessionListReq query = req == null ? new SessionListReq() : req;
+        return agentSessionService.listNormal(
+                query.getAid(), currentUserId(), Boolean.FALSE, query.getLimit());
+    }
+
+    /** 调试态置顶会话列表。 */
+    @PostMapping("/debug/topList")
+    public List<SessionVo> debugTopList(@RequestBody(required = false) SessionTopListReq req) {
+        SessionTopListReq query = req == null ? new SessionTopListReq() : req;
+        return agentSessionService.listTop(query.getAid(), currentUserId(), Boolean.TRUE);
+    }
+
+    /** 发布态置顶会话列表。 */
+    @PostMapping("/published/topList")
+    public List<SessionVo> publishedTopList(@RequestBody(required = false) SessionTopListReq req) {
+        SessionTopListReq query = req == null ? new SessionTopListReq() : req;
+        return agentSessionService.listTop(query.getAid(), currentUserId(), Boolean.FALSE);
+    }
+
+    /** 通用置顶列表；debug 为空表示不区分调试/发布态，仅供内部/兼容使用。 */
     @PostMapping("/topList")
     public List<SessionVo> topList(@RequestBody(required = false) SessionTopListReq req) {
         SessionTopListReq query = req == null ? new SessionTopListReq() : req;
-        return agentSessionService.listTop(query.getAid(), currentUserId());
+        return agentSessionService.listTop(query.getAid(), currentUserId(), query.getDebug());
     }
 
     @PostMapping("/setTop")

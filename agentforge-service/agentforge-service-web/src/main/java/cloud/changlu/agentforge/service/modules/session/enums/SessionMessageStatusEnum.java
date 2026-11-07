@@ -6,7 +6,9 @@ public enum SessionMessageStatusEnum {
     RUNNING(2, "处理中"),
     FAILED(3, "失败"),
     CANCELLED(4, "取消"),
-    SUCCEEDED(5, "成功");
+    SUCCEEDED(5, "成功"),
+    TIMEOUT_CANCELLED(6, "超时取消"),
+    CANCELLING(7, "取消中");
 
     private final Integer code;
     private final String description;

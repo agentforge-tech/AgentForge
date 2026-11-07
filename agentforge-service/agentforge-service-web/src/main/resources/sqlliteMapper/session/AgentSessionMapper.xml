@@ -70,6 +70,9 @@
         <if test="aid != null and aid != ''">
             and aid = #{aid}
         </if>
+        <if test="debug != null">
+            and is_debug = #{debug}
+        </if>
         order by pin_order desc, modify_time desc
     </select>
 
