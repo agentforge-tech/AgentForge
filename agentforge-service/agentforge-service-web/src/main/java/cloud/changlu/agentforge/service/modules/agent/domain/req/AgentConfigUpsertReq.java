@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.service.modules.agent.domain.req;
 
+import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentCapabilityConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.PluginConfig;
 
 /** Agent 新增/修改请求。 */
@@ -17,6 +18,7 @@ public class AgentConfigUpsertReq {
     private Integer chatMemoryType;
     private Integer chatMemoryMaxMessages;
     private PluginConfig pluginConfig;
+    private AgentCapabilityConfig capabilityConfig;
     private Boolean submitVersion;
     private String versionRemark;
 
@@ -114,6 +116,14 @@ public class AgentConfigUpsertReq {
 
     public void setPluginConfig(PluginConfig pluginConfig) {
         this.pluginConfig = pluginConfig;
+    }
+
+    public AgentCapabilityConfig getCapabilityConfig() {
+        return capabilityConfig;
+    }
+
+    public void setCapabilityConfig(AgentCapabilityConfig capabilityConfig) {
+        this.capabilityConfig = capabilityConfig;
     }
 
     public Boolean getSubmitVersion() {
