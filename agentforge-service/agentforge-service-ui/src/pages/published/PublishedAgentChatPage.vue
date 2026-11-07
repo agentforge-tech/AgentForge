@@ -175,10 +175,10 @@
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
 import AppUserPanel from '../../components/AppUserPanel.vue'
 import chatAutoScroll from '../../utils/chatAutoScroll'
-import { postSse } from '../../utils/sse'
+import { runChatStream, resumeChatStream, isDetachedChatTransport } from '../../utils/chatTransport'
 import {
-  fetchSessionList,
-  fetchTopSessionList,
+  fetchPublishedSessionList,
+  fetchPublishedTopSessionList,
   setSessionTop,
   changeSessionTitle,
   deleteSession,
@@ -188,6 +188,7 @@ import {
 import { replaySession } from '../../utils/sessionReplay'
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
 import { reduceCompactEvent } from '../../utils/compactEventReducer'
+import { buildTodoCardPart } from '../../utils/todoEventReducer'
 
 /** 输入框最大高度（px），超过后内部滚动，不再继续撑高 */
 const COMPOSER_MAX_HEIGHT = 120
@@ -207,7 +208,7 @@ export default {
   mixins: [chatAutoScroll],
   data: () => ({
     aid: '', agentBasic: null, agentLoading: false, agentError: '',
-    draft: '', focused: false, running: false, sessionId: '', controller: null, requestVersion: 0, messages: [],
+    draft: '', focused: false, running: false, stopping: false, sessionId: '', currentMessageId: null, controller: null, requestVersion: 0, messages: [],
     composing: false, pendingAppends: [], deferredAppends: [], remotePollTimer: null,
     topSessions: [], normalSessions: [], sessionLoading: false,
     activeSessionId: null, sessionTitle: '',
@@ -309,8 +310,8 @@ export default {
       this.sessionLoading = true
       try {
         const [top, normal] = await Promise.all([
-          fetchTopSessionList(this.aid),
-          fetchSessionList(this.aid, 20)
+          fetchPublishedTopSessionList(this.aid),
+          fetchPublishedSessionList(this.aid, 20)
         ])
         this.topSessions = top || []
         this.normalSessions = normal || []
@@ -370,10 +371,35 @@ export default {
       const running = !!(last && last.status === 'running')
       if (running && !this.controller) {
         this.running = true
-        this.startRemotePoll(sessionRefId)
+        if (isDetachedChatTransport() && last.messageId) this.resumeDetachedRun(last)
+        else this.startRemotePoll(sessionRefId)
       } else if (!this.controller) {
         this.stopRemotePoll()
         this.running = false
+      }
+    },
+    async resumeDetachedRun(answer) {
+      const requestVersion = ++this.requestVersion
+      this.controller = new AbortController()
+      this.currentMessageId = answer.messageId
+      answer.parts = []; answer.content = ''; answer.error = ''; answer.lastEventSeq = 0
+      try {
+        await resumeChatStream(answer.messageId, 0, {
+          signal: this.controller.signal,
+          onEvent: (event) => {
+            if (requestVersion !== this.requestVersion) return
+            answer.lastEventSeq = Math.max(answer.lastEventSeq || 0, Number(event.eventSeq || 0))
+            this.handleEvent(answer, event)
+          }
+        })
+      } catch (error) {
+        if (error.name !== 'AbortError') this.$message.error(error.message || '恢复流式对话失败')
+      } finally {
+        if (requestVersion === this.requestVersion) {
+          if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
+          this.running = false; this.controller = null; this.currentMessageId = null
+          this.loadSessions()
+        }
       }
     },
     startRemotePoll(sessionRefId) {
@@ -508,8 +534,17 @@ export default {
       this.resetScrollFollow()
       this.scroll()
       try {
-        await postSse('/api/chat/stream', { aid: this.aid, sessionId: this.sessionId, message: text, isDebug: false }, {
+        await runChatStream({ aid: this.aid, sessionId: this.sessionId, message: text, isDebug: false }, {
           signal: controller.signal,
+          onSubmitted: (task) => {
+            this.currentMessageId = task.messageId
+            this.sessionId = task.sessionId
+            this.pendingSessionId = ''
+            if (!this.sessionTitle) this.sessionTitle = task.title || resolveSessionTitle(text)
+            this.syncSessionToUrl(this.sessionId)
+            // 新会话立即追加到左侧列表，不整体刷新历史列表。
+            this.upsertSession(task, text)
+          },
           onEvent: (event) => {
             if (requestVersion === this.requestVersion) this.handleEvent(answer, event, text)
           }
@@ -527,24 +562,73 @@ export default {
             this.finishParts(answer)
           }
           this.running = false
+          this.currentMessageId = null
           this.controller = null
           this.restoreDeferredAppends()
           this.scroll()
-          this.loadSessions()
+          // 不整体刷新列表，只更新当前会话的时间与运行标记。
+          this.updateSessionState()
         }
       }
+    },
+    /** 新会话插入左侧列表；已存在则更新标题。 */
+    upsertSession(task, text) {
+      if (!task || !task.sessionId) return
+      const sessionId = String(task.sessionId)
+      const existing = [...this.topSessions, ...this.normalSessions].find(
+        (session) => String(session.sessionId) === sessionId
+      )
+      if (existing) {
+        if (task.title) existing.title = task.title
+        existing.running = true
+        if (task.sessionPk) existing.id = task.sessionPk
+        return
+      }
+      const now = new Date().toISOString()
+      const item = {
+        id: task.sessionPk,
+        sessionId,
+        aid: this.aid,
+        title: task.title || this.sessionTitle || resolveSessionTitle(text),
+        status: 1,
+        isDebug: 0,
+        topOrder: 0,
+        running: true,
+        messageCount: 1,
+        lastMessageAt: now,
+        modifyTime: now,
+        createTime: now
+      }
+      this.normalSessions = [item, ...this.normalSessions]
+      this.activeSessionId = item.id
+      this.sessionTitle = item.title
+    },
+    /** 更新当前会话在列表中的运行标记与时间，不触发列表刷新。 */
+    updateSessionState() {
+      if (!this.sessionId) return
+      const item = [...this.topSessions, ...this.normalSessions].find(
+        (session) => String(session.sessionId) === String(this.sessionId)
+      )
+      if (!item) return
+      item.running = false
+      item.status = 2
+      item.lastMessageAt = new Date().toISOString()
+      item.modifyTime = item.lastMessageAt
     },
     /** 切换会话时仅脱离当前 SSE，不停止后台 Agent Run。 */
     detachCurrentRun() {
       ++this.requestVersion
       if (this.controller) this.controller.abort()
       this.controller = null
+      this.currentMessageId = null
       this.running = false
       this.pendingAppends = []
       this.deferredAppends = []
       this.stopRemotePoll()
     },
     handleEvent(answer, event, questionText) {
+      // 停止受理后由 applyStopResult 统一决定终态，避免 resp_end/error 抢先写成成功/失败。
+      if (this.stopping) return
       switch (event.event) {
         case 'session':
           if (event.content) {
@@ -580,12 +664,17 @@ export default {
           this.clearRetryNotice(answer)
           answer.status = 'success'
           this.finishParts(answer)
+          // 终态到达即结束运行态，避免异步收尾未及时把按钮从“停止”切回“发送”。
+          this.running = false
+          this.stopRemotePoll()
           break
         case 'error':
           this.clearRetryNotice(answer)
           answer.status = 'error'
           answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '生成失败')
           this.finishParts(answer)
+          this.running = false
+          this.stopRemotePoll()
           break
         default:
           break
@@ -640,6 +729,11 @@ export default {
       if (part.isFinish) {
         part.finishedAt = Date.now()
         if (!(part.duration > 0)) part.duration = Math.max(100, part.finishedAt - (part.startedAt || part.finishedAt))
+        const todoPart = buildTodoCardPart(part)
+        if (todoPart) {
+          const index = answer.parts.indexOf(part)
+          if (index >= 0) answer.parts.splice(index, 1, todoPart)
+        }
       }
     },
     finishParts(answer) {
@@ -738,11 +832,38 @@ export default {
       return reasons[reason] || reason || '追加失败'
     },
     async stop() {
-      if (!this.running) return
-      if (this.sessionId) fetch(`/api/chat/stop?sessionId=${encodeURIComponent(this.sessionId)}`, { method: 'POST' }).catch(() => {})
+      if (!this.running || this.stopping) return
+      this.stopping = true
+      this.scroll()
+      let result = null
+      try {
+        // 同步等待后端真正停止：停止接口轮询消息到终态后返回权威状态，不能一点击就直接显示已取消。
+        if (isDetachedChatTransport() && this.currentMessageId) {
+          const response = await fetch(`/api/chat/tasks/stop?messageId=${encodeURIComponent(this.currentMessageId)}`, { method: 'POST' })
+          result = await response.json().catch(() => null)
+        } else if (this.sessionId) {
+          const response = await fetch(`/api/chat/stop?sessionId=${encodeURIComponent(this.sessionId)}`, { method: 'POST' })
+          result = await response.json().catch(() => null)
+        }
+      } catch (_error) {
+        result = null
+      }
+      this.applyStopResult(result)
       if (this.controller) this.controller.abort()
       this.running = false
+      this.stopping = false
       this.stopRemotePoll()
+    },
+    /** 根据停止接口返回的真实终态渲染，未拿到状态时才按取消兜底。 */
+    applyStopResult(result) {
+      // 停止等待期间 SSE 可能已把消息标成 success/error，这里以本轮最后一条 assistant 消息为准。
+      const answer = [...this.messages].reverse().find((m) => m.role === 'assistant')
+      if (!answer) return
+      const name = result && result.statusName
+      if (name === 'SUCCEEDED') answer.status = 'success'
+      else if (name === 'FAILED') { answer.status = 'error'; if (!answer.error) answer.error = '生成失败' }
+      else answer.status = 'cancelled'
+      this.finishParts(answer)
     },
   }
 }

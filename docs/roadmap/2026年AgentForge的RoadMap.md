@@ -115,8 +115,9 @@ AgentForge
   - 实现：`LoggingIAgentMiddleware` 打印 loop、模型调用、工具执行关键节点并截断超长内容，按 memoryId 统计模型耗时、工具耗时与 token 消耗 → `...agent.extend.middlewares`
 - [x] Agent Trace middlware（Agent Loop 监控，包含token消耗记录）：[内置middlware扩展：Agent Loop TraceMiddlware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：Agent%20Loop%20TraceMiddlware实现.md)
 - [x] Agent 对话追加middleware（Agent Loop过程中追加消息）：[内置middleware扩展：追加对话到Agent.md](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：追加对话到Agent.md)
-- [x] 上下文压缩middlware（阈值比例压缩机制）：[内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）.md)
+- [x] 上下文压缩middleware（阈值比例压缩机制）：[内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）.md)
   - 实现：`CompactSummarizationMiddleware` 在 `beforeModelCall` 按阈值压缩历史并重建请求，在 `afterToolExecution` / `afterConcurrentToolExecution` 截断超大工具结果，通过 `CompactLifecycleHook` 向业务层发布压缩事件 → `...agent.extend.middlewares.compact`
+- [x] 支持任务计划middleware：
 
 
 
@@ -198,13 +199,33 @@ AgentForge
 
 
 
-
 ### Agent页面会话对话交互
+
+**会话交互设计：**
 
 - [x] AgentForge标准Agent会话与消息核心表设计：[AgentForge标准Agent会话与消息核心表设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/AgentForge标准Agent会话与消息核心表设计.md)
 - [x] agentforge-service核心标准agent事件协议设计定义：[agentforge-service核心事件协议设计定义](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/agentforge-service核心事件协议设计定义.md)
+
+1）普通一次对话流式（一段式，无法恢复前端流式效果）：
+
+- [x] 
+
+- [x] AgentForge标准Agent会话与消息核心表设计：[AgentForge标准Agent会话与消息核心表设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/AgentForge标准Agent会话与消息核心表设计.md)
+
+2）支持并行恢复流式渲染对话（二段式）
+
+
+
+**交互优化**：
+
 - [x] Agent工具调用思考参数与前端优雅交互设计：[Agent工具调用思考参数与前端优雅交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent工具调用思考参数与前端优雅交互设计.md)
 - [x] Agent追加事件 + 插入Agent loop对话交互设计：[Agent追加事件 + 插入Agent loop对话设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent追加事件%20%2B%20插入Agent%20loop对话设计.md)
+- [x] Agent支持任务计划todo列表展示：
+
+
+
+**长程任务对话优化：**
+
 - [x] Agent 上下文阈值压缩交互设计：[Agent 上下文阈值压缩交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent%20上下文阈值压缩交互设计.md)
   - 实现：`ServiceCompactSummarizationMiddleware` 将 Core 压缩钩子转为 `compact` SSE 事件，经 `ServiceStreamingMiddleware` 实时推送、`SessionLifecycleMiddleware` 落库回放；前端调试模式展示压缩前/后两条，发布模式合并为一条 → `...agent.middleware.compact`
 - [ ] ...
@@ -260,33 +281,35 @@ AgentForge
 # 未来扩展：基于AgentForge长出来的Agent应用（平台、cli、桌面）
 
 ```text
-                         +--------------------------------------+
-                         |          agentforge-core             |
-                         |                                      |
-                         |          LLM Model Protocol          |
-                         |                  |                   |
-                         |            ReAct Agent               |
-                         |                  |                   |
-                         |           Harness Agent              |
-                         |                                      |
-                         +------------------+-------------------+
-                                            |
-                                            |
-                          +-----------------+-----------------+
-                          |        agentforge-service         |
-                          +-----------------+-----------------+
-                                            |
-                                            |
-                  +-------------------------+-------------------------+
-                  |                         |                         |
-                  v                         v                         v
-               Platform                    CLI                     Desktop
++--------------------------------------------------------------------------------------+
+|                         agentforge-core / agentforge-harness                         |
+|                                                                                      |
+|   LLM Model Protocol        Permission        HITL           Runtime                 |
+|          |                      |               |               |                     |
+|          +----------+-----------+---------------+               |                     |
+|                     v                                           v                     |
+|               ReAct Agent  -------------------------------->  Harness Agent           |
+|                                                                                      |
++---------------------------------------+----------------------------------------------+
+                                        |
+              +-------------------------+-------------------------+
+              |                         |                         |
+              v                         |                         |
++-------------------------------+       |                         |
+|     agentforge-service        |       |                         |
+|  (可水平部署 / 多实例)         |       |                         |
++---------------+---------------+       |                         |
+                |                       |                         |
+                v                       v                         v
+        +-------------+         +-------------+           +-------------+
+        |  Platform   |         |     CLI     |           |   Desktop   |
+        +-------------+         +-------------+           +-------------+
 ```
 
 **核心未来扩展多形态：**
 
-1）Platform【AgentForge-Platform】：AgentForge-Platform：提供标准的一套平台运行时，支持多用户 + 租户来进行绑定设计，支持对接纳管所有的agent系列
+1）Platform【AgentForge-Platform】：AgentForge-Platform：提供标准的一套平台运行时，支持多用户 + 租户来进行绑定设计 会直接对接agentforge-service，支持对接纳管所有的agent系列
 
-2）CLI【AgentForge-CLI】：提供核心标准的一套本地CLI Agent设计，对标cli为opencode、codex、claude。
+2）CLI【AgentForge-CLI】：基于agentforge-core/agentforge-harness，来提供核心标准的一套本地CLI Agent设计，对标cli为opencode、codex、claude。
 
-3）Desktop【AgentForge-Desktop】：提供核心标准的一套本地工作台设计，对标workbuddy、codex桌面版设计。
+3）Desktop【AgentForge-Desktop】：基于agentforge-core/agentforge-harness，来提供核心标准的一套本地工作台设计，对标workbuddy、codex桌面版设计。

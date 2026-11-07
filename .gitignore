@@ -30,6 +30,10 @@ logs/
 # Local env
 .env
 .env.*
+!agentforge-service/agentforge-service-ui/.env
+!agentforge-service/agentforge-service-ui/.env.development
+!agentforge-service/agentforge-service-ui/.env.production
+!agentforge-service/agentforge-service-ui/.env.test
 
 # Local Maven settings (Central token / credentials, do not commit)
 bin/local/settings.xml

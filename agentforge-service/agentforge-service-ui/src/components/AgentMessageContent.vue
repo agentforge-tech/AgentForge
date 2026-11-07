@@ -5,7 +5,7 @@
       <button class="mini-btn agent-debug-mini-btn" type="button" title="复制回答" :disabled="!message.content" @click="copy">
         <i class="el-icon-document-copy"></i>
       </button>
-      <span v-if="message.status === 'error'" class="status-tag error agent-debug-status-error">失败</span>
+      
     </div>
   </div>
 </template>

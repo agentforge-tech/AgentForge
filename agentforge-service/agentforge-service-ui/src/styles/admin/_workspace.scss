@@ -127,6 +127,19 @@
     @include brand-gradient;
   }
 
+  &--stop {
+    border: none;
+    background: $color-danger;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(214, 69, 69, 0.3);
+
+    &:hover:not(:disabled) {
+      background: #bf3b3b;
+      color: #fff;
+      box-shadow: 0 3px 10px rgba(214, 69, 69, 0.4);
+    }
+  }
+
   &--ghost {
     border-color: transparent;
     background: transparent;
