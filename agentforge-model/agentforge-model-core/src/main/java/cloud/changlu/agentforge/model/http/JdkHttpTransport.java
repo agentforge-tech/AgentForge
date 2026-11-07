@@ -1,5 +1,7 @@
 package cloud.changlu.agentforge.model.http;
 
+import cloud.changlu.agentforge.model.cancel.CancellationHandle;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,8 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Dependency-free HTTP transport based on JDK {@link HttpURLConnection}.
@@ -44,19 +49,22 @@ public final class JdkHttpTransport implements HttpTransport {
 
     @Override
     public HttpResponse execute(HttpRequest request) throws IOException {
-        HttpURLConnection connection = openConnection(request);
-        try {
-            writeBody(connection, request.body());
-            int status = connection.getResponseCode();
-            InputStream stream = responseStream(connection, status);
-            return new HttpResponse(status, readBody(stream));
-        } finally {
-            connection.disconnect();
-        }
+        return newCall(request).execute();
+    }
+
+    @Override
+    public HttpCall newCall(final HttpRequest request) {
+        return new JdkHttpCall(request);
     }
 
     @Override
     public void executeStreaming(
+            final HttpRequest request, final StreamingHttpResponseHandler handler) {
+        executeStreamingCancellable(request, handler);
+    }
+
+    @Override
+    public CancellationHandle executeStreamingCancellable(
             final HttpRequest request, final StreamingHttpResponseHandler handler) {
         if (request == null) {
             throw new IllegalArgumentException("request must not be null");
@@ -64,39 +72,52 @@ public final class JdkHttpTransport implements HttpTransport {
         if (handler == null) {
             throw new IllegalArgumentException("handler must not be null");
         }
-        STREAM_EXECUTOR.execute(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        stream(request, handler);
-                    }
-                });
+        final JdkStreamingCancellationHandle cancellation = new JdkStreamingCancellationHandle();
+        Future<?> future =
+                STREAM_EXECUTOR.submit(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                stream(request, handler, cancellation);
+                            }
+                        });
+        cancellation.setFuture(future);
+        return cancellation;
     }
 
-    private static void stream(HttpRequest request, StreamingHttpResponseHandler handler) {
+    private static void stream(
+            HttpRequest request,
+            StreamingHttpResponseHandler handler,
+            JdkStreamingCancellationHandle cancellation) {
         HttpURLConnection connection = null;
         try {
+            if (cancellation.isCancelled()) return;
             connection = openConnection(request);
+            cancellation.setConnection(connection);
             writeBody(connection, request.body());
+            if (cancellation.isCancelled()) return;
             int status = connection.getResponseCode();
             Map<String, List<String>> headers = connection.getHeaderFields();
             handler.onOpen(status, headers);
 
             InputStream stream = responseStream(connection, status);
             if (stream != null) {
+                cancellation.setInputStream(stream);
                 BufferedReader reader =
                         new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
                 try {
                     String line;
                     while ((line = reader.readLine()) != null) {
+                        if (cancellation.isCancelled()) return;
                         handler.onLine(line);
                     }
                 } finally {
                     reader.close();
                 }
             }
-            handler.onComplete();
+            if (!cancellation.isCancelled()) handler.onComplete();
         } catch (Throwable error) {
+            if (cancellation.isCancelled()) return;
             try {
                 handler.onError(error);
             } catch (Throwable ignored) {
@@ -106,6 +127,114 @@ public final class JdkHttpTransport implements HttpTransport {
             if (connection != null) {
                 connection.disconnect();
             }
+            cancellation.clearResources();
+        }
+    }
+
+    private static final class JdkStreamingCancellationHandle implements CancellationHandle {
+        private final AtomicBoolean cancelled = new AtomicBoolean(false);
+        private final AtomicReference<HttpURLConnection> connection =
+                new AtomicReference<HttpURLConnection>();
+        private final AtomicReference<InputStream> inputStream = new AtomicReference<InputStream>();
+        private final AtomicReference<Future<?>> future = new AtomicReference<Future<?>>();
+
+        @Override
+        public boolean cancel() {
+            if (!cancelled.compareAndSet(false, true)) return false;
+            InputStream stream = inputStream.getAndSet(null);
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException ignored) {
+                }
+            }
+            HttpURLConnection activeConnection = connection.getAndSet(null);
+            if (activeConnection != null) activeConnection.disconnect();
+            Future<?> activeFuture = future.getAndSet(null);
+            if (activeFuture != null) activeFuture.cancel(true);
+            return true;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return cancelled.get();
+        }
+
+        private void setConnection(HttpURLConnection value) {
+            connection.set(value);
+            if (cancelled.get()) value.disconnect();
+        }
+
+        private void setInputStream(InputStream value) {
+            inputStream.set(value);
+            if (cancelled.get()) {
+                try {
+                    value.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
+
+        private void setFuture(Future<?> value) {
+            future.set(value);
+            if (cancelled.get()) value.cancel(true);
+        }
+
+        private void clearResources() {
+            inputStream.set(null);
+            connection.set(null);
+            future.set(null);
+        }
+    }
+
+    private static final class JdkHttpCall implements HttpCall {
+        private final HttpRequest request;
+        private final AtomicBoolean cancelled = new AtomicBoolean(false);
+        private final AtomicReference<HttpURLConnection> connection =
+                new AtomicReference<HttpURLConnection>();
+        private final AtomicReference<InputStream> inputStream = new AtomicReference<InputStream>();
+
+        private JdkHttpCall(HttpRequest request) {
+            this.request = request;
+        }
+
+        @Override
+        public HttpResponse execute() throws IOException {
+            if (cancelled.get()) throw new IOException("HTTP call cancelled");
+            HttpURLConnection activeConnection = openConnection(request);
+            connection.set(activeConnection);
+            try {
+                writeBody(activeConnection, request.body());
+                if (cancelled.get()) throw new IOException("HTTP call cancelled");
+                int status = activeConnection.getResponseCode();
+                InputStream stream = responseStream(activeConnection, status);
+                inputStream.set(stream);
+                return new HttpResponse(status, readBody(stream));
+            } finally {
+                inputStream.set(null);
+                connection.set(null);
+                activeConnection.disconnect();
+            }
+        }
+
+        @Override
+        public boolean cancel() {
+            if (!cancelled.compareAndSet(false, true)) return false;
+            InputStream stream = inputStream.getAndSet(null);
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException ignored) {
+                }
+            }
+            HttpURLConnection activeConnection = connection.getAndSet(null);
+            if (activeConnection != null) activeConnection.disconnect();
+            return true;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return cancelled.get();
         }
     }
 
