@@ -69,10 +69,16 @@ AgentForge
 
 - [x] 核心ReAct 框架设计，支持非流式、流式 一套调用：
   - 实现：`ReActAgent` 承载非流式主循环，`stream.ReActTokenStream` 承载流式主循环，二者共用 think→act→写回记忆 的步进语义与中断、步长上限控制 → `agentforge-agent-core` / `cloud.changlu.agentforge.agent`
+  - [x] Agent state状态持久化设计：
+  - [x] AgentForge Agent运行恢复设计方案：
+  - [x] AgentForge ReAct Agent停止设计方案：
 - [x] middleware接口扩展实现：
   - 实现：`IAgentMiddleware` 定义 loop、AI重试、工具执行等阶段回调，`IStreamingIAgentMiddleware` 承载流式事件，`AgentMiddlewareManager` 负责注册排序与分发 → `...agent.component.middleware`
-
 - [x] agent标准会话记忆设计与实现：[Agent会话记忆接口设计与实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/会话记忆/Agent会话记忆接口设计与实现.md)
+
+
+
+
 
 
 
@@ -208,11 +214,15 @@ AgentForge
 
 1）普通一次对话流式（一段式，无法恢复前端流式效果）：
 
-- [x] 
+- [x] AgentForge一段式流式对话（SSE长连接）设计实现：[AgentForge一段式流式对话（SSE长连接）设计实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/普通流式对话一段式设计实现/AgentForge一段式流式对话（SSE长连接）设计实现.md)
 
-- [x] AgentForge标准Agent会话与消息核心表设计：[AgentForge标准Agent会话与消息核心表设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/AgentForge标准Agent会话与消息核心表设计.md)
+- [x] AgentForge一段式流式对话停止（signal）设计实现：[AgentForge一段式流式对话停止（signal）设计实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/普通流式对话一段式设计实现/AgentForge一段式流式对话停止（signal）设计实现.md)
 
 2）支持并行恢复流式渲染对话（二段式）
+
+- [x] AgentForge流式对话支持重连二段式设计方案：[AgentForge流式对话支持重连二段式设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/流式对话支持重连二段式设计实现/AgentForge流式对话支持重连二段式设计方案.md)
+
+- [x] AgentForge二段式流式对话停止与超时取消设计方案：[AgentForge二段式流式对话停止与超时取消设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/流式对话支持重连二段式设计实现/AgentForge二段式流式对话停止与超时取消设计方案.md)
 
 
 
