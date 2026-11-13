@@ -19,5 +19,16 @@
             <artifactId>agentforge-agent-core</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>cloud.changlu.agentforge</groupId>
+            <artifactId>agentforge-model-openai</artifactId>
+            <version>${revision}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

@@ -238,10 +238,10 @@ http://127.0.0.1:17080
 # 后端（Spring Boot，默认 8080）
 cp agentforge-service/conf/application.yml.example agentforge-service/conf/application.yml
 export AGENTFORGE_MODEL_API_KEY=your-api-key
-mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
+mvn package -pl agentforge-service/agentforge-service-backend/agentforge-service-web -am -DskipTests
 cd agentforge-service
 ./bin/local/upgrate-sqlite.sh
-java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
+java -jar agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 
 # 前端（Vue 2 + Vite，默认 5173，代理 /api 到 8080）
 cd agentforge-service/agentforge-service-ui

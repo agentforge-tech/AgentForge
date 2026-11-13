@@ -52,10 +52,10 @@ cp agentforge-service/conf/application.yml.example \
 
 # 2. Build and run (run from the agentforge-service dir so conf/ and logs/ are resolved)
 export AGENTFORGE_MODEL_API_KEY=your-api-key
-mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
+mvn package -pl agentforge-service/agentforge-service-backend/agentforge-service-web -am -DskipTests
 cd agentforge-service
 ./bin/local/upgrate-sqlite.sh
-java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
+java -jar agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 ```
 
 启动时读取 `${user.dir.conf}/application.yml` 与 `${user.dir.conf}/logback.xml`；日志写入 `logs/agentforge-service.log`（历史滚动到 `logs/history/`），LLM 模块日志单独写入 `logs/llm.log`。
