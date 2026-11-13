@@ -84,7 +84,9 @@ AgentForge
 │   └── agentforge-harness-agent  # Harness runtime (design phase)
 ├── agentforge-service            # Out-of-the-box service (Vue frontend + Spring Boot backend)
 │   ├── agentforge-service-ui     # Vue 2 + Vite frontend
-│   └── agentforge-service-web    # Spring Boot backend
+│   ├── agentforge-service-backend # Backend module aggregator
+│   │   ├── agentforge-service-protocal # Streaming protocol contracts
+│   │   └── agentforge-service-web # Spring Boot backend
 ├── agentforge-examples
 ├── pom.xml
 └── README.md
@@ -228,10 +230,10 @@ Requires the source build from Part 1:
 # Backend (Spring Boot, default 8080)
 cp agentforge-service/conf/application.yml.example agentforge-service/conf/application.yml
 export AGENTFORGE_MODEL_API_KEY=your-api-key
-mvn package -pl agentforge-service/agentforge-service-web -am -DskipTests
+mvn package -pl agentforge-service/agentforge-service-backend/agentforge-service-web -am -DskipTests
 cd agentforge-service
 ./bin/local/upgrate-sqlite.sh
-java -jar agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
+java -jar agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-1.0.0-SNAPSHOT.jar
 
 # Frontend (Vue 2 + Vite, default 5173, proxies /api to 8080)
 cd agentforge-service/agentforge-service-ui

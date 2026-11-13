@@ -132,7 +132,7 @@ cd AgentForge
 mvn clean install -DskipTests
 ```
 
-The frontend and backend are under `agentforge-service/agentforge-service-ui` and `agentforge-service/agentforge-service-web`.
+The frontend and backend are under `agentforge-service/agentforge-service-ui` and `agentforge-service/agentforge-service-backend/agentforge-service-web`.
 
 ## 8. Troubleshooting
 

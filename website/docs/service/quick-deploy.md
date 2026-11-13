@@ -132,7 +132,7 @@ cd AgentForge
 mvn clean install -DskipTests
 ```
 
-前端与后端分别位于 `agentforge-service/agentforge-service-ui` 与 `agentforge-service/agentforge-service-web`。
+前端与后端分别位于 `agentforge-service/agentforge-service-ui` 与 `agentforge-service/agentforge-service-backend/agentforge-service-web`。
 
 ## 8. 常见问题
 

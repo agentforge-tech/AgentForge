@@ -8,7 +8,7 @@ RUN printf '%s\n' \
     '    <mirror><id>aliyun-public</id><name>Aliyun Maven Public</name><url>https://maven.aliyun.com/repository/public</url><mirrorOf>*</mirrorOf></mirror>' \
     '  </mirrors>' \
     '</settings>' > /tmp/maven-settings.xml \
-    && mvn -s /tmp/maven-settings.xml -B -q -pl agentforge-service/agentforge-service-web -am \
+    && mvn -s /tmp/maven-settings.xml -B -q -pl agentforge-service/agentforge-service-backend/agentforge-service-web -am \
     -Dmaven.test.skip=true package
 
 # 2) Build the Vue frontend.
@@ -42,7 +42,7 @@ COPY agentforge-service/conf/application.yml.example ${APP_HOME}/conf/applicatio
 COPY agentforge-service/conf/logback.xml ${APP_HOME}/conf/logback.xml
 COPY agentforge-service/sql/sqllite/ ${APP_HOME}/sql/sqllite/
 COPY --from=backend \
-     /workspace/agentforge-service/agentforge-service-web/target/agentforge-service-web-*.jar \
+     /workspace/agentforge-service/agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-*.jar \
      ${APP_HOME}/lib/app.jar
 COPY --from=frontend /workspace/ui/dist/ ${APP_HOME}/conf/static/
 
