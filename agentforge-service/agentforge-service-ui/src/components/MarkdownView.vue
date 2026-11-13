@@ -1,7 +1,7 @@
 <template>
   <div class="af-markdown" :class="[`af-markdown--${normalizedMode}`, { 'is-streaming': animationActive }]">
-    <div ref="stable" class="markdown-body markdown-body--stable" v-html="stableHtml"></div>
-    <div ref="tail" class="markdown-body markdown-body--tail" v-html="tailHtml"></div>
+    <div ref="stable" class="markdown-body markdown-body--stable" v-html="stableHtml" @click="handleMarkdownClick"></div>
+    <div ref="tail" class="markdown-body markdown-body--tail" v-html="tailHtml" @click="handleMarkdownClick"></div>
   </div>
 </template>
 
@@ -59,6 +59,16 @@ function createMarkdown(highlightCode) {
     }
   })
   installMath(md)
+  const renderCodeBlock = (code, language = '') => {
+    let highlighted = md.utils.escapeHtml(code)
+    if (highlightCode && language && hljs.getLanguage(language)) {
+      try { highlighted = hljs.highlight(code, { language }).value } catch (_error) { /* use escaped code */ }
+    }
+    const languageClass = language ? ` language-${md.utils.escapeHtml(language)}` : ''
+    return `<div class="af-code-block"><button class="af-code-copy" type="button" aria-label="复制代码" title="复制代码">复制</button><pre class="hljs"><code class="${languageClass.trim()}">${highlighted}</code></pre></div>`
+  }
+  md.renderer.rules.fence = (tokens, idx) => renderCodeBlock(tokens[idx].content, (tokens[idx].info || '').trim().split(/\s+/)[0])
+  md.renderer.rules.code_block = (tokens, idx) => renderCodeBlock(tokens[idx].content)
   const defaultLinkOpen = md.renderer.rules.link_open || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options))
   md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
     tokens[idx].attrSet('target', '_blank'); tokens[idx].attrSet('rel', 'noopener noreferrer')
@@ -149,6 +159,25 @@ export default {
         this.$nextTick(() => this.$emit('render-complete', { content: renderedContent }))
       }
     },
+    async handleMarkdownClick(event) {
+      const button = event.target.closest('.af-code-copy')
+      if (!button) return
+      const code = button.closest('.af-code-block')?.querySelector('code')
+      if (!code) return
+      try {
+        await navigator.clipboard.writeText(code.textContent || '')
+        button.textContent = '已复制'
+        button.classList.add('is-copied')
+        window.setTimeout(() => {
+          if (!button.isConnected) return
+          button.textContent = '复制'
+          button.classList.remove('is-copied')
+        }, 1600)
+      } catch (_error) {
+        button.textContent = '复制失败'
+        window.setTimeout(() => { if (button.isConnected) button.textContent = '复制' }, 1600)
+      }
+    },
     decorateTail() {
       const root = this.$refs.tail
       if (!root || !this.animationActive) return
@@ -208,9 +237,64 @@ export default {
 .markdown-body th, .markdown-body td { border: 1px solid #dfe2e5; padding: 6px 10px; }
 .markdown-body th { background: #f6f8fa; font-weight: 600; }
 .markdown-body blockquote { margin: 8px 0; padding: 4px 12px; color: #6a737d; border-left: 4px solid #dfe2e5; background: #fafbfc; }
-.markdown-body code { background: rgba(27,31,35,.06); border-radius: 4px; padding: 2px 5px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; }
-.markdown-body pre { background: #f6f8fa; border-radius: 8px; padding: 12px; overflow: auto; margin: 10px 0; }
-.markdown-body pre code { background: transparent; padding: 0; }
+.af-markdown .markdown-body code { background: #f3f5f8; color: #d6336c; border: 1px solid #e8ebf0; border-radius: 5px; padding: 1px 5px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: .9em; }
+.af-markdown .af-code-block { position: relative; margin: 12px 0; }
+.af-markdown .af-code-copy {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  right: 9px;
+  height: 26px;
+  padding: 0 9px;
+  color: #64748b;
+  background: rgba(255,255,255,.9);
+  border: 1px solid #dce1e8;
+  border-radius: 6px;
+  font: 12px/24px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s ease, color .15s ease, background .15s ease;
+}
+.af-markdown .af-code-block:hover .af-code-copy,
+.af-markdown .af-code-copy:focus-visible,
+.af-markdown .af-code-copy.is-copied { opacity: 1; }
+.af-markdown .af-code-copy:hover { color: #334155; background: #fff; }
+.af-markdown .af-code-copy.is-copied { color: #15803d; }
+/* 代码块必须比 chat.css 中的全局 Markdown 规则更具体，否则颜色会受样式加载顺序影响。 */
+.af-markdown .markdown-body pre,
+.af-markdown .markdown-body pre.hljs {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 13px 72px 13px 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  color: #334155;
+  background: #f7f8fa;
+  border: 1px solid #e8ebf0;
+  border-radius: 8px;
+  box-shadow: inset 3px 0 0 #d7dde7;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.65;
+  white-space: pre;
+  tab-size: 2;
+  -webkit-overflow-scrolling: touch;
+}
+.af-markdown .markdown-body pre code,
+.af-markdown .markdown-body pre.hljs code {
+  display: block;
+  min-width: max-content;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  white-space: inherit;
+}
 .markdown-body ul, .markdown-body ol { padding-left: 22px; margin: 8px 0; }
 .markdown-body li { margin: 3px 0; }
 .markdown-body a { color: #0969da; text-decoration: none; }

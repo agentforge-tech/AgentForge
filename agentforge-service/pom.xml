@@ -16,6 +16,6 @@
 
     <modules>
         <module>agentforge-service-ui</module>
-        <module>agentforge-service-web</module>
+        <module>agentforge-service-backend</module>
     </modules>
 </project>
