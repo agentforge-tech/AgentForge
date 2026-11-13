@@ -1,13 +1,13 @@
 <template>
   <div class="elegant-message">
     <!-- 刚开始就取消：还没有任何思考片段或正文时，也要有顶部状态提示，避免空白 -->
-    <div v-if="message.status === 'cancelled' && !thinkParts.length" class="elegant-status-box cancelled">
+    <div v-if="message.status === 'cancelled' && !processParts.length" class="elegant-status-box cancelled">
       <i class="el-icon-remove-outline"></i>
       <span>已取消</span>
     </div>
 
-    <!-- 思考过程：模型思考 + 工具调用，统一收拢为轻量事件流 -->
-    <div v-if="thinkParts.length" class="elegant-thinking" :class="{ running: message.status === 'running' }">
+    <!-- 执行过程：阶段响应 + 模型思考 + 工具调用，统一收拢为轻量事件流 -->
+    <div v-if="processParts.length" class="elegant-thinking" :class="{ running: message.status === 'running' }">
       <div class="elegant-thinking-head" @click="open = !open">
         <span class="elegant-thinking-title">
           {{ statusTitle }}<span v-if="doneElapsed" class="elegant-thinking-elapsed"> {{ doneElapsed }}</span>
@@ -17,8 +17,9 @@
 
       <el-collapse-transition>
         <div v-show="open" class="elegant-thinking-body">
-          <template v-for="(part, idx) in thinkParts">
-            <ElegantThinkItem v-if="part.type === 'think'" :key="'t' + idx" :part="part" />
+          <template v-for="(part, idx) in processParts">
+            <ResponseSegmentBlock v-if="part.type === 'response_segment'" :key="'r' + idx" :part="part" mode="elegant" />
+            <ElegantThinkItem v-else-if="part.type === 'think'" :key="'t' + idx" :part="part" />
             <ElegantToolItem v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
             <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
             <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" />
@@ -29,10 +30,10 @@
     </div>
 
     <!-- 最终回答 -->
-    <div v-if="message.content" class="answer">
+    <div v-if="displayContent" class="answer">
       <MarkdownView
-        :content="message.content"
-        :streaming="message.status === 'running'"
+        :content="displayContent"
+        :streaming="contentStreaming"
         mode="typewriter-blur"
         @render-complete="$emit('render-complete', $event)"
       />
@@ -62,10 +63,11 @@ import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
 import RetryNotice from '../../components/RetryNotice.vue'
 import CompactNotice from '../../components/CompactNotice.vue'
 import TodoBoard from '../../components/TodoBoard.vue'
+import ResponseSegmentBlock from '../../components/ResponseSegmentBlock.vue'
 
 export default {
   name: 'ElegantMessage',
-  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice, TodoBoard },
+  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice, TodoBoard, ResponseSegmentBlock },
   props: {
     message: { type: Object, required: true }
   },
@@ -73,8 +75,26 @@ export default {
     return { open: this.message.status === 'running' }
   },
   computed: {
-    thinkParts() {
-      return (this.message.parts || []).filter((p) => p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice' || p.type === 'todo_card')
+    processParts() {
+      return (this.message.parts || []).filter((p) =>
+        (p.type !== 'response_segment' || String(p.content || '').trim()) &&
+        p !== this.activeResponseSegment &&
+        (p.type === 'response_segment' || p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice' || p.type === 'todo_card')
+      )
+    },
+    activeResponseSegment() {
+      const parts = this.message.parts || []
+      for (let index = parts.length - 1; index >= 0; index--) {
+        const part = parts[index]
+        if (part.type === 'response_segment' && part.status === 'streaming') return part
+      }
+      return null
+    },
+    displayContent() {
+      return this.message.content || this.activeResponseSegment?.content || ''
+    },
+    contentStreaming() {
+      return !this.message.content && !!this.activeResponseSegment && this.message.status === 'running'
     },
     retryNotice() {
       const parts = this.message.parts || []
@@ -105,13 +125,13 @@ export default {
 </script>
 
 <style scoped>
-.elegant-thinking { margin: 0 0 12px; }
+.elegant-thinking { margin: 0 0 8px; }
 .elegant-thinking-head {
   display: flex;
   align-items: center;
   gap: 6px;
   width: fit-content;
-  height: 32px; /* 与发布页左侧 .bot-avatar 保持同高，使状态行与 Logo 垂直居中 */
+  height: 24px;
   padding: 0;
   cursor: pointer;
   user-select: none;
@@ -124,7 +144,7 @@ export default {
 .elegant-thinking-elapsed { color: #98a2b3; font-weight: 400; font-size: 11.5px; }
 .elegant-thinking-arrow { color: #aeb7c4; font-size: 11px; transition: transform 0.2s; }
 .elegant-thinking-arrow.open { transform: rotate(180deg); }
-.elegant-thinking-body { padding: 4px 0 1px; }
+.elegant-thinking-body { padding: 1px 0; }
 
 .answer { margin: 2px 0 8px; }
 

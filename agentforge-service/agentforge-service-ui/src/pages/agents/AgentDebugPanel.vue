@@ -129,6 +129,13 @@ import { chatTransportMode, setChatTransportMode, runChatStream, resumeChatStrea
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
 import { reduceCompactEvent } from '../../utils/compactEventReducer'
 import { buildTodoCardPart } from '../../utils/todoEventReducer'
+import {
+  appendResponseSegment,
+  closeOpenResponseSegment,
+  finishResponseSegments,
+  promoteLastResponseSegment,
+  shouldAppendResponseSegment
+} from '../../utils/responseSegmentReducer'
 
 const MODE_KEY = 'agentforge.render.mode'
 export default {
@@ -178,7 +185,7 @@ export default {
       } catch (e) {
         if (e.name !== 'AbortError') { answer.status = 'error'; answer.error = e.message || '调试失败'; this.finishParts(answer) }
       } finally {
-        if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
+        if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
         if (requestVersion === this.requestVersion) { this.running = false; this.currentMessageId = null; this.controller = null; this.restoreDeferredAppends(); this.scroll() }
         if (this.historyOpen) this.loadHistory()
       }
@@ -212,7 +219,7 @@ export default {
       const answer = [...this.messages].reverse().find((m) => m.role === 'assistant')
       if (!answer) return
       const name = result && result.statusName
-      if (name === 'SUCCEEDED') answer.status = 'success'
+      if (name === 'SUCCEEDED') { promoteLastResponseSegment(answer); answer.status = 'success' }
       else if (name === 'FAILED') { answer.status = 'error'; if (!answer.error) answer.error = '生成失败' }
       else answer.status = 'cancelled'
       this.finishParts(answer)
@@ -359,7 +366,7 @@ export default {
         if (error.name !== 'AbortError') this.$message.error(error.message || '恢复流式对话失败')
       } finally {
         if (requestVersion === this.requestVersion) {
-          if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
+          if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
           this.running = false; this.controller = null; this.currentMessageId = null
           if (this.historyOpen) this.loadHistory()
         }
@@ -419,14 +426,20 @@ export default {
       if (this.stopping) return
       switch (event.event) {
         case 'session': if (event.content) this.sessionId = event.content; break
-        case 'think': this.clearRetryNotice(answer); this.applyThink(answer, event); break
-        case 'resp': this.clearRetryNotice(answer); answer.content += event.content || ''; break
-        case 'tool_call': this.clearRetryNotice(answer); this.closeOpenThink(answer); this.applyTool(answer, event, this.mode === 'debug'); break
-        case 'user_message': this.applyAppendEvent(answer, event); break
-        case 'retry': this.applyRetryEvent(answer, event); break
-        case 'compact': reduceCompactEvent(answer, event, this.mode === 'debug'); break
-        case 'resp_end': this.clearRetryNotice(answer); answer.status = 'success'; this.finishParts(answer); this.running = false; this.stopRemotePoll(); break
-        case 'error': this.clearRetryNotice(answer); answer.status = 'error'; answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '调试失败'); this.finishParts(answer); this.running = false; this.stopRemotePoll(); break
+        case 'think': this.clearRetryNotice(answer); closeOpenResponseSegment(answer); this.applyThink(answer, event); break
+        case 'resp':
+          this.clearRetryNotice(answer)
+          if (shouldAppendResponseSegment(answer, event)) {
+            this.closeOpenThink(answer)
+            appendResponseSegment(answer, event)
+          }
+          break
+        case 'tool_call': this.clearRetryNotice(answer); closeOpenResponseSegment(answer); this.closeOpenThink(answer); this.applyTool(answer, event, this.mode === 'debug'); break
+        case 'user_message': closeOpenResponseSegment(answer); this.applyAppendEvent(answer, event); break
+        case 'retry': closeOpenResponseSegment(answer); this.applyRetryEvent(answer, event); break
+        case 'compact': closeOpenResponseSegment(answer); reduceCompactEvent(answer, event, this.mode === 'debug'); break
+        case 'resp_end': this.clearRetryNotice(answer); promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer); this.running = false; this.stopRemotePoll(); break
+        case 'error': this.clearRetryNotice(answer); finishResponseSegments(answer); answer.status = 'error'; answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '调试失败'); this.finishParts(answer); this.running = false; this.stopRemotePoll(); break
         default: break
       }
       this.scroll()
@@ -435,11 +448,12 @@ export default {
       const last = answer.parts[answer.parts.length - 1]
       const open = last && last.type === 'think' && last.status === 'thinking' ? last : null
       const text = event.content || ''
+      if (!String(text).trim() && !open) return
       if (!event.isFinish) {
         if (open) open.content += text
         else answer.parts.push({ type: 'think', content: text, status: 'thinking', startedAt: Date.now(), duration: null })
       } else if (open) {
-        if (text) open.content = text
+        if (String(text).trim()) open.content = text
         open.status = 'end'; open.duration = Date.now() - (open.startedAt || Date.now())
       } else if (text) answer.parts.push({ type: 'think', content: text, status: 'end', startedAt: Date.now(), duration: 0 })
     },
@@ -473,6 +487,7 @@ export default {
       }
     },
     finishParts(answer) {
+      finishResponseSegments(answer)
       answer.parts.forEach((part) => {
         if (part.type === 'think' && part.status === 'thinking') { part.status = 'end'; part.duration = Date.now() - (part.startedAt || Date.now()) }
         if (part.type === 'tool_card' && !part.isFinish) { part.isFinish = true; part.finishedAt = Date.now(); if (!(part.duration > 0)) part.duration = part.finishedAt - (part.startedAt || part.finishedAt) }

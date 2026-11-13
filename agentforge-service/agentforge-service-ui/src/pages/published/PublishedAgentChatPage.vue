@@ -189,6 +189,13 @@ import { replaySession } from '../../utils/sessionReplay'
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
 import { reduceCompactEvent } from '../../utils/compactEventReducer'
 import { buildTodoCardPart } from '../../utils/todoEventReducer'
+import {
+  appendResponseSegment,
+  closeOpenResponseSegment,
+  finishResponseSegments,
+  promoteLastResponseSegment,
+  shouldAppendResponseSegment
+} from '../../utils/responseSegmentReducer'
 
 /** 输入框最大高度（px），超过后内部滚动，不再继续撑高 */
 const COMPOSER_MAX_HEIGHT = 120
@@ -396,7 +403,7 @@ export default {
         if (error.name !== 'AbortError') this.$message.error(error.message || '恢复流式对话失败')
       } finally {
         if (requestVersion === this.requestVersion) {
-          if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
+          if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
           this.running = false; this.controller = null; this.currentMessageId = null
           this.loadSessions()
         }
@@ -558,6 +565,7 @@ export default {
       } finally {
         if (requestVersion === this.requestVersion) {
           if (answer.status === 'running') {
+            promoteLastResponseSegment(answer)
             answer.status = 'success'
             this.finishParts(answer)
           }
@@ -640,28 +648,37 @@ export default {
           break
         case 'think':
           this.clearRetryNotice(answer)
+          closeOpenResponseSegment(answer)
           this.applyThink(answer, event)
           break
         case 'resp':
           this.clearRetryNotice(answer)
-          answer.content += event.content || ''
+          if (shouldAppendResponseSegment(answer, event)) {
+            this.closeOpenThink(answer)
+            appendResponseSegment(answer, event)
+          }
           break
         case 'tool_call':
           this.clearRetryNotice(answer)
+          closeOpenResponseSegment(answer)
           this.closeOpenThink(answer)
           this.applyTool(answer, event)
           break
         case 'user_message':
+          closeOpenResponseSegment(answer)
           this.applyAppendEvent(answer, event)
           break
         case 'retry':
+          closeOpenResponseSegment(answer)
           this.applyRetryEvent(answer, event)
           break
         case 'compact':
+          closeOpenResponseSegment(answer)
           reduceCompactEvent(answer, event)
           break
         case 'resp_end':
           this.clearRetryNotice(answer)
+          promoteLastResponseSegment(answer)
           answer.status = 'success'
           this.finishParts(answer)
           // 终态到达即结束运行态，避免异步收尾未及时把按钮从“停止”切回“发送”。
@@ -670,6 +687,7 @@ export default {
           break
         case 'error':
           this.clearRetryNotice(answer)
+          finishResponseSegments(answer)
           answer.status = 'error'
           answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '生成失败')
           this.finishParts(answer)
@@ -687,13 +705,14 @@ export default {
       const last = answer.parts[answer.parts.length - 1]
       const open = last && last.type === 'think' && last.status === 'thinking' ? last : null
       const text = event.content || ''
+      if (!String(text).trim() && !open) return
       if (!event.isFinish) {
         if (open) open.content += text
         else answer.parts.push({ type: 'think', content: text, status: 'thinking', startedAt: Date.now(), duration: null })
         return
       }
       if (open) {
-        if (text) open.content = text
+        if (String(text).trim()) open.content = text
         open.status = 'end'
         open.duration = Date.now() - (open.startedAt || Date.now())
       } else if (text) {
@@ -737,6 +756,7 @@ export default {
       }
     },
     finishParts(answer) {
+      finishResponseSegments(answer)
       answer.parts.forEach((part) => {
         if (part.type === 'think' && part.status === 'thinking') {
           part.status = 'end'
@@ -860,7 +880,7 @@ export default {
       const answer = [...this.messages].reverse().find((m) => m.role === 'assistant')
       if (!answer) return
       const name = result && result.statusName
-      if (name === 'SUCCEEDED') answer.status = 'success'
+      if (name === 'SUCCEEDED') { promoteLastResponseSegment(answer); answer.status = 'success' }
       else if (name === 'FAILED') { answer.status = 'error'; if (!answer.error) answer.error = '生成失败' }
       else answer.status = 'cancelled'
       this.finishParts(answer)
