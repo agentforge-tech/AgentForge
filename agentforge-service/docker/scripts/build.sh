@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 require_docker
 ensure_env
 
-VERSION="${1:-$(env_get IMAGE_TAG 1.0.0)}"
+VERSION="${1:-$(env_get IMAGE_TAG 1.0.1)}"
 IMAGE_REPO="$(env_get IMAGE_REPO agentforge-service)"
 
 log "building ${IMAGE_REPO}:${VERSION} (${DOCKER_DIR}/Dockerfile)"

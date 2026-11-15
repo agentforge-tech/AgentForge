@@ -12,7 +12,7 @@ if [ -n "$NEW_TAG" ]; then
     log "image tag switched to ${NEW_TAG}"
 fi
 
-IMAGE_TAG="$(env_get IMAGE_TAG 1.0.0)"
+IMAGE_TAG="$(env_get IMAGE_TAG 1.0.1)"
 IMAGE_REPO="$(env_get IMAGE_REPO agentforge-service)"
 log "upgrading ${IMAGE_REPO}:${IMAGE_TAG}"
 

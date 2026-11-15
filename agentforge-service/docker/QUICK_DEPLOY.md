@@ -73,7 +73,7 @@ docker run -d \
   -e AGENTFORGE_FILE_VISIT_PORT=17080 \
   -e AGENTFORGE_SQLITE_APPLIED_DIR=/opt/agentforge/data/sql-applied \
   --entrypoint /bin/bash \
-  codercl/agentforge-service:1.0.0 \
+  codercl/agentforge-service:1.0.1 \
   -c 'cp -n /opt/agentforge/conf/application.yml /opt/agentforge/host-conf/application.yml && cp -n /opt/agentforge/conf/logback.xml /opt/agentforge/host-conf/logback.xml && cp /opt/agentforge/host-conf/application.yml /opt/agentforge/conf/application.yml && cp /opt/agentforge/host-conf/logback.xml /opt/agentforge/conf/logback.xml && /opt/agentforge/bin/upgrade-sql.sh && exec /opt/agentforge/bin/start.sh'
 ```
 
