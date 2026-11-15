@@ -93,6 +93,14 @@ public class DefaultToolExecutor implements ToolExecutor {
             Parameter parameter = parameters[i];
             String parameterName = parameterName(parameter);
             Object value = argumentsMap.get(parameterName);
+            P pAnnotation = parameter.getAnnotation(P.class);
+            if (value == null
+                    && pAnnotation != null
+                    && !pAnnotation.required()
+                    && !parameter.getType().isPrimitive()) {
+                bound[i] = null;
+                continue;
+            }
             bound[i] = coerce(value, parameter.getType(), parameterName, request.name());
         }
         return bound;

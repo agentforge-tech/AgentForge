@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent.stream;
 
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
 import cloud.changlu.agentforge.model.chat.response.ChatResponse;
 import cloud.changlu.agentforge.model.tool.execution.ToolExecution;
 
@@ -29,6 +30,16 @@ public interface TokenStream {
 
     /** 最终回答生成完成后回调 */
     TokenStream onCompleteResponse(Consumer<ChatResponse> completeResponseHandler);
+
+    /** 因权限审核 / AskUser 中断挂起时回调；未注册时可调用 {@link #suspendInfo()} 读取 */
+    default TokenStream onSuspended(Consumer<AgentSuspendInfo> suspendedHandler) {
+        return this;
+    }
+
+    /** 流式执行已挂起时返回挂起信息，否则返回 null */
+    default AgentSuspendInfo suspendInfo() {
+        return null;
+    }
 
     /** 流式过程中发生错误时回调 */
     TokenStream onError(Consumer<Throwable> errorHandler);

@@ -12,7 +12,9 @@ public enum AgentRunState {
 
     CANCEL(1002, "任务已取消"),
 
-    MAX_STEPS(1003, "执行步长达到上限");
+    MAX_STEPS(1003, "执行步长达到上限"),
+
+    WAITING_INTERRUPT(1004, "等待中断恢复");
 
     private final Integer code;
     private final String description;

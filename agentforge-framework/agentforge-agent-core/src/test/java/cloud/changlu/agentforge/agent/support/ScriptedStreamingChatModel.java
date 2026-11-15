@@ -78,6 +78,19 @@ public class ScriptedStreamingChatModel implements StreamingChatModel {
         return this;
     }
 
+    public ScriptedStreamingChatModel enqueueToolCalls(List<ToolExecutionRequest> requests) {
+        rounds.add(
+                new Round(
+                        Collections.<String>emptyList(),
+                        Collections.<String>emptyList(),
+                        ChatResponse.builder()
+                                .aiMessage(AiMessage.from(requests))
+                                .finishReason(FinishReason.TOOL_EXECUTION)
+                                .build(),
+                        null));
+        return this;
+    }
+
     public ScriptedStreamingChatModel enqueueError(Throwable error) {
         rounds.add(
                 new Round(

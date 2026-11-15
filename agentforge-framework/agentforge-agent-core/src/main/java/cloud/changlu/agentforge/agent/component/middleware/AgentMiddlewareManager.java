@@ -2,6 +2,8 @@ package cloud.changlu.agentforge.agent.component.middleware;
 
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.StopResult;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptResumeContext;
 import cloud.changlu.agentforge.agent.step.StepResult;
 import cloud.changlu.agentforge.agent.stream.PartialThinking;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
@@ -108,7 +110,7 @@ public class AgentMiddlewareManager {
         return Collections.unmodifiableList(streamingMiddlewares);
     }
 
-    /** 按注册顺序整理中间件，并挑出需要接收流式事件的中间件 */
+    /** 按注册顺序整理中间件，并挑出处理高频流式事件的中间件 */
     private void sortMiddlewares() {
         sortedMiddlewares.clear();
         streamingMiddlewares.clear();
@@ -197,6 +199,84 @@ public class AgentMiddlewareManager {
                 middleware.onLoopError(currentStep, error, chatContext);
             } catch (Exception e) {
                 log.log(Level.SEVERE, "中间件 " + name(middleware) + " 执行 onLoopError 时出错", e);
+            }
+        }
+    }
+
+    // ===================== 中断与恢复相关方法 ===================== //
+
+    /** 触发中断挂起回调；单个中间件失败不影响主流程。 */
+    public void triggerOnInterruptRequested(
+            int currentStep, AgentSuspendInfo suspendInfo, AgentChatContext chatContext) {
+        if (sortedMiddlewares.isEmpty()) {
+            return;
+        }
+        log.fine("触发中断挂起中间件，步骤: " + currentStep + ", batchId: " + suspendInfo.getBatchId());
+        for (IAgentMiddleware middleware : sortedMiddlewares) {
+            try {
+                middleware.onInterruptRequested(currentStep, suspendInfo, chatContext);
+            } catch (Exception e) {
+                log.log(
+                        Level.SEVERE,
+                        "中间件 " + name(middleware) + " 执行 onInterruptRequested 时出错",
+                        e);
+            }
+        }
+    }
+
+    /** 触发恢复前回调；在工具副作用之前执行，失败不阻断恢复。 */
+    public void triggerOnBeforeInterruptResume(
+            InterruptResumeContext resumeContext, AgentChatContext chatContext) {
+        if (sortedMiddlewares.isEmpty()) {
+            return;
+        }
+        log.fine("触发恢复前中间件，batchId: " + resumeContext.getBatchId());
+        for (IAgentMiddleware middleware : sortedMiddlewares) {
+            try {
+                middleware.onBeforeInterruptResume(resumeContext, chatContext);
+            } catch (Exception e) {
+                log.log(
+                        Level.SEVERE,
+                        "中间件 " + name(middleware) + " 执行 onBeforeInterruptResume 时出错",
+                        e);
+            }
+        }
+    }
+
+    /** 触发恢复完成回调；在冻结批次写回 ChatMemory 之后执行。 */
+    public void triggerOnAfterInterruptResume(
+            InterruptResumeContext resumeContext, AgentChatContext chatContext) {
+        if (sortedMiddlewares.isEmpty()) {
+            return;
+        }
+        log.fine("触发恢复后中间件，batchId: " + resumeContext.getBatchId());
+        for (IAgentMiddleware middleware : sortedMiddlewares) {
+            try {
+                middleware.onAfterInterruptResume(resumeContext, chatContext);
+            } catch (Exception e) {
+                log.log(
+                        Level.SEVERE,
+                        "中间件 " + name(middleware) + " 执行 onAfterInterruptResume 时出错",
+                        e);
+            }
+        }
+    }
+
+    /** 触发恢复异常回调。 */
+    public void triggerOnInterruptResumeError(
+            InterruptResumeContext resumeContext, Throwable error, AgentChatContext chatContext) {
+        if (sortedMiddlewares.isEmpty()) {
+            return;
+        }
+        log.fine("触发恢复异常中间件，batchId: " + resumeContext.getBatchId());
+        for (IAgentMiddleware middleware : sortedMiddlewares) {
+            try {
+                middleware.onInterruptResumeError(resumeContext, error, chatContext);
+            } catch (Exception e) {
+                log.log(
+                        Level.SEVERE,
+                        "中间件 " + name(middleware) + " 执行 onInterruptResumeError 时出错",
+                        e);
             }
         }
     }

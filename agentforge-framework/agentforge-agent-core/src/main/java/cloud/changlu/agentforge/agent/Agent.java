@@ -14,6 +14,8 @@ import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.domain.StopResult;
 import cloud.changlu.agentforge.agent.exception.AgentException;
 import cloud.changlu.agentforge.agent.exception.CancelException;
+import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
 import cloud.changlu.agentforge.agent.memory.ChatMemory;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
@@ -188,6 +190,7 @@ public abstract class Agent extends BaseAgent implements IResumableAgent {
         String runRes = "";
         String cancelReason = null;
         boolean isFinished = false;
+        boolean isSuspended = false;
         AgentRunState runState = null;
 
         try {
@@ -225,6 +228,11 @@ public abstract class Agent extends BaseAgent implements IResumableAgent {
                             curStep.getRunState() == null
                                     ? AgentRunState.SUCCESS
                                     : curStep.getRunState();
+                    break;
+                }
+                if (curStep.getState() == StepState.SUSPENDED) {
+                    isSuspended = true;
+                    runState = AgentRunState.WAITING_INTERRUPT;
                     break;
                 }
                 if (curStep.getState() == StepState.FINISHED) {
@@ -283,6 +291,17 @@ public abstract class Agent extends BaseAgent implements IResumableAgent {
                 runRegistry.complete(runControl);
                 throw new AgentException("Agent执行失败: " + e.getMessage(), e);
             }
+        }
+
+        if (isSuspended) {
+            runControl.finalizing();
+            runControl.finish(
+                    AgentExecutionStatus.SUSPENDED, AgentRunState.WAITING_INTERRUPT, null);
+            runRegistry.complete(runControl);
+            AgentSuspendInfo suspendInfo =
+                    (AgentSuspendInfo)
+                            chatContext.getExtension(PermissionInterruptModule.SUSPEND_INFO_KEY);
+            return ChatResult.toSuspended(chatContext.getExecutionId(), question, suspendInfo);
         }
 
         // 取消可能发生在循环自然结束的瞬间，这里补一次判定，避免误报完成
@@ -439,6 +458,7 @@ public abstract class Agent extends BaseAgent implements IResumableAgent {
 
     private static boolean isTerminalStatus(AgentExecutionStatus status) {
         return status == AgentExecutionStatus.COMPLETED
+                || status == AgentExecutionStatus.SUSPENDED
                 || status == AgentExecutionStatus.CANCELLED
                 || status == AgentExecutionStatus.FAILED;
     }

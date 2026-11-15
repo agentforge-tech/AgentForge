@@ -1,6 +1,7 @@
 package cloud.changlu.agentforge.agent.step;
 
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
 
 /**
  * @description Agent run() 的最终返回
@@ -15,6 +16,7 @@ public class ChatResult {
     private String res;
     private ChatResultState chatResultState;
     private AgentRunState runState;
+    private AgentSuspendInfo suspendInfo;
 
     public ChatResult() {}
 
@@ -24,6 +26,7 @@ public class ChatResult {
         this.res = builder.res;
         this.chatResultState = builder.chatResultState;
         this.runState = builder.runState;
+        this.suspendInfo = builder.suspendInfo;
     }
 
     public static Builder builder() {
@@ -52,6 +55,26 @@ public class ChatResult {
                 .runState(runState)
                 .chatResultState(ChatResultState.FINISHED)
                 .build();
+    }
+
+    public static ChatResult toSuspended(
+            String executionId, String question, AgentSuspendInfo suspendInfo) {
+        return builder()
+                .executionId(executionId)
+                .question(question)
+                .res("等待中断恢复")
+                .runState(AgentRunState.WAITING_INTERRUPT)
+                .chatResultState(ChatResultState.SUSPENDED)
+                .suspendInfo(suspendInfo)
+                .build();
+    }
+
+    public AgentSuspendInfo getSuspendInfo() {
+        return suspendInfo;
+    }
+
+    public void setSuspendInfo(AgentSuspendInfo suspendInfo) {
+        this.suspendInfo = suspendInfo;
     }
 
     public String getExecutionId() {
@@ -121,6 +144,7 @@ public class ChatResult {
         private String res;
         private ChatResultState chatResultState;
         private AgentRunState runState;
+        private AgentSuspendInfo suspendInfo;
 
         public Builder executionId(String executionId) {
             this.executionId = executionId;
@@ -144,6 +168,11 @@ public class ChatResult {
 
         public Builder runState(AgentRunState runState) {
             this.runState = runState;
+            return this;
+        }
+
+        public Builder suspendInfo(AgentSuspendInfo suspendInfo) {
+            this.suspendInfo = suspendInfo;
             return this;
         }
 
