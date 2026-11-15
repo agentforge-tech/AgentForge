@@ -12,7 +12,7 @@ public interface IAgentSessionService {
     /**
      * 聊天请求初始化：解析/创建会话，写入 USER 消息与 AI 占位消息。
      *
-     * @return 初始化结果，包含会话主键与 AI 消息主键
+     * @return 初始化结果，包含业务会话标识与消息主键
      */
     SessionInitResult initChat(
             String aid, String sessionId, String message, Long createUserId, boolean debug);
@@ -40,7 +40,6 @@ public interface IAgentSessionService {
     /** 请求初始化结果。 */
     final class SessionInitResult {
         private final String sessionId;
-        private final Long sessionPk;
         private final Long userMessageId;
         private final Long aiMessageId;
         private final Integer seqNum;
@@ -48,13 +47,11 @@ public interface IAgentSessionService {
 
         public SessionInitResult(
                 String sessionId,
-                Long sessionPk,
                 Long userMessageId,
                 Long aiMessageId,
                 Integer seqNum,
                 String title) {
             this.sessionId = sessionId;
-            this.sessionPk = sessionPk;
             this.userMessageId = userMessageId;
             this.aiMessageId = aiMessageId;
             this.seqNum = seqNum;
@@ -63,10 +60,6 @@ public interface IAgentSessionService {
 
         public String getSessionId() {
             return sessionId;
-        }
-
-        public Long getSessionPk() {
-            return sessionPk;
         }
 
         public Long getAiMessageId() {

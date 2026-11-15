@@ -8,6 +8,7 @@ package cloud.changlu.agentforge.agent.step;
 public enum StepState {
     RUNNING,
     FINISHED,
+    SUSPENDED,
     STOP,
     CANCEL;
 }

@@ -1,12 +1,25 @@
 package cloud.changlu.agentforge.service.modules.agent.service.impl;
 
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.ApprovalAction;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchResumeCommand;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptRequest;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptResponse;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptType;
+import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserAnswer;
+import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserResponse;
+import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserSupport;
 import cloud.changlu.agentforge.service.domain.req.ChatStreamRequest;
 import cloud.changlu.agentforge.service.env.EnvironmentContext;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
+import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentInterruptResponseReq;
+import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentInterruptResumeReq;
+import cloud.changlu.agentforge.service.modules.agent.domain.req.AskUserAnswerReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentChatTaskStopVo;
+import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentInterruptResumeVo;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.ChatTaskSubmitVo;
 import cloud.changlu.agentforge.service.modules.agent.event.store.MessageEventFactory;
+import cloud.changlu.agentforge.service.modules.agent.interrupt.AgentInterruptRuntimeRegistry;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.IAgentManager;
@@ -46,6 +59,7 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
     private final AgentSessionMessageMapper agentSessionMessageMapper;
     private final AgentSessionMapper agentSessionMapper;
     private final EnvironmentContext environmentContext;
+    private final AgentInterruptRuntimeRegistry interruptRegistry;
     private final Executor taskExecutor;
     private final Map<Long, Runnable> activeStops = new ConcurrentHashMap<Long, Runnable>();
 
@@ -60,6 +74,7 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
             AgentSessionMessageMapper agentSessionMessageMapper,
             AgentSessionMapper agentSessionMapper,
             EnvironmentContext environmentContext,
+            AgentInterruptRuntimeRegistry interruptRegistry,
             @Qualifier("chatTaskExecutor") Executor taskExecutor) {
         this.runtimeConfigResolver = runtimeConfigResolver;
         this.agentManagerFactory = agentManagerFactory;
@@ -71,6 +86,7 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         this.agentSessionMessageMapper = agentSessionMessageMapper;
         this.agentSessionMapper = agentSessionMapper;
         this.environmentContext = environmentContext;
+        this.interruptRegistry = interruptRegistry;
         this.taskExecutor = taskExecutor;
     }
 
@@ -99,7 +115,7 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
                                 .build());
         AgentChatReq request = buildRequest(config, body, init, debug);
         request.setExecutionId(manager.createExecutionId(agent));
-        registerRun(init, manager, agent, request.getExecutionId());
+        registerRun(init, manager, agent, request.getExecutionId(), config.getAid(), debug, userId);
         try {
             taskExecutor.execute(() -> start(manager, agent, request, init.getAiMessageId()));
         } catch (RuntimeException e) {
@@ -120,6 +136,13 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         SessionMessageStatusEnum current = SessionMessageStatusEnum.getByCode(message.getStatus());
         if (SessionStatusTransfer.isTerminal(current)) {
             return buildStopVo(messageId, false, current, false);
+        }
+
+        // HITL 等待态没有正在运行的 Agent 线程，直接取消批次并收口原消息。
+        if (current == SessionMessageStatusEnum.WAITING_HITL
+                && streamingMiddleware.cancelWaitingInterrupt(message.getSessionId())) {
+            activeStops.remove(messageId);
+            return buildStopVo(messageId, true, SessionMessageStatusEnum.CANCELLED, false);
         }
 
         // 步骤 3：先把消息置为 CANCELLING(7)，作为取消意图的落库状态。
@@ -164,6 +187,113 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         return stop(messageId, userId);
     }
 
+    @Override
+    public AgentInterruptResumeVo resumeInterrupt(AgentInterruptResumeReq request, Long userId) {
+        if (request == null) {
+            throw new IllegalArgumentException("恢复请求不能为空");
+        }
+        AgentInterruptRuntimeRegistry.BatchContext batch =
+                interruptRegistry.requireOwned(request.getBatchId(), userId);
+        InterruptBatchResumeCommand command = toResumeCommand(batch, request);
+        AgentInterruptRuntimeRegistry.BatchContext claimed =
+                interruptRegistry.claim(request.getBatchId(), userId);
+        AgentInterruptRuntimeRegistry.RuntimeContext runtime = claimed.getRuntime();
+        try {
+            taskExecutor.execute(() -> resume(claimed, command));
+        } catch (RuntimeException error) {
+            interruptRegistry.failed(request.getBatchId());
+            throw error;
+        }
+        AgentInterruptResumeVo result = new AgentInterruptResumeVo();
+        result.setBatchId(request.getBatchId());
+        result.setMessageId(runtime.getMessageId());
+        result.setStatus(AgentInterruptRuntimeRegistry.Status.RESUMING.name());
+        return result;
+    }
+
+    private void resume(
+            AgentInterruptRuntimeRegistry.BatchContext batch, InterruptBatchResumeCommand command) {
+        AgentInterruptRuntimeRegistry.RuntimeContext runtime = batch.getRuntime();
+        Object memoryId = runtime.getMemoryId();
+        streamingMiddleware.bind(memoryId, eventFactory.createSink(runtime.getMessageId()));
+        activeStops.put(
+                runtime.getMessageId(),
+                () ->
+                        runtime.getManager()
+                                .cancel(
+                                        runtime.getAgent(),
+                                        String.valueOf(memoryId),
+                                        runtime.getExecutionId()));
+        try {
+            runtime.getManager()
+                    .resumeInterruptStream(runtime.getAgent(), command)
+                    .onCompleteResponse(response -> finishTask(runtime.getMessageId()))
+                    .onError(error -> finishTask(runtime.getMessageId()))
+                    .ignoreErrors()
+                    .start();
+        } catch (RuntimeException error) {
+            interruptRegistry.failed(command.getBatchId());
+            streamingMiddleware.onError(memoryId, error);
+            lifecycleMiddleware.finishWithError(memoryId, error);
+            finishTask(runtime.getMessageId());
+        }
+    }
+
+    private static InterruptBatchResumeCommand toResumeCommand(
+            AgentInterruptRuntimeRegistry.BatchContext batch, AgentInterruptResumeReq request) {
+        List<AgentInterruptResponseReq> submitted =
+                request.getResponses() == null
+                        ? java.util.Collections.emptyList()
+                        : request.getResponses();
+        Map<String, AgentInterruptResponseReq> indexed = new java.util.LinkedHashMap<>();
+        for (AgentInterruptResponseReq item : submitted) {
+            if (item == null || item.getInterruptId() == null) {
+                throw new IllegalArgumentException("interruptId 不能为空");
+            }
+            if (indexed.put(item.getInterruptId(), item) != null) {
+                throw new IllegalArgumentException("不能重复提交 interruptId");
+            }
+        }
+        List<InterruptResponse> responses = new java.util.ArrayList<>();
+        for (InterruptRequest interrupt : batch.getSuspendInfo().getInterrupts()) {
+            AgentInterruptResponseReq item = indexed.remove(interrupt.getInterruptId());
+            if (item == null) {
+                throw new IllegalArgumentException("缺少中断项回复: " + interrupt.getInterruptId());
+            }
+            if (interrupt.getType() == InterruptType.PERMISSION_APPROVAL) {
+                if (item.getAction() == null) {
+                    throw new IllegalArgumentException("权限审核 action 不能为空");
+                }
+                ApprovalAction action;
+                try {
+                    action = ApprovalAction.valueOf(item.getAction().trim().toUpperCase());
+                } catch (IllegalArgumentException error) {
+                    throw new IllegalArgumentException("不支持的审批操作: " + item.getAction());
+                }
+                responses.add(new InterruptResponse(interrupt.getInterruptId(), action, null));
+            } else {
+                List<AskUserAnswer> answers = new java.util.ArrayList<>();
+                if (item.getAnswers() != null) {
+                    for (AskUserAnswerReq answer : item.getAnswers()) {
+                        answers.add(
+                                new AskUserAnswer(
+                                        answer.getQuestionId(),
+                                        answer.getSelectedOptionIds(),
+                                        answer.getCustomValue()));
+                    }
+                }
+                AskUserResponse askUserResponse = new AskUserResponse(answers);
+                AskUserSupport.validate(interrupt.getAskUserRequest(), askUserResponse);
+                responses.add(
+                        InterruptResponse.askUser(interrupt.getInterruptId(), askUserResponse));
+            }
+        }
+        if (!indexed.isEmpty()) {
+            throw new IllegalArgumentException("存在未知的 interruptId");
+        }
+        return new InterruptBatchResumeCommand(request.getBatchId(), responses);
+    }
+
     /** 找到指定业务会话下最近一条仍可取消的 AI 消息。 */
     private Long findActiveAiMessageId(String sessionId) {
         if (sessionId == null || sessionId.trim().isEmpty()) {
@@ -194,7 +324,8 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         return status != null
                 && (status.equals(SessionMessageStatusEnum.CREATED.getCode())
                         || status.equals(SessionMessageStatusEnum.RUNNING.getCode())
-                        || status.equals(SessionMessageStatusEnum.CANCELLING.getCode()));
+                        || status.equals(SessionMessageStatusEnum.CANCELLING.getCode())
+                        || status.equals(SessionMessageStatusEnum.WAITING_HITL.getCode()));
     }
 
     /** 轮询等待消息进入终态；超时或线程中断返回 null。 */
@@ -283,14 +414,23 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
             IAgentSessionService.SessionInitResult init,
             IAgentManager<Object, Object> manager,
             Object agent,
-            String executionId) {
+            String executionId,
+            String aid,
+            boolean debug,
+            Long userId) {
         streamingMiddleware.bind(
                 init.getSessionId(), eventFactory.createSink(init.getAiMessageId()));
         lifecycleMiddleware.registerRun(
+                init.getSessionId(), init.getSessionId(), init.getAiMessageId());
+        interruptRegistry.register(
                 init.getSessionId(),
-                init.getSessionId(),
-                init.getSessionPk(),
-                init.getAiMessageId());
+                init.getAiMessageId(),
+                aid,
+                debug,
+                userId,
+                executionId,
+                manager,
+                agent);
         activeStops.put(
                 init.getAiMessageId(),
                 () -> manager.cancel(agent, init.getSessionId(), executionId));
@@ -334,7 +474,6 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         request.setMessage(body.getMessage().trim());
         request.setIsDebug(debug);
         request.setAiMessageId(init.getAiMessageId());
-        request.setSessionPk(init.getSessionPk());
         request.setSessionTitle(init.getTitle());
         return request;
     }
@@ -342,7 +481,6 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
     private static ChatTaskSubmitVo toSubmitVo(IAgentSessionService.SessionInitResult init) {
         ChatTaskSubmitVo result = new ChatTaskSubmitVo();
         result.setSessionId(init.getSessionId());
-        result.setSessionPk(init.getSessionPk());
         result.setUserMessageId(init.getUserMessageId());
         result.setMessageId(init.getAiMessageId());
         result.setStatus(SessionMessageStatusEnum.CREATED.getCode());

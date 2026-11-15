@@ -12,20 +12,29 @@ import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.domain.StopResult;
 import cloud.changlu.agentforge.agent.exception.AgentException;
 import cloud.changlu.agentforge.agent.exception.CancelException;
+import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
+import cloud.changlu.agentforge.agent.governance.permission.domain.PermissionDenial;
+import cloud.changlu.agentforge.agent.governance.permission.domain.PermissionPreflightResult;
 import cloud.changlu.agentforge.agent.step.StepResult;
 import cloud.changlu.agentforge.agent.step.StopResultState;
 import cloud.changlu.agentforge.agent.tool.AgentToolExecutor;
 import cloud.changlu.agentforge.model.chat.StreamingChatModel;
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
+import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
+import cloud.changlu.agentforge.model.chat.message.ToolExecutionResultMessage;
 import cloud.changlu.agentforge.model.chat.request.ChatRequest;
 import cloud.changlu.agentforge.model.chat.request.DefaultChatRequestParameters;
 import cloud.changlu.agentforge.model.chat.response.ChatResponse;
 import cloud.changlu.agentforge.model.chat.response.StreamingChatResponseHandler;
 import cloud.changlu.agentforge.model.tool.execution.ToolExecution;
+import cloud.changlu.agentforge.model.tool.execution.ToolExecutionResult;
 import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -75,14 +84,17 @@ public class ReActTokenStream implements TokenStream {
     private final AgentMiddlewareManager middlewareManager;
     private final AgentRunControl runControl;
     private final AgentRunRegistry runRegistry;
+    private final PermissionInterruptModule permissionInterruptModule;
 
     private Consumer<String> partialResponseHandler;
     private Consumer<PartialThinking> partialThinkingHandler;
     private Consumer<ChatResponse> intermediateResponseHandler;
     private Consumer<ToolExecution> toolExecutedHandler;
     private Consumer<ChatResponse> completeResponseHandler;
+    private Consumer<AgentSuspendInfo> suspendedHandler;
     private Consumer<Throwable> errorHandler;
     private boolean ignoreErrors;
+    private volatile AgentSuspendInfo suspendInfo;
 
     // 本轮实际发起模型调用所用的请求，供afterModelCall等中间件回调读取
     private ChatRequest currentChatRequest;
@@ -106,6 +118,7 @@ public class ReActTokenStream implements TokenStream {
                 agentSettings,
                 null,
                 null,
+                null,
                 null);
     }
 
@@ -118,6 +131,28 @@ public class ReActTokenStream implements TokenStream {
             AgentMiddlewareManager middlewareManager,
             AgentRunControl runControl,
             AgentRunRegistry runRegistry) {
+        this(
+                chatContext,
+                streamingChatModel,
+                toolExecutor,
+                toolSpecifications,
+                agentSettings,
+                middlewareManager,
+                runControl,
+                runRegistry,
+                null);
+    }
+
+    public ReActTokenStream(
+            AgentChatContext chatContext,
+            StreamingChatModel streamingChatModel,
+            AgentToolExecutor toolExecutor,
+            List<ToolSpecification> toolSpecifications,
+            AgentSettings agentSettings,
+            AgentMiddlewareManager middlewareManager,
+            AgentRunControl runControl,
+            AgentRunRegistry runRegistry,
+            PermissionInterruptModule permissionInterruptModule) {
         if (streamingChatModel == null) {
             throw new AgentException("streamingChatModel is null, need set");
         }
@@ -132,6 +167,7 @@ public class ReActTokenStream implements TokenStream {
         this.middlewareManager = middlewareManager;
         this.runControl = runControl;
         this.runRegistry = runRegistry;
+        this.permissionInterruptModule = permissionInterruptModule;
         if (this.runControl != null) {
             this.runControl.onCancel(
                     new Runnable() {
@@ -180,6 +216,17 @@ public class ReActTokenStream implements TokenStream {
     public TokenStream onCompleteResponse(Consumer<ChatResponse> completeResponseHandler) {
         this.completeResponseHandler = completeResponseHandler;
         return this;
+    }
+
+    @Override
+    public TokenStream onSuspended(Consumer<AgentSuspendInfo> suspendedHandler) {
+        this.suspendedHandler = suspendedHandler;
+        return this;
+    }
+
+    @Override
+    public AgentSuspendInfo suspendInfo() {
+        return suspendInfo;
     }
 
     @Override
@@ -471,6 +518,21 @@ public class ReActTokenStream implements TokenStream {
                         + aiMessage.toolExecutionRequests().size());
         chatContext.getChatMemory().add(aiMessage);
 
+        if (aiMessage.hasToolExecutionRequests() && permissionInterruptModule != null) {
+            PermissionPreflightResult preflight =
+                    permissionInterruptModule.preflight(
+                            currentStep, aiMessage.toolExecutionRequests(), chatContext);
+            if (preflight.isSuspended()) {
+                handleSuspend(currentStep, preflight.getSuspendInfo());
+                return;
+            }
+            if (preflight.hasDenials()) {
+                executeToolRoundWithDenials(
+                        currentStep, response, aiMessage, preflight.getDenials());
+                return;
+            }
+        }
+
         // check是否还需要tools调用情况
         if (!aiMessage.hasToolExecutionRequests()) {
             if (middlewareManager != null) {
@@ -513,9 +575,122 @@ public class ReActTokenStream implements TokenStream {
         chat(currentStep + 1);
     }
 
+    /** 存在直接 DENY 时按原 Tool Call 顺序处理：拒绝项写失败 Tool Result 并通知监听器， 其余项逐个执行；全部完成后继续下一轮 think。 */
+    private void executeToolRoundWithDenials(
+            int currentStep,
+            ChatResponse response,
+            AiMessage aiMessage,
+            List<PermissionDenial> denials) {
+        List<ToolExecutionRequest> requests = aiMessage.toolExecutionRequests();
+        if (runControl != null) runControl.beginTools(requests, currentStep);
+        Map<String, PermissionDenial> deniedById = new LinkedHashMap<String, PermissionDenial>();
+        for (PermissionDenial denial : denials) {
+            deniedById.put(denial.getRequest().id(), denial);
+        }
+        for (ToolExecutionRequest request : requests) {
+            if (isCancelled()) {
+                handleCancel(
+                        currentStep, String.format("会话：%s 流式执行被取消", chatContext.getMemoryId()));
+                return;
+            }
+            PermissionDenial denial = deniedById.get(request.id());
+            if (denial != null) {
+                writeDeniedToolResult(denial);
+                continue;
+            }
+            if (runControl != null) runControl.toolRunning(request.id());
+            List<ToolExecutionResultMessage> results =
+                    toolExecutor.execute(
+                            currentStep,
+                            java.util.Collections.singletonList(request),
+                            chatContext,
+                            toolExecutedHandler,
+                            middlewareManager,
+                            false,
+                            null);
+            ToolExecutionResultMessage result =
+                    results == null || results.isEmpty() ? null : results.get(0);
+            if (runControl != null) {
+                if (result != null && Boolean.TRUE.equals(result.isError())) {
+                    runControl.toolFailed(request.id());
+                } else {
+                    runControl.toolCompleted(request.id());
+                }
+            }
+        }
+        if (isCancelled()) {
+            handleCancel(currentStep, String.format("会话：%s 流式执行被取消", chatContext.getMemoryId()));
+            return;
+        }
+        if (middlewareManager != null) {
+            middlewareManager.triggerOnIntermediateResponse(currentStep, response, chatContext);
+        }
+        if (intermediateResponseHandler != null) {
+            intermediateResponseHandler.accept(response);
+        }
+        if (middlewareManager != null) {
+            middlewareManager.triggerAfterLoop(currentStep, StepResult.toFinished(""), chatContext);
+        }
+        if (runControl != null) runControl.betweenSteps(currentStep + 1);
+        chat(currentStep + 1);
+    }
+
+    /** 将权限引擎的 DENY 结果写成失败 Tool Result，并通知流式工具监听器。 */
+    private void writeDeniedToolResult(PermissionDenial denial) {
+        ToolExecutionRequest request = denial.getRequest();
+        chatContext
+                .getChatMemory()
+                .add(
+                        ToolExecutionResultMessage.builder()
+                                .id(request.id())
+                                .toolName(request.name())
+                                .text(denial.getReason() == null ? "" : denial.getReason())
+                                .isError(true)
+                                .build());
+        if (runControl != null) runControl.toolFailed(request.id());
+        if (toolExecutedHandler != null) {
+            toolExecutedHandler.accept(
+                    ToolExecution.builder()
+                            .request(request)
+                            .result(
+                                    ToolExecutionResult.builder()
+                                            .isError(true)
+                                            .text(denial.getReason())
+                                            .build())
+                            .memoryId(chatContext.getMemoryId())
+                            .build());
+        }
+    }
+
     private void handleComplete(ChatResponse response) {
         if (completeResponseHandler != null) {
             completeResponseHandler.accept(response);
+        }
+    }
+
+    /** 冻结本轮工具批次并收口为挂起态，等待外部提交审批/回答后恢复。 */
+    private void handleSuspend(int currentStep, AgentSuspendInfo info) {
+        this.suspendInfo = info;
+        chatContext.putExtension(PermissionInterruptModule.SUSPEND_INFO_KEY, info);
+        if (middlewareManager != null) {
+            middlewareManager.triggerOnInterruptRequested(currentStep, info, chatContext);
+        }
+        log.fine(
+                "ReActTokenStream 挂起 executionId="
+                        + chatContext.getExecutionId()
+                        + ", step="
+                        + currentStep
+                        + ", batchId="
+                        + info.getBatchId());
+        if (middlewareManager != null) {
+            middlewareManager.triggerAfterLoop(
+                    currentStep,
+                    StepResult.toSuspended("interrupt batch: " + info.getBatchId()),
+                    chatContext);
+        }
+        finishExecution(AgentExecutionStatus.SUSPENDED, AgentRunState.WAITING_INTERRUPT, null);
+        if (suspendedHandler != null) {
+            suspendedHandler.accept(info);
         }
     }
 

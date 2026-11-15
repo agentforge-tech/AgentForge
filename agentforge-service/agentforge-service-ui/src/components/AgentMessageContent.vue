@@ -25,7 +25,8 @@ export default {
   computed: {
     modeComponent() { return getRenderMode(this.mode).component },
     showActions() {
-      if (this.message.status === 'running') return false
+      // 只有整轮正常完成且正文渲染结束后才出现复制按钮，等待确认/取消/失败都不显示。
+      if (this.message.status !== 'success') return false
       return !this.message.content || this.renderedContent === this.message.content
     }
   },

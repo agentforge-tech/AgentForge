@@ -32,7 +32,9 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 - **Tool ecosystem** — local Java `@Tool` methods, HTTP plugins and MCP servers converted into a unified function-call standard, with thought fields injected into every tool call
 - **AgentForge Service** — a runnable single-user Agent workbench covering model config, Agent build / debug / version / publish, session history and replay on SQLite / MySQL
 - **Streaming & observability** — unified SSE event protocol, dual `debug` / `elegant` rendering, session event replay, and Agent Loop Trace with flame graph and flow chart
-- **Coming next** — Harness runtime (sandbox, HITL approval, resumable execution), context compression, scenario-aware retries, scheduled tasks, DingTalk / Feishu channels, and CLI / Desktop / Platform forms
+- **Human-in-the-Loop (initial)** — `ALLOW / DENY / ASK` permission decisions, permission approval and `ask_user` interrupts, frozen tool batches, `SUSPENDED` invocations and explicit structured recovery
+- **Harness Agent (initial local runtime)** — `HarnessAgent` binds a `Workspace` and `LocalRuntime` to provide `read / write / edit / glob / grep / rg / bash` tools, command execution, prompt rendering and resource lifecycle
+- **Coming next** — remote sandbox runtimes (Docker / E2B / K8s), persistent and cross-process interrupt stores, multi-level approval, Harness-level permission policy selection, context compression, scenario-aware retries, scheduled tasks, DingTalk / Feishu channels, and CLI / Desktop / Platform forms
 
 ---
 
@@ -40,7 +42,7 @@ Rather than starting from a highly abstracted Agent API, it first establishes a 
 
 AgentForge follows the two-part design from the [roadmap](https://github.com/agentforge-tech/AgentForge/issues/1):
 
-1. **Agent framework** — reusable core components: unified model protocol, general-purpose ReAct Agent runtime, Harness Agent runtime (permissions, sandbox, HITL approval, resumable execution), plus tools, memory, middleware, tracing and token accounting.
+1. **Agent framework** — reusable core components: unified model protocol, general-purpose ReAct Agent runtime, HITL permission approval and AskUser interrupts, Harness Agent runtime (initial local Workspace runtime; remote sandbox and Harness-level approval integration next), plus tools, memory, middleware, tracing and token accounting.
 2. **Agent Service** — `agentforge-service`, an out-of-the-box implementation of standard Agent infrastructure best practices, from model configuration to Agent build / debug / version / publish and session operations.
 
 `agentforge-agent-core` is the heart of the framework. It takes the raw intelligence of an LLM and forges it into real action, layer by layer:
@@ -64,8 +66,8 @@ Real Action
 | Tool / Skill / MCP | `ToolService` with a shared tool specification / executor SPI: local `@Tool`, HTTP plugins and MCP servers |
 | Reasoning / Planning | ReAct think → act → observe loop with step limits and interruption checks |
 | Agent Runtime | `ReActAgent` for sync, `ReActTokenStream` for streaming, a middleware chain, retry and cancellation |
-| Multi-Agent / Sandbox / Observability | Agent Loop Trace middleware with token accounting; Agent Team and harness sandbox are on the roadmap |
-| Real Action | Real tool execution and side effects; approval and sandboxing arrive with the harness runtime |
+| Multi-Agent / Sandbox / Observability | Agent Loop Trace middleware with token accounting; initial Harness local runtime with Workspace and command sandbox; Agent Team and remote sandboxes are on the roadmap |
+| Real Action | Real tool execution and side effects; HITL permission approval and AskUser recovery at the ReAct layer; Harness-level approval policy selection is next |
 
 ### Project Structure
 
@@ -81,7 +83,7 @@ AgentForge
 │   └── agentforge-model-registry # Out-of-the-box ChatModel factory
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent runtime
-│   └── agentforge-harness-agent  # Harness runtime (design phase)
+│   └── agentforge-harness-agent  # Harness runtime (initial local runtime)
 ├── agentforge-service            # Out-of-the-box service (Vue frontend + Spring Boot backend)
 │   ├── agentforge-service-ui     # Vue 2 + Vite frontend
 │   ├── agentforge-service-backend # Backend module aggregator
@@ -123,6 +125,22 @@ agentforge-service-web
     ├── session    # Sessions, messages and SSE replay
     └── plugins    # HTTP and MCP plugins
 ```
+
+### Harness Agent (initial local runtime)
+
+`HarnessAgent` keeps the standard `IAgent` surface and composes a `ReActAgent` with an execution `Runtime`:
+
+```text
+HarnessAgent
+  ├── ReActAgent          # reasoning loop, memory, middleware
+  └── Runtime             # Workspace / tools / execution options / lifecycle
+        └── LocalRuntime  # initial implementation
+```
+
+- `Workspace` fixes the file and command boundary; path resolution rejects `..` escapes and symlink escapes;
+- `LocalRuntime` provides `read / write / edit / glob / grep / rg / bash` tools, command timeout and output limits;
+- `HarnessAgent` is `AutoCloseable`; cancellation propagates into the runtime and terminates active local commands;
+- HITL permission approval and AskUser live at the ReAct layer today; selecting permission policies per Harness runtime is the next step.
 
 ### Design Principles
 

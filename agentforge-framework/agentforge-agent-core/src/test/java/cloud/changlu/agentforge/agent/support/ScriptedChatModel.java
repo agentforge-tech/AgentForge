@@ -44,6 +44,15 @@ public class ScriptedChatModel implements ChatModel {
         return this;
     }
 
+    public ScriptedChatModel enqueueToolCalls(List<ToolExecutionRequest> requests) {
+        scripted.add(
+                ChatResponse.builder()
+                        .aiMessage(AiMessage.from(requests))
+                        .finishReason(FinishReason.TOOL_EXECUTION)
+                        .build());
+        return this;
+    }
+
     /** 前若干次调用直接抛异常，用于验证重试 */
     public ScriptedChatModel failFirst(int times) {
         this.failuresBeforeSuccess = times;

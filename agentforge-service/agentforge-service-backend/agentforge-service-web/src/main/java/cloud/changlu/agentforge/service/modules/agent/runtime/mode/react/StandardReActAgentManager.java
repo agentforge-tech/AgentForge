@@ -2,6 +2,7 @@ package cloud.changlu.agentforge.service.modules.agent.runtime.mode.react;
 
 import cloud.changlu.agentforge.agent.ReActAgent;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchResumeCommand;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.stream.TokenStream;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
@@ -59,6 +60,12 @@ public class StandardReActAgentManager
     }
 
     @Override
+    public TokenStream resumeInterruptStream(
+            ReActAgent agent, InterruptBatchResumeCommand command) {
+        return agent.resumeInterruptStream(command);
+    }
+
+    @Override
     public String createExecutionId(ReActAgent agent) {
         return agent.createExecutionId();
     }
@@ -80,9 +87,6 @@ public class StandardReActAgentManager
         extensions.put(AgentTraceAttributes.DEBUG, isDebug);
         if (req.getAiMessageId() != null) {
             extensions.put(SessionLifecycleMiddleware.EXT_AI_MESSAGE_ID, req.getAiMessageId());
-        }
-        if (req.getSessionPk() != null) {
-            extensions.put("session.sessionPk", req.getSessionPk());
         }
         return AgentRequest.builder()
                 .memoryId(sessionId)

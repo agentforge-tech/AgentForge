@@ -2,6 +2,8 @@ package cloud.changlu.agentforge.agent.component.middleware;
 
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.StopResult;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptResumeContext;
 import cloud.changlu.agentforge.agent.step.StepResult;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.request.ChatRequest;
@@ -50,6 +52,46 @@ public interface IAgentMiddleware {
      * @param chatContext 聊天上下文
      */
     default void onLoopError(int currentStep, Throwable error, AgentChatContext chatContext) {}
+
+    // ===================== 中断与恢复相关回调 ===================== //
+
+    /**
+     * 权限审核 / AskUser 中断被冻结时调用，流式与非流式入口都会触发。 可用于向外部系统推送中断事件。
+     *
+     * @param currentStep 当前步骤号
+     * @param suspendInfo 挂起信息（批次ID与全部中断项）
+     * @param chatContext 聊天上下文
+     */
+    default void onInterruptRequested(
+            int currentStep, AgentSuspendInfo suspendInfo, AgentChatContext chatContext) {}
+
+    /**
+     * 中断恢复已被抢占、但尚未执行任何工具副作用前调用。
+     *
+     * @param resumeContext 恢复上下文，可读取审批动作和 AskUser 结构化答案
+     * @param chatContext 聊天上下文
+     */
+    default void onBeforeInterruptResume(
+            InterruptResumeContext resumeContext, AgentChatContext chatContext) {}
+
+    /**
+     * 中断恢复已应用完冻结批次并写回 ChatMemory 后调用。
+     *
+     * @param resumeContext 恢复上下文
+     * @param chatContext 聊天上下文
+     */
+    default void onAfterInterruptResume(
+            InterruptResumeContext resumeContext, AgentChatContext chatContext) {}
+
+    /**
+     * 中断恢复应用阶段发生异常时调用，异常仍会继续向上抛出。
+     *
+     * @param resumeContext 恢复上下文
+     * @param error 恢复应用过程中的异常
+     * @param chatContext 聊天上下文
+     */
+    default void onInterruptResumeError(
+            InterruptResumeContext resumeContext, Throwable error, AgentChatContext chatContext) {}
 
     // ===================== AI调用重试相关回调 ===================== //
 

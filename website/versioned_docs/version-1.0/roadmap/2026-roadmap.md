@@ -93,10 +93,9 @@ AgentForge
 
 - [x] 插件工具统一 Function Call 标准注入思考字段：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/02%E3%80%81%E9%80%9A%E7%94%A8ReActagent%E5%B1%82/functioncall%E6%A0%B8%E5%BF%83%E6%89%A9%E5%B1%95%E4%B8%9A%E5%8A%A1tool/%E6%8F%92%E4%BB%B6%E5%B7%A5%E5%85%B7%E7%BB%9F%E4%B8%80FunctionCall%E6%A0%87%E5%87%86%E4%B8%8E%E6%80%9D%E8%80%83%E5%AD%97%E6%AE%B5%E6%B3%A8%E5%85%A5%E8%AE%BE%E8%AE%A1.md" target="_blank" rel="noopener noreferrer">插件工具统一FunctionCall标准与思考字段注入设计</a>
 
-### 外部中断工具调用场景
+### Human in the Loop（审核确认机制）
 
-- [ ] 中断事件：外部构造并返回工具调用结果（例如 `askUser` tool）
-- [ ] 中断审核确认：支持确认/拒绝工具是否执行（例如 `rm` 审批，见 HITL）
+- [x] AgentForge 权限体系与审核中断恢复设计方案：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/02%E3%80%81%E9%80%9A%E7%94%A8ReActagent%E5%B1%82/%E6%9D%83%E9%99%90%E7%B3%BB%E7%BB%9F%E4%B8%8E%E4%B8%AD%E6%96%AD%E8%AE%BE%E8%AE%A1/AgentForge%E6%9D%83%E9%99%90%E4%BD%93%E7%B3%BB%E4%B8%8E%E5%AE%A1%E6%A0%B8%E4%B8%AD%E6%96%AD%E6%81%A2%E5%A4%8D%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">AgentForge权限体系与统一中断恢复设计方案</a>
 
 ### 扩展实现-会话记忆
 
@@ -124,11 +123,6 @@ AgentForge
 - [ ] 支持 Docker 控制远程沙箱协议（本机与外部）
 - [ ] 支持对接 E2B 沙箱环境
 - [ ] 支持对接 K8S 容器沙箱环境
-
-### Human in the Loop（审核确认机制）
-
-- [ ] Agent 审核权限设计
-- [ ] 中断审核确认：Agent 层提供标准 HITL 审核确认（例如权限审批工具拦截、外部注入工具权限规则）
 
 ## Agent 基础服务：AgentForge Service
 
@@ -179,6 +173,10 @@ AgentForge
 - [x] 二段式流式对话停止与超时取消设计方案：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E9%A1%B5%E9%9D%A2%E4%BC%9A%E8%AF%9D%E5%AF%B9%E8%AF%9D%E4%BA%A4%E4%BA%92/%E6%B5%81%E5%BC%8F%E5%AF%B9%E8%AF%9D%E6%94%AF%E6%8C%81%E9%87%8D%E8%BF%9E%E4%BA%8C%E6%AE%B5%E5%BC%8F%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/AgentForge%E4%BA%8C%E6%AE%B5%E5%BC%8F%E6%B5%81%E5%BC%8F%E5%AF%B9%E8%AF%9D%E5%81%9C%E6%AD%A2%E4%B8%8E%E8%B6%85%E6%97%B6%E5%8F%96%E6%B6%88%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">AgentForge 二段式流式对话停止与超时取消设计方案</a>
 
 - [x] Agent 支持任务计划 Todo 列表展示：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E9%A1%B5%E9%9D%A2%E4%BC%9A%E8%AF%9D%E5%AF%B9%E8%AF%9D%E4%BA%A4%E4%BA%92/Agent%E6%94%AF%E6%8C%81%E4%BB%BB%E5%8A%A1%E8%AE%A1%E5%88%92todo%E5%88%97%E8%A1%A8%E5%B1%95%E7%A4%BA.md" target="_blank" rel="noopener noreferrer">Agent 支持任务计划 Todo 列表展示</a>
+
+**支持 HITL：**
+
+- [x] HITL 支持询问用户问题，用户回答作为工具结果；支持权限审核确认任务 Tool 执行：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E9%A1%B5%E9%9D%A2%E4%BC%9A%E8%AF%9D%E5%AF%B9%E8%AF%9D%E4%BA%A4%E4%BA%92/%E6%94%AF%E6%8C%81HITL/Agent%E9%A1%B5%E9%9D%A2HITL%E4%B8%AD%E6%96%AD%E4%BA%8B%E4%BB%B6%E4%B8%8E%E6%81%A2%E5%A4%8D%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">Agent 页面 HITL 中断事件与恢复设计方案</a>
 
 #### Agent 版本控制与发布
 

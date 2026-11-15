@@ -9,6 +9,8 @@ import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.extend.middlewares.LoggingIAgentMiddleware;
 import cloud.changlu.agentforge.agent.extend.middlewares.compact.CompactSummarizationMiddleware;
 import cloud.changlu.agentforge.agent.extend.middlewares.todoplan.tool.TodoPlanTool;
+import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
+import cloud.changlu.agentforge.agent.governance.permission.domain.PermissionMode;
 import cloud.changlu.agentforge.agent.tool.local.LocalToolFactory;
 import cloud.changlu.agentforge.model.registry.LlmFactory;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
@@ -151,6 +153,14 @@ public class ReActAgentFactory {
                                         standardAgentConfig.getChatMemoryConfig()))
                         .middlewares(middlewares)
                         .toolService(buildToolService(standardAgentConfig, todoEnabled));
+        if (standardAgentConfig.isAskUserEnabled()) {
+            // DEFAULT 只执行规则：没有匹配规则时放行普通工具，只有显式 ASK 规则或 ask_user 才产生中断。
+            builder.permissionInterruptModule(
+                    PermissionInterruptModule.builder()
+                            .activePermissionMode(PermissionMode.DEFAULT)
+                            .enableAskUser()
+                            .build());
+        }
         return builder.build();
     }
 

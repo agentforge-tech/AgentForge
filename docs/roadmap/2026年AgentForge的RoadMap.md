@@ -104,12 +104,17 @@ AgentForge
 
 
 
-#### 外部中断工具调用场景
+---
 
-- [ ] 中断事件，外部构造返回的tool工具调用结果（例如：askUser tool）
-- [ ] 中断审核确认，支持两种确认、拒绝完成工具是否执行审核【例如：rm审批等，可见HITL部分】
+#### Human in the Loop（审核确认机制）
+
+- [x] AgentForge权限体系与审核中断恢复设计方案：[AgentForge权限体系与统一中断恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/权限系统与中断设计/AgentForge权限体系与审核中断恢复设计方案.md)
 
 
+
+
+
+---
 
 #### 扩展实现-会话记忆
 
@@ -144,13 +149,6 @@ AgentForge
 - [ ] 支持docker控制远程沙箱协议（本机 & 外部）
 - [ ] 支持对接E2B沙箱环境
 - [ ] 支持对接K8S容器沙箱环境
-
-
-
-#### Human in the Loop（审核确认机制）
-
-- [ ] Agent审核权限设计
-- [ ] 中断审核确认，Agent层提供标准的一套human in the loop审核确认（例如：权限审批工具拦截，外部注入配置对应的工具权限规则设定）
 
 
 
@@ -225,6 +223,12 @@ AgentForge
 - [x] AgentForge流式对话支持重连二段式设计方案：[AgentForge流式对话支持重连二段式设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/流式对话支持重连二段式设计实现/AgentForge流式对话支持重连二段式设计方案.md)
 
 - [x] AgentForge二段式流式对话停止与超时取消设计方案：[AgentForge二段式流式对话停止与超时取消设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/流式对话支持重连二段式设计实现/AgentForge二段式流式对话停止与超时取消设计方案.md)
+
+
+
+**支持HITL：**
+- [x] HITL支持询问用户问题，用户回答作为工具结果：支持权限审核确认任务tool执行：[Agent页面HITL中断事件与恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/支持HITL/Agent页面HITL中断事件与恢复设计方案.md)
+
 
 
 

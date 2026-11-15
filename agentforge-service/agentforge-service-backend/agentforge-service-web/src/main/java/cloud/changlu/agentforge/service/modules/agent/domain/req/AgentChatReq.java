@@ -13,7 +13,6 @@ public class AgentChatReq {
     private Long aiMessageId;
 
     /** 会话表主键。 */
-    private Long sessionPk;
 
     /** 会话标题，仅首次创建时有值。 */
     private String sessionTitle;
@@ -64,14 +63,6 @@ public class AgentChatReq {
 
     public void setAiMessageId(Long aiMessageId) {
         this.aiMessageId = aiMessageId;
-    }
-
-    public Long getSessionPk() {
-        return sessionPk;
-    }
-
-    public void setSessionPk(Long sessionPk) {
-        this.sessionPk = sessionPk;
     }
 
     public String getSessionTitle() {

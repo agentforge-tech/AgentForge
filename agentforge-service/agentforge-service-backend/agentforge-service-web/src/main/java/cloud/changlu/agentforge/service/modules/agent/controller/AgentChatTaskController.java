@@ -1,7 +1,9 @@
 package cloud.changlu.agentforge.service.modules.agent.controller;
 
 import cloud.changlu.agentforge.service.domain.req.ChatStreamRequest;
+import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentInterruptResumeReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentChatTaskStopVo;
+import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentInterruptResumeVo;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.ChatTaskSubmitVo;
 import cloud.changlu.agentforge.service.modules.agent.service.AgentChatTaskService;
 import cloud.changlu.agentforge.service.modules.agent.service.impl.ReconnectableChatStreamService;
@@ -48,6 +50,12 @@ public class AgentChatTaskController {
     @PostMapping("/stop")
     public AgentChatTaskStopVo stop(@RequestParam Long messageId) {
         return chatTaskService.stop(messageId, currentUserId());
+    }
+
+    /** 提交一个 HITL 批次的全部审批结果或 AskUser 回答。 */
+    @PostMapping("/interrupts/resume")
+    public AgentInterruptResumeVo resumeInterrupt(@RequestBody AgentInterruptResumeReq request) {
+        return chatTaskService.resumeInterrupt(request, currentUserId());
     }
 
     private static long resolveCursor(Long afterSeq, String lastEventId) {

@@ -21,6 +21,9 @@ public enum AgentExecutionStatus {
      */
     CANCEL_REQUESTED,
 
+    /** 工具批次已冻结，等待审批或用户回答后恢复。 */
+    SUSPENDED,
+
     /** 正常结束，或达到最大步数后按既定结果结束；具体结束原因看 resultState。 */
     COMPLETED,
 

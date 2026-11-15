@@ -58,7 +58,7 @@ export default {
 </script>
 
 <style scoped>
-.elegant-think-item { margin: 7px 0 10px; }
+.elegant-think-item { margin: 3px 0 6px; }
 .elegant-think-head {
   display: flex;
   align-items: center;

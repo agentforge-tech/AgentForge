@@ -242,12 +242,23 @@
               </div>
             </el-form-item>
 
-            <el-form-item label="任务计划">
-              <div class="agent-plan-setting">
-                <el-switch v-model="form.planEnabled" />
-                <span class="af-form-tip">{{ form.planEnabled ? '已开启' : '已关闭' }}</span>
+            <el-form-item label="内置能力">
+              <div class="agent-capability-list">
+                <div class="agent-capability-row">
+                  <span class="agent-capability-name">任务计划</span>
+                  <el-switch v-model="form.planEnabled" active-text="开启" inactive-text="关闭" />
+                  <el-tooltip content="开启后 Agent 可在多步骤任务中调用 todoplan 维护任务列表" placement="top">
+                    <i class="el-icon-info agent-setting-tip"></i>
+                  </el-tooltip>
+                </div>
+                <div class="agent-capability-row">
+                  <span class="agent-capability-name">询问用户</span>
+                  <el-switch v-model="form.askUserEnabled" active-text="开启" inactive-text="关闭" />
+                  <el-tooltip content="开启后 Agent 可在执行中暂停，向用户提问并根据回答继续执行" placement="top">
+                    <i class="el-icon-info agent-setting-tip"></i>
+                  </el-tooltip>
+                </div>
               </div>
-              <div class="af-form-tip">开启后 Agent 可在多步骤任务中调用 todoplan 维护任务列表</div>
             </el-form-item>
           </el-form>
           </template>
@@ -608,6 +619,7 @@ export default {
         chatMemoryType: 1,
         chatMemoryMaxMessages: 1000,
         planEnabled: true,
+        askUserEnabled: false,
         mcpPlugins: [],
         httpPlugins: []
       },
@@ -697,6 +709,7 @@ export default {
         chatMemoryType: detail.chatMemoryType || 1,
         chatMemoryMaxMessages: detail.chatMemoryMaxMessages || 1000,
         planEnabled: !(detail.capabilityConfig && detail.capabilityConfig.planEnabled === false),
+        askUserEnabled: !!(detail.capabilityConfig && detail.capabilityConfig.askUserEnabled === true),
         mcpPlugins: ((detail.pluginConfig && detail.pluginConfig.mcpPlugins) || []).map((item) => ({ pluginId: item.pluginId, serverIds: item.serverIds || [] })),
         httpPlugins: ((detail.pluginConfig && detail.pluginConfig.httpPlugins) || []).map((item) => ({ pluginId: item.pluginId, pluginMethodIds: item.pluginMethodIds || [] }))
       }
@@ -829,8 +842,8 @@ export default {
       }
       this.saving = true
       try {
-        const { mcpPlugins, httpPlugins, planEnabled, ...basicForm } = this.form
-        const detail = await upsertAgent({ ...basicForm, capabilityConfig: { planEnabled }, pluginConfig: { mcpPlugins, httpPlugins }, submitVersion, versionRemark: submitVersion ? this.versionRemarkDraft : '' })
+        const { mcpPlugins, httpPlugins, planEnabled, askUserEnabled, ...basicForm } = this.form
+        const detail = await upsertAgent({ ...basicForm, capabilityConfig: { planEnabled, askUserEnabled }, pluginConfig: { mcpPlugins, httpPlugins }, submitVersion, versionRemark: submitVersion ? this.versionRemarkDraft : '' })
         this.applyDetail(detail)
         this.toast(submitVersion ? 'Agent 配置已保存并提交 V' + detail.submittedVersionNo : 'Agent 配置已保存')
         if (this.historyVisible) await this.loadVersions()
@@ -964,7 +977,8 @@ export default {
         systemPrompt: config.systemPrompt,
         chatMemoryType: config.chatMemoryType,
         chatMemoryMaxMessages: config.chatMemoryMaxMessages,
-        planEnabled: config.planEnabled
+        planEnabled: config.planEnabled,
+        askUserEnabled: config.askUserEnabled
       }
     },
     async compareWithCurrent(version) {
@@ -1002,7 +1016,8 @@ export default {
         maxOutputToken: current.maxOutputToken,
         chatMemoryType: current.chatMemoryType || 1,
         chatMemoryMaxMessages: current.chatMemoryMaxMessages || 1000,
-        planEnabled: !(current.capabilityConfig && current.capabilityConfig.planEnabled === false)
+        planEnabled: !(current.capabilityConfig && current.capabilityConfig.planEnabled === false),
+        askUserEnabled: !!(current.capabilityConfig && current.capabilityConfig.askUserEnabled === true)
       }
       const fields = [
         { key: 'name', label: 'Agent 名称', versionValue: historical.name || '', currentValue: current.name || '' },
@@ -1013,7 +1028,8 @@ export default {
         { key: 'maxOutputToken', label: '最大输出(k)', versionValue: versionConfig.maxOutputToken, currentValue: currentConfig.maxOutputToken },
         { key: 'chatMemoryType', label: '记忆类型', versionValue: this.memoryTypeLabel(versionConfig.chatMemoryType), currentValue: this.memoryTypeLabel(currentConfig.chatMemoryType) },
         { key: 'chatMemoryMaxMessages', label: '最大记忆消息数', versionValue: String(versionConfig.chatMemoryMaxMessages), currentValue: String(currentConfig.chatMemoryMaxMessages) },
-        { key: 'planEnabled', label: '任务计划', versionValue: versionConfig.planEnabled ? '开启' : '关闭', currentValue: currentConfig.planEnabled ? '开启' : '关闭' }
+        { key: 'planEnabled', label: '任务计划', versionValue: versionConfig.planEnabled ? '开启' : '关闭', currentValue: currentConfig.planEnabled ? '开启' : '关闭' },
+        { key: 'askUserEnabled', label: '询问用户', versionValue: versionConfig.askUserEnabled ? '开启' : '关闭', currentValue: currentConfig.askUserEnabled ? '开启' : '关闭' }
       ]
       return fields.map((field) => ({
         ...field,
@@ -1040,10 +1056,11 @@ export default {
           maxOutputToken: chatModel.maxOutputToken ?? null,
           chatMemoryType: memory.type || 1,
           chatMemoryMaxMessages: memoryConfig.maxMessage || 1000,
-          planEnabled: !(config.capabilityConfig && config.capabilityConfig.planEnabled === false)
+          planEnabled: !(config.capabilityConfig && config.capabilityConfig.planEnabled === false),
+          askUserEnabled: !!(config.capabilityConfig && config.capabilityConfig.askUserEnabled === true)
         }
       } catch (_e) {
-        return { systemPrompt: '', modelId: null, maxInputToken: null, maxOutputToken: null, chatMemoryType: 1, chatMemoryMaxMessages: 1000, planEnabled: true }
+        return { systemPrompt: '', modelId: null, maxInputToken: null, maxOutputToken: null, chatMemoryType: 1, chatMemoryMaxMessages: 1000, planEnabled: true, askUserEnabled: false }
       }
     },
     modelLabel(modelId) {
@@ -1112,7 +1129,11 @@ export default {
 .agent-config-fields { display: flex; flex-direction: column; gap: 18px; padding: 18px; overflow-y: auto; }
 .agent-config-form { display: flex; flex-direction: column; gap: 4px; }
 .agent-model-settings { margin-top: 10px; }
-.agent-plan-setting { display: flex; align-items: center; gap: 10px; }
+.agent-capability-list { display: flex; flex-direction: column; gap: 8px; }
+.agent-capability-row { display: flex; align-items: center; gap: 12px; min-height: 28px; white-space: nowrap; }
+.agent-capability-name { flex: 0 0 72px; color: $color-text-secondary; font-size: 13px; }
+.agent-setting-tip { color: $color-text-muted; font-size: 13px; cursor: help; }
+.agent-setting-tip:hover { color: $color-brand; }
 .agent-memory-settings { margin-top: 10px; overflow: hidden; border: 1px solid #dce7f3; border-radius: 9px; background: #f8fbff; }
 .agent-memory-settings__head { display: flex; width: 100%; height: 40px; align-items: center; gap: 8px; padding: 0 10px; border: 0; background: #f1f6fc; cursor: pointer; font-family: inherit; line-height: 1.4; text-align: left; transition: background .15s; > div { min-width: 0; flex: 1; } b { display: block; color: $color-text-secondary; font-size: 12.5px; } &:hover, &:focus { outline: 0; background: #eaf2fb; } }
 .agent-memory-settings__icon { display: inline-flex; width: 24px; height: 24px; flex: 0 0 24px; align-items: center; justify-content: center; border-radius: 6px; background: #fff; color: $color-brand; box-shadow: 0 1px 3px rgba(45, 82, 128, .09); font-size: 13px; }
@@ -1180,7 +1201,10 @@ export default {
 .agent-debug-history-tip { padding: 18px 10px; color: $color-text-muted; font-size: 12px; text-align: center; }
 .agent-debug-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0; border: 1px solid #cbd8e9; border-radius: 5px; background: #f6f9fd; color: #657791; cursor: pointer; box-shadow: 0 1px 2px rgba(59, 111, 182, .06); transition: all .15s; svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; } &:hover { border-color: #8eb3e5; background: #edf4fd; color: #3b6fb6; box-shadow: 0 2px 6px rgba(59, 111, 182, .14); transform: translateY(-1px); } &:active { transform: translateY(0); box-shadow: none; } }
 .agent-debug { position: relative; }
+.agent-debug-composer { position: relative; }
+.agent-debug-interrupt { position: absolute !important; z-index: 25; left: 28px; right: 28px; bottom: calc(100% + 6px); width: auto !important; margin: 0 !important; }
 .agent-debug-feed { flex: 1; overflow-y: auto; padding: 16px 32px; }
+.agent-debug-feed.has-interrupt { padding-bottom: 72px; }
 .agent-debug-empty { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; color: $color-text-muted; span { margin-bottom: 12px; color: $color-brand; font-size: 30px; } b { color: $color-text-secondary; font-size: 13px; } p { max-width: 240px; font-size: 11.5px; line-height: 1.6; } }
 .agent-debug-message-row { display: flex; width: 100%; margin-bottom: 20px; font-size: 13px; &--user { justify-content: flex-end; } &--assistant { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; justify-items: stretch; } }
 .agent-debug-user-block { display: flex; max-width: 78%; flex-direction: column; align-items: flex-end; gap: 4px; }

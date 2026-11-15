@@ -70,6 +70,21 @@ On first start, the default configuration is exported to the host `conf/` direct
 
 > Do not mount an empty host `conf/` directory directly to `/opt/agentforge/conf`; it would hide the default configuration and frontend assets. The command above uses `/opt/agentforge/host-conf` as an intermediate directory.
 
+### 2.3 After deployment: run your first Agent
+
+After the service starts, the workbench still has no data. We recommend completing the first delivery in this order:
+
+| Step | Page | Goal |
+| --- | --- | --- |
+| 1 | [Create a model](./agent-components/model) | Connect a usable model and pass the connection test |
+| 2 | [Create an HTTP plugin](./agent-components/http-plugin) / [Create an MCP plugin](./agent-components/mcp-plugin) | Connect external tools as needed |
+| 3 | [Create a general Agent](./agent-cockpit/create-agent) | Combine model, Prompt, plugins, and memory |
+| 4 | [Agent debugging](./agent-cockpit/debug) | Validate tool calls and answer quality |
+| 5 | [Agent publishing](./agent-cockpit/publish) | Save a version and publish the production link |
+| 6 | [Agent Trace monitoring](./agent-infrastructure/trace) | Observe durations, Tokens, and tool chains |
+
+For the first launch, you only need steps 1 and 3 to start a conversation; plugins and Trace can be added in later iterations.
+
 ## 3. Change the port
 
 For example, to use `8088`, change both the port mapping and the file access port:

@@ -78,7 +78,7 @@
       </div>
 
       <div class="message-input-wrapper" :class="{ 'input-at-bottom': messages.length > 0 }">
-      <section ref="feed" class="chat-scroll" @scroll.passive="onFeedScroll">
+      <section ref="feed" class="chat-scroll" :class="{ 'has-interrupt': !!activeInterrupt }" @scroll.passive="onFeedScroll">
         <div class="chat-inner">
           <div v-if="!messages.length" class="welcome">
             <h2>{{ agentLoading ? '正在加载 Agent...' : (canChat ? '今天想解决什么问题？' : '请从已发布的 Agent 进入') }}</h2>
@@ -130,6 +130,7 @@
 
       <div class="composer-wrap">
         <div class="composer-inner">
+          <InterruptCard v-if="activeInterrupt" class="composer-interrupt" :part="activeInterrupt" @resumed="continueAfterResume" />
           <div v-if="pendingAppends.length" class="append-queue" aria-live="polite">
             <div class="append-queue-head">
               <span class="append-queue-status"><i></i>后续指令</span>
@@ -162,10 +163,10 @@
               <span v-else class="stop-square"></span>
             </button>
           </div>
-          <div class="composer-tip">AI 生成内容可能不准确，请核对重要信息</div>
         </div>
       </div>
       </div>
+      <div class="composer-tip">AI 生成内容可能不准确，请核对重要信息</div>
     </main>
 
   </div>
@@ -173,6 +174,7 @@
 
 <script>
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
+import InterruptCard from '../../components/InterruptCard.vue'
 import AppUserPanel from '../../components/AppUserPanel.vue'
 import chatAutoScroll from '../../utils/chatAutoScroll'
 import { runChatStream, resumeChatStream, isDetachedChatTransport } from '../../utils/chatTransport'
@@ -189,6 +191,14 @@ import { replaySession } from '../../utils/sessionReplay'
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
 import { reduceCompactEvent } from '../../utils/compactEventReducer'
 import { buildTodoCardPart } from '../../utils/todoEventReducer'
+import { reduceInterruptAnswers, reduceInterruptEvent } from '../../utils/interruptEventReducer'
+import {
+  appendResponseSegment,
+  closeOpenResponseSegment,
+  finishResponseSegments,
+  promoteLastResponseSegment,
+  shouldAppendResponseSegment
+} from '../../utils/responseSegmentReducer'
 
 /** 输入框最大高度（px），超过后内部滚动，不再继续撑高 */
 const COMPOSER_MAX_HEIGHT = 120
@@ -204,7 +214,7 @@ function resolveAid(route) {
 
 export default {
   name: 'PublishedAgentChatPage',
-  components: { AgentMessageContent, AppUserPanel },
+  components: { AgentMessageContent, AppUserPanel, InterruptCard },
   mixins: [chatAutoScroll],
   data: () => ({
     aid: '', agentBasic: null, agentLoading: false, agentError: '',
@@ -221,7 +231,14 @@ export default {
     },
     agentName() { return this.agentBasic?.name || 'AgentForge' },
     agentAvatar() { return this.agentBasic?.avatar || '/logo.png' },
-    canChat() { return Boolean(this.aid && this.agentBasic && !this.agentError) }
+    canChat() { return Boolean(this.aid && this.agentBasic && !this.agentError) },
+    activeInterrupt() {
+      for (let i = this.messages.length - 1; i >= 0; i -= 1) {
+        const part = (this.messages[i].parts || []).find((item) => item.type === 'interrupt_card' && item.status === 'PENDING')
+        if (part) return part
+      }
+      return null
+    }
   },
   watch: {
     '$route.query.sessionId'(value) {
@@ -368,7 +385,7 @@ export default {
      */
     syncRemoteRun(sessionRefId, messages) {
       const last = [...(messages || [])].reverse().find((item) => item.role === 'assistant')
-      const running = !!(last && last.status === 'running')
+      const running = !!(last && (last.status === 'running' || last.status === 'waiting'))
       if (running && !this.controller) {
         this.running = true
         if (isDetachedChatTransport() && last.messageId) this.resumeDetachedRun(last)
@@ -379,6 +396,11 @@ export default {
       }
     },
     async resumeDetachedRun(answer) {
+      if (answer.status === 'waiting') {
+        this.currentMessageId = answer.messageId
+        this.running = true
+        return
+      }
       const requestVersion = ++this.requestVersion
       this.controller = new AbortController()
       this.currentMessageId = answer.messageId
@@ -396,8 +418,9 @@ export default {
         if (error.name !== 'AbortError') this.$message.error(error.message || '恢复流式对话失败')
       } finally {
         if (requestVersion === this.requestVersion) {
-          if (answer.status === 'running') { answer.status = 'success'; this.finishParts(answer) }
-          this.running = false; this.controller = null; this.currentMessageId = null
+          if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
+          this.applyStreamPauseState(answer)
+          this.controller = null
           this.loadSessions()
         }
       }
@@ -511,6 +534,69 @@ export default {
       event.preventDefault()
       this.send()
     },
+    /** 中断请求到达即进入暂停态：保留运行锁，等待用户提交后按 afterSeq 续流。 */
+    applyInterruptStatus(answer, event) {
+      if (event.type === 'interrupt_requested') {
+        answer.status = 'waiting'
+        this.running = true
+        if (answer.messageId) this.currentMessageId = answer.messageId
+      } else if (event.type === 'interrupt_resuming') {
+        answer.status = 'running'
+      }
+    },
+    /** 流结束后按 waiting/running 决定页面是否保持运行锁。 */
+    applyStreamPauseState(answer) {
+      if (answer.status === 'waiting') {
+        this.running = true
+        this.currentMessageId = answer.messageId || this.currentMessageId
+        return
+      }
+      this.running = false
+      this.currentMessageId = null
+    },
+    /** Resume 提交成功后以中断事件序号为边界重新续流，只接收恢复后的新事件。 */
+    async continueAfterResume(payload) {
+      if (!payload) return
+      const answers = [...this.messages].reverse().filter((item) => item.role === 'assistant')
+      const answer = answers.find((item) => String(item.messageId) === String(payload.messageId)) || answers[0]
+      if (!answer || !answer.messageId) return
+      const requestVersion = ++this.requestVersion
+      if (this.controller) this.controller.abort()
+      this.currentMessageId = answer.messageId
+      answer.status = 'running'
+      this.running = true
+      this.controller = new AbortController()
+      const controller = this.controller
+      try {
+        await resumeChatStream(answer.messageId, Number(payload.afterSeq || 0), {
+          signal: controller.signal,
+          onEvent: (event) => {
+            if (requestVersion !== this.requestVersion) return
+            answer.lastEventSeq = Math.max(answer.lastEventSeq || 0, Number(event.eventSeq || 0))
+            this.handleEvent(answer, event)
+          }
+        })
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          answer.status = 'error'
+          answer.error = error.message || '恢复流式对话失败'
+          this.finishParts(answer)
+        }
+      } finally {
+        if (requestVersion === this.requestVersion) {
+          if (answer.status === 'running') {
+            promoteLastResponseSegment(answer)
+            answer.status = 'success'
+            this.finishParts(answer)
+          }
+          this.applyStreamPauseState(answer)
+          this.controller = null
+          this.restoreDeferredAppends()
+          this.scroll()
+          if (answer.status !== 'waiting') this.updateSessionState()
+        }
+      }
+    },
     async send() {
       const text = this.draft.trim()
       if (!this.canChat) {
@@ -538,6 +624,7 @@ export default {
           signal: controller.signal,
           onSubmitted: (task) => {
             this.currentMessageId = task.messageId
+            answer.messageId = task.messageId
             this.sessionId = task.sessionId
             this.pendingSessionId = ''
             if (!this.sessionTitle) this.sessionTitle = task.title || resolveSessionTitle(text)
@@ -558,16 +645,16 @@ export default {
       } finally {
         if (requestVersion === this.requestVersion) {
           if (answer.status === 'running') {
+            promoteLastResponseSegment(answer)
             answer.status = 'success'
             this.finishParts(answer)
           }
-          this.running = false
-          this.currentMessageId = null
+          this.applyStreamPauseState(answer)
           this.controller = null
           this.restoreDeferredAppends()
           this.scroll()
-          // 不整体刷新列表，只更新当前会话的时间与运行标记。
-          this.updateSessionState()
+          // 等待确认时保留运行态，避免会话被误标为已结束。
+          if (answer.status !== 'waiting') this.updateSessionState()
         }
       }
     },
@@ -581,12 +668,10 @@ export default {
       if (existing) {
         if (task.title) existing.title = task.title
         existing.running = true
-        if (task.sessionPk) existing.id = task.sessionPk
         return
       }
       const now = new Date().toISOString()
       const item = {
-        id: task.sessionPk,
         sessionId,
         aid: this.aid,
         title: task.title || this.sessionTitle || resolveSessionTitle(text),
@@ -640,28 +725,45 @@ export default {
           break
         case 'think':
           this.clearRetryNotice(answer)
+          closeOpenResponseSegment(answer)
           this.applyThink(answer, event)
           break
         case 'resp':
           this.clearRetryNotice(answer)
-          answer.content += event.content || ''
+          if (shouldAppendResponseSegment(answer, event)) {
+            this.closeOpenThink(answer)
+            appendResponseSegment(answer, event)
+          }
           break
         case 'tool_call':
           this.clearRetryNotice(answer)
+          closeOpenResponseSegment(answer)
           this.closeOpenThink(answer)
           this.applyTool(answer, event)
+          reduceInterruptAnswers(answer, event)
+          break
+        case 'interrupt':
+          this.clearRetryNotice(answer)
+          closeOpenResponseSegment(answer)
+          this.closeOpenThink(answer)
+          reduceInterruptEvent(answer, event)
+          this.applyInterruptStatus(answer, event)
           break
         case 'user_message':
+          closeOpenResponseSegment(answer)
           this.applyAppendEvent(answer, event)
           break
         case 'retry':
+          closeOpenResponseSegment(answer)
           this.applyRetryEvent(answer, event)
           break
         case 'compact':
+          closeOpenResponseSegment(answer)
           reduceCompactEvent(answer, event)
           break
         case 'resp_end':
           this.clearRetryNotice(answer)
+          promoteLastResponseSegment(answer)
           answer.status = 'success'
           this.finishParts(answer)
           // 终态到达即结束运行态，避免异步收尾未及时把按钮从“停止”切回“发送”。
@@ -670,6 +772,7 @@ export default {
           break
         case 'error':
           this.clearRetryNotice(answer)
+          finishResponseSegments(answer)
           answer.status = 'error'
           answer.error = typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '生成失败')
           this.finishParts(answer)
@@ -687,13 +790,14 @@ export default {
       const last = answer.parts[answer.parts.length - 1]
       const open = last && last.type === 'think' && last.status === 'thinking' ? last : null
       const text = event.content || ''
+      if (!String(text).trim() && !open) return
       if (!event.isFinish) {
         if (open) open.content += text
         else answer.parts.push({ type: 'think', content: text, status: 'thinking', startedAt: Date.now(), duration: null })
         return
       }
       if (open) {
-        if (text) open.content = text
+        if (String(text).trim()) open.content = text
         open.status = 'end'
         open.duration = Date.now() - (open.startedAt || Date.now())
       } else if (text) {
@@ -737,6 +841,7 @@ export default {
       }
     },
     finishParts(answer) {
+      finishResponseSegments(answer)
       answer.parts.forEach((part) => {
         if (part.type === 'think' && part.status === 'thinking') {
           part.status = 'end'
@@ -860,10 +965,19 @@ export default {
       const answer = [...this.messages].reverse().find((m) => m.role === 'assistant')
       if (!answer) return
       const name = result && result.statusName
-      if (name === 'SUCCEEDED') answer.status = 'success'
+      if (name === 'SUCCEEDED') { promoteLastResponseSegment(answer); answer.status = 'success' }
       else if (name === 'FAILED') { answer.status = 'error'; if (!answer.error) answer.error = '生成失败' }
       else answer.status = 'cancelled'
       this.finishParts(answer)
+      if (answer.status === 'cancelled') this.cancelOpenInterrupts(answer)
+    },
+    /** 等待确认期间没有活动订阅，停止后需本地收口仍在等待的中断卡片。 */
+    cancelOpenInterrupts(answer) {
+      ;(answer.parts || []).forEach((part) => {
+        if (part.type === 'interrupt_card' && (part.status === 'PENDING' || part.status === 'RESUMING')) {
+          part.status = 'CANCELLED'
+        }
+      })
     },
   }
 }

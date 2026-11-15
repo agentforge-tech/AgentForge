@@ -2,7 +2,6 @@ package cloud.changlu.agentforge.service.modules.agent.domain.vo;
 
 public class ChatTaskSubmitVo {
     private String sessionId;
-    private Long sessionPk;
     private Long userMessageId;
     private Long messageId;
     private Integer status;
@@ -14,14 +13,6 @@ public class ChatTaskSubmitVo {
 
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
-    }
-
-    public Long getSessionPk() {
-        return sessionPk;
-    }
-
-    public void setSessionPk(Long sessionPk) {
-        this.sessionPk = sessionPk;
     }
 
     public Long getUserMessageId() {

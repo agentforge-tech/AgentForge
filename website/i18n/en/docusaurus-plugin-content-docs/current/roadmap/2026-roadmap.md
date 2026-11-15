@@ -93,10 +93,9 @@ The project has two core parts:
 
 - [x] Unified Function Call standard and `__thought` injection for plugin tools: <a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/02%E3%80%81%E9%80%9A%E7%94%A8ReActagent%E5%B1%82/functioncall%E6%A0%B8%E5%BF%83%E6%89%A9%E5%B1%95%E4%B8%9A%E5%8A%A1tool/%E6%8F%92%E4%BB%B6%E5%B7%A5%E5%85%B7%E7%BB%9F%E4%B8%80FunctionCall%E6%A0%87%E5%87%86%E4%B8%8E%E6%80%9D%E8%80%83%E5%AD%97%E6%AE%B5%E6%B3%A8%E5%85%A5%E8%AE%BE%E8%AE%A1.md" target="_blank" rel="noopener noreferrer">Unified FunctionCall standard and thought field injection</a>
 
-### External interruption of tool calls
+### Human in the Loop (approval confirmation)
 
-- [ ] Interruption events: externally construct and return tool results (for example, an `askUser` tool)
-- [ ] Approval confirmation: confirm or reject tool execution (for example, `rm` approval, see HITL)
+- [x] AgentForge permission system and unified interrupt recovery design: <a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/02%E3%80%81%E9%80%9A%E7%94%A8ReActagent%E5%B1%82/%E6%9D%83%E9%99%90%E7%B3%BB%E7%BB%9F%E4%B8%8E%E4%B8%AD%E6%96%AD%E8%AE%BE%E8%AE%A1/AgentForge%E6%9D%83%E9%99%90%E4%BD%93%E7%B3%BB%E4%B8%8E%E5%AE%A1%E6%A0%B8%E4%B8%AD%E6%96%AD%E6%81%A2%E5%A4%8D%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">AgentForge permission system and unified interrupt recovery design</a>
 
 ### Session memory extensions
 
@@ -121,11 +120,6 @@ The project has two core parts:
 - [ ] Docker remote sandbox protocol (local and external)
 - [ ] E2B sandbox environment
 - [ ] Kubernetes container sandbox environment
-
-### Human in the Loop
-
-- [ ] Agent approval permission design
-- [ ] Standard HITL approval and confirmation (tool permission interception, externally injected permission rules)
 
 ## AgentForge Service
 
@@ -175,6 +169,10 @@ The project has two core parts:
 - [x] Two-stage streaming chat stop and timeout cancellation design: <a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E9%A1%B5%E9%9D%A2%E4%BC%9A%E8%AF%9D%E5%AF%B9%E8%AF%9D%E4%BA%A4%E4%BA%92/%E6%B5%81%E5%BC%8F%E5%AF%B9%E8%AF%9D%E6%94%AF%E6%8C%81%E9%87%8D%E8%BF%9E%E4%BA%8C%E6%AE%B5%E5%BC%8F%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/AgentForge%E4%BA%8C%E6%AE%B5%E5%BC%8F%E6%B5%81%E5%BC%8F%E5%AF%B9%E8%AF%9D%E5%81%9C%E6%AD%A2%E4%B8%8E%E8%B6%85%E6%97%B6%E5%8F%96%E6%B6%88%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">AgentForge two-stage streaming chat stop and timeout cancellation design</a>
 
 - [x] Task plan Todo list display: <a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E9%A1%B5%E9%9D%A2%E4%BC%9A%E8%AF%9D%E5%AF%B9%E8%AF%9D%E4%BA%A4%E4%BA%92/Agent%E6%94%AF%E6%8C%81%E4%BB%BB%E5%8A%A1%E8%AE%A1%E5%88%92todo%E5%88%97%E8%A1%A8%E5%B1%95%E7%A4%BA.md" target="_blank" rel="noopener noreferrer">Agent task plan Todo list display</a>
+
+**HITL support:**
+
+- [x] AskUser questions with user answers written back as tool results; permission approval before task tool execution: <a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E9%A1%B5%E9%9D%A2%E4%BC%9A%E8%AF%9D%E5%AF%B9%E8%AF%9D%E4%BA%A4%E4%BA%92/%E6%94%AF%E6%8C%81HITL/Agent%E9%A1%B5%E9%9D%A2HITL%E4%B8%AD%E6%96%AD%E4%BA%8B%E4%BB%B6%E4%B8%8E%E6%81%A2%E5%A4%8D%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">Agent page HITL interrupt events and recovery design</a>
 
 #### Versioning and publishing
 

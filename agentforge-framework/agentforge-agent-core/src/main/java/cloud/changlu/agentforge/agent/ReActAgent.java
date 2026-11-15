@@ -6,14 +6,32 @@ import cloud.changlu.agentforge.agent.component.state.compensation.MessageChainR
 import cloud.changlu.agentforge.agent.component.state.control.AgentRunControl;
 import cloud.changlu.agentforge.agent.constant.AgentPromptConstants;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
+import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.domain.ThinkResult;
+import cloud.changlu.agentforge.agent.exception.AgentException;
 import cloud.changlu.agentforge.agent.exception.CancelException;
+import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentInterruptSnapshot;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.ApprovalAction;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchResumeCommand;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptRequest;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptResponse;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptResumeContext;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptType;
+import cloud.changlu.agentforge.agent.governance.permission.domain.PermissionDenial;
+import cloud.changlu.agentforge.agent.governance.permission.domain.PermissionPreflightResult;
+import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserResponse;
+import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserSupport;
+import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserTool;
 import cloud.changlu.agentforge.agent.memory.ChatMemory;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
 import cloud.changlu.agentforge.agent.retry.AiCallRetrySupport;
+import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.step.StepResult;
+import cloud.changlu.agentforge.agent.stream.TokenStream;
 import cloud.changlu.agentforge.agent.tool.AgentToolExecutor;
 import cloud.changlu.agentforge.model.chat.ChatCall;
 import cloud.changlu.agentforge.model.chat.ChatModel;
@@ -33,7 +51,9 @@ import cloud.changlu.agentforge.model.tool.execution.ToolService;
 import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -43,7 +63,7 @@ import java.util.logging.Logger;
  * @author changlu
  * @date 2026/9/16
  */
-public class ReActAgent extends BaseReActAgent {
+public class ReActAgent extends BaseReActAgent implements IInterruptibleAgent {
 
     private static final Logger log = Logger.getLogger(ReActAgent.class.getName());
 
@@ -58,6 +78,7 @@ public class ReActAgent extends BaseReActAgent {
     private final ToolService toolService;
     private final AgentToolExecutor toolExecutor;
     private final AgentMiddlewareManager middlewareManager;
+    private final PermissionInterruptModule permissionInterruptModule;
 
     protected ReActAgent(ReActAgentBuilder builder) {
         this.agentName = builder.agentName;
@@ -67,6 +88,17 @@ public class ReActAgent extends BaseReActAgent {
         this.streamingChatModel = builder.streamingChatModel;
         this.chatMemoryProvider = builder.chatMemoryProvider;
         this.toolService = builder.toolService;
+        this.permissionInterruptModule = builder.permissionInterruptModule;
+        if (permissionInterruptModule != null && permissionInterruptModule.isAskUserEnabled()) {
+            boolean registered = false;
+            for (ToolSpecification specification : this.toolService.toolSpecifications()) {
+                if (AskUserTool.TOOL_NAME.equals(specification.name())) {
+                    registered = true;
+                    break;
+                }
+            }
+            if (!registered) this.toolService.tools(Arrays.<Object>asList(new AskUserTool()));
+        }
         this.agentSettings =
                 builder.agentSettings == null
                         ? AgentSettings.defaultSettings()
@@ -320,6 +352,21 @@ public class ReActAgent extends BaseReActAgent {
     @Override
     protected StepResult act(
             int currentStep, List<ToolExecutionRequest> curActTools, AgentChatContext chatContext) {
+        if (permissionInterruptModule != null) {
+            PermissionPreflightResult preflight =
+                    permissionInterruptModule.preflight(currentStep, curActTools, chatContext);
+            if (preflight.isSuspended()) {
+                AgentSuspendInfo suspendInfo = preflight.getSuspendInfo();
+                chatContext.putExtension(PermissionInterruptModule.SUSPEND_INFO_KEY, suspendInfo);
+                middlewareManager.triggerOnInterruptRequested(
+                        currentStep, suspendInfo, chatContext);
+                return StepResult.toSuspended("interrupt batch: " + suspendInfo.getBatchId());
+            }
+            if (preflight.hasDenials()) {
+                return actWithDenials(
+                        currentStep, curActTools, preflight.getDenials(), chatContext);
+            }
+        }
         AgentRunControl control = runControl(chatContext);
         if (control != null) control.beginTools(curActTools, currentStep);
         log.fine(
@@ -342,6 +389,55 @@ public class ReActAgent extends BaseReActAgent {
         return StepResult.toFinished(toolMessages.toString());
     }
 
+    /**
+     * 存在直接 DENY 时按原 Tool Call 顺序执行：拒绝项写失败 Tool Result，其余项正常执行。
+     *
+     * <p>该路径会牺牲并发执行，换取结果与原始调用顺序严格一致；没有 DENY 时仍走原有并发批次。
+     */
+    private StepResult actWithDenials(
+            int currentStep,
+            List<ToolExecutionRequest> requests,
+            List<PermissionDenial> denials,
+            AgentChatContext chatContext) {
+        AgentRunControl control = runControl(chatContext);
+        if (control != null) control.beginTools(requests, currentStep);
+        Map<String, PermissionDenial> deniedById = new LinkedHashMap<String, PermissionDenial>();
+        for (PermissionDenial denial : denials) {
+            deniedById.put(denial.getRequest().id(), denial);
+        }
+        for (ToolExecutionRequest request : requests) {
+            if (control != null && control.isCancellationRequested()) {
+                throw new CancelException("工具执行已取消");
+            }
+            PermissionDenial denial = deniedById.get(request.id());
+            if (denial != null) {
+                if (control != null) control.toolFailed(request.id());
+                addMessage(chatContext, toolResult(request, denial.getReason(), true));
+                continue;
+            }
+            if (control != null) control.toolRunning(request.id());
+            List<ToolExecutionResultMessage> results =
+                    toolExecutor.execute(
+                            currentStep,
+                            Collections.singletonList(request),
+                            chatContext,
+                            null,
+                            middlewareManager,
+                            false,
+                            null);
+            ToolExecutionResultMessage result =
+                    results == null || results.isEmpty() ? null : results.get(0);
+            if (control != null) {
+                if (result != null && Boolean.TRUE.equals(result.isError())) {
+                    control.toolFailed(request.id());
+                } else {
+                    control.toolCompleted(request.id());
+                }
+            }
+        }
+        return StepResult.toFinished("tool batch executed with permission denials");
+    }
+
     @Override
     protected List<ToolSpecification> getToolSpecifications() {
         return toolService.toolSpecifications();
@@ -349,6 +445,135 @@ public class ReActAgent extends BaseReActAgent {
 
     protected Map<String, ToolExecutor> getExecutorMap() {
         return toolService.toolExecutors();
+    }
+
+    /** 提交一组审批/回答，将冻结批次的工具结果按原始顺序写回记忆，再以非流式继续 ReAct。 */
+    @Override
+    public ChatResult resumeInterrupt(InterruptBatchResumeCommand command) {
+        if (permissionInterruptModule == null) {
+            throw new IllegalStateException("PermissionInterruptModule is not configured");
+        }
+        if (chatModel == null) {
+            throw new AgentException("chatModel is null, need set");
+        }
+        AgentInterruptSnapshot snapshot = applyInterruptBatch(command);
+        return resume(snapshot.getMemoryId(), snapshot.getSourceExecutionId());
+    }
+
+    /**
+     * 提交一组审批/回答，将冻结批次的工具结果按原始顺序写回记忆，再以流式继续 ReAct。
+     *
+     * <p>冻结批次的工具恢复在调用本方法时同步执行，不经过返回的 TokenStream 的 onToolExecuted 回调；返回的流式句柄只覆盖恢复后的 ReAct 轮次。
+     */
+    @Override
+    public TokenStream resumeInterruptStream(InterruptBatchResumeCommand command) {
+        if (permissionInterruptModule == null) {
+            throw new IllegalStateException("PermissionInterruptModule is not configured");
+        }
+        if (streamingChatModel == null) {
+            throw new AgentException("streamingChatModel is null, need set");
+        }
+        AgentInterruptSnapshot snapshot = applyInterruptBatch(command);
+        return resumeStream(snapshot.getMemoryId(), snapshot.getSourceExecutionId());
+    }
+
+    /** 校验恢复指令并将冻结批次的工具结果按原始顺序写回 ChatMemory。 */
+    private AgentInterruptSnapshot applyInterruptBatch(InterruptBatchResumeCommand command) {
+        PermissionInterruptModule.ResolvedInterruptBatch resolved =
+                permissionInterruptModule.resolve(command);
+        AgentInterruptSnapshot snapshot = resolved.getSnapshot();
+        ChatMemory memory = chatMemoryProvider.get(snapshot.getMemoryId());
+
+        AgentRequest request = new AgentRequest();
+        request.setMemoryId(snapshot.getMemoryId());
+        request.setExecutionId(snapshot.getSourceExecutionId());
+        request.setQuestion("恢复中断");
+        AgentChatContext context =
+                AgentChatContext.builder()
+                        .executionId(snapshot.getSourceExecutionId())
+                        .request(request)
+                        .chatMemory(memory)
+                        .chatModel(chatModel)
+                        .build();
+
+        InterruptResumeContext resumeContext =
+                new InterruptResumeContext(snapshot, resolved.getResponses());
+        middlewareManager.triggerOnBeforeInterruptResume(resumeContext, context);
+        try {
+            for (ToolExecutionRequest toolRequest : snapshot.getToolRequests()) {
+                PermissionDenial denial = findDenial(snapshot, toolRequest.id());
+                if (denial != null) {
+                    memory.add(toolResult(toolRequest, denial.getReason(), true));
+                    continue;
+                }
+                InterruptRequest interrupt = findInterrupt(snapshot, toolRequest.id());
+                if (interrupt == null) {
+                    executeFrozenTool(snapshot, context, toolRequest);
+                    continue;
+                }
+                InterruptResponse response = resolved.responseOf(interrupt);
+                if (interrupt.getType() == InterruptType.ASK_USER) {
+                    AskUserResponse answer = response.getAskUserResponse();
+                    memory.add(
+                            toolResult(
+                                    toolRequest,
+                                    AskUserSupport.renderToolResult(
+                                            interrupt.getAskUserRequest(),
+                                            answer,
+                                            interrupt.getInterruptId()),
+                                    false));
+                } else if (response.getAction() == ApprovalAction.REJECT) {
+                    memory.add(toolResult(toolRequest, "User rejected this tool call", true));
+                } else {
+                    executeFrozenTool(snapshot, context, toolRequest);
+                }
+            }
+            permissionInterruptModule.complete(resolved);
+            middlewareManager.triggerOnAfterInterruptResume(resumeContext, context);
+        } catch (RuntimeException e) {
+            middlewareManager.triggerOnInterruptResumeError(resumeContext, e, context);
+            throw e;
+        }
+        return snapshot;
+    }
+
+    private void executeFrozenTool(
+            AgentInterruptSnapshot snapshot,
+            AgentChatContext context,
+            ToolExecutionRequest request) {
+        toolExecutor.execute(
+                snapshot.getStep(),
+                Collections.singletonList(request),
+                context,
+                null,
+                middlewareManager,
+                false,
+                null);
+    }
+
+    private static InterruptRequest findInterrupt(
+            AgentInterruptSnapshot snapshot, String toolCallId) {
+        for (InterruptRequest interrupt : snapshot.getInterrupts()) {
+            if (interrupt.getToolRequest().id().equals(toolCallId)) return interrupt;
+        }
+        return null;
+    }
+
+    private static PermissionDenial findDenial(AgentInterruptSnapshot snapshot, String toolCallId) {
+        for (PermissionDenial denial : snapshot.getDenials()) {
+            if (denial.getRequest().id().equals(toolCallId)) return denial;
+        }
+        return null;
+    }
+
+    private static ToolExecutionResultMessage toolResult(
+            ToolExecutionRequest request, String text, boolean error) {
+        return ToolExecutionResultMessage.builder()
+                .id(request.id())
+                .toolName(request.name())
+                .text(text == null ? "" : text)
+                .isError(error)
+                .build();
     }
 
     protected List<ChatMessage> getAllMessages(Object memoryId) {
@@ -390,6 +615,11 @@ public class ReActAgent extends BaseReActAgent {
         return middlewareManager;
     }
 
+    @Override
+    protected PermissionInterruptModule getPermissionInterruptModule() {
+        return permissionInterruptModule;
+    }
+
     public static class ReActAgentBuilder {
         private String systemPrompt;
         private String description;
@@ -400,6 +630,7 @@ public class ReActAgent extends BaseReActAgent {
         private ChatMemoryProvider chatMemoryProvider;
         private ToolService toolService;
         private AgentSettings agentSettings;
+        private PermissionInterruptModule permissionInterruptModule;
         private final List<IAgentMiddleware> middlewares = new ArrayList<IAgentMiddleware>();
 
         public ReActAgentBuilder chatModel(ChatModel chatModel) {
@@ -439,6 +670,12 @@ public class ReActAgent extends BaseReActAgent {
 
         public ReActAgentBuilder agentSettings(AgentSettings agentSettings) {
             this.agentSettings = agentSettings;
+            return this;
+        }
+
+        /** 启用权限与统一中断模块，run / runStream 均可挂起并通过 IInterruptibleAgent 恢复。 */
+        public ReActAgentBuilder permissionInterruptModule(PermissionInterruptModule module) {
+            this.permissionInterruptModule = module;
             return this;
         }
 
