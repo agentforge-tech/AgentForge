@@ -74,13 +74,13 @@
         <if test="elapsedMs != null">elapsed_ms = #{elapsedMs},</if>
         finished_at = #{finishedAt},
         modify_time = #{modifyTime}
-        where id = #{id} and is_deleted = 0 and status in (1, 2, 7)
+        where id = #{id} and is_deleted = 0 and status in (1, 2, 7, 8)
     </update>
 
     <update id="markCancelling">
         update ai_agent_session_message
         set status = #{status}, modify_time = #{modifyTime}
-        where id = #{id} and is_deleted = 0 and status in (1, 2)
+        where id = #{id} and is_deleted = 0 and status in (1, 2, 8)
     </update>
 
     <update id="timeoutCancelIfRunning">

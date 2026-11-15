@@ -43,6 +43,14 @@ public class StepResult {
         return builder().state(StepState.RUNNING).build();
     }
 
+    public static StepResult toSuspended(String message) {
+        return builder()
+                .state(StepState.SUSPENDED)
+                .res(message)
+                .runState(AgentRunState.WAITING_INTERRUPT)
+                .build();
+    }
+
     public StepState getState() {
         return state;
     }

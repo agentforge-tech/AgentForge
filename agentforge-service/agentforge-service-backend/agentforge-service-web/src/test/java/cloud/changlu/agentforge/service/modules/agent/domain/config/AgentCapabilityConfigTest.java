@@ -31,4 +31,19 @@ public class AgentCapabilityConfigTest {
 
         assertFalse(config.isPlanEnabled());
     }
+
+    @Test
+    public void shouldDisableAskUserByDefault() {
+        assertFalse(new StandardAgentConfig().isAskUserEnabled());
+    }
+
+    @Test
+    public void shouldEnableAskUserOnlyWhenExplicitlyTrue() {
+        StandardAgentConfig config = new StandardAgentConfig();
+        AgentCapabilityConfig capabilityConfig = new AgentCapabilityConfig();
+        capabilityConfig.setAskUserEnabled(true);
+        config.setCapabilityConfig(capabilityConfig);
+
+        assertTrue(config.isAskUserEnabled());
+    }
 }

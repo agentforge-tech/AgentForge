@@ -408,7 +408,7 @@
     "message": "Config-driven docs structure and sidebar, with on-page TOC and site navigation."
   },
   "home.description": {
-    "message": "From unified LLM abstractions to Agent Runtime, AgentForge gives Java developers a transparent, controllable, and extensible foundation for intelligent agents."
+    "message": "From unified LLM abstractions to ReAct / Harness Runtime and HITL approval and recovery, AgentForge gives Java developers a transparent, controllable, and extensible foundation for intelligent agents."
   },
   "home.start": {
     "message": "Start building"
@@ -477,13 +477,19 @@
     "message": "Deploy Service locally"
   },
   "home.capabilities.desc": {
-    "message": "Six core capabilities cover model access, tool calling, runtime governance and a ready-to-use workbench."
+    "message": "Eight core capabilities cover model access, tool calling, HITL approval, Harness runtime and a ready-to-use workbench."
   },
   "home.card.middleware": {
     "message": "Attach logging, tracing, auditing and masking to model calls, tool execution and the Agent loop, keeping cross-cutting logic out of the main loop."
   },
   "home.card.events": {
     "message": "Unified messages and streaming events bring synchronous results, reasoning deltas, tool calls and frontend SSE onto the same semantics."
+  },
+  "home.card.hitl": {
+    "message": "Permission ALLOW / DENY / ASK and AskUser share one interrupt kernel: freeze the tool batch, suspend normally as SUSPENDED, then resume with a structured response from the business layer."
+  },
+  "home.card.harness": {
+    "message": "Initial local runtime: HarnessAgent binds a Workspace and LocalRuntime to provide file, search and command tools, prompt rendering and resource lifecycle."
   },
   "home.card.service": {
     "message": "Model configuration, Agent debugging, version publishing, session replay and tracing out of the box — experience the full Agent workbench."
@@ -543,7 +549,7 @@
     "message": "Observable, governable, extensible"
   },
   "home.layer.service": {
-    "message": "Permissions, approvals, sandboxes and a ready-to-use Agent workbench"
+    "message": "Initial local Harness runtime, HITL approval and recovery, and a ready-to-use Agent workbench"
   },
   "home.layer.service.note": {
     "message": "From framework to production"

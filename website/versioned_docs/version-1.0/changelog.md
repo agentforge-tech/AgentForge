@@ -22,6 +22,29 @@ displayed_sidebar: changelogSidebar
 
 ## release_1.0.x
 
+### v1.0.1 - 2026.11.02-2026.11.15
+
+状态：待发布
+
+#### Added
+
+- [bd463fe] Agent 运行期交互与重试：新增执行中追加用户消息的 Middleware、存储与接口链路及调试/发布页展示，新增 AI 调用重试流式事件，补充 Memory / Middleware / Tool SDK 文档与上下文压缩设计方案
+- [c0d00bb] 上下文阈值压缩与模型配置：新增 CompactSummarizationMiddleware 阈值比例压缩、TokenStatsUtil 与 Compact 生命周期事件，Service 侧输出 compact SSE 事件并支持调试/发布双模式展示；新增 LlmModelConfig / Registry 模型配置注册表与模型能力接口，前端新增 CompactNotice 与压缩事件归并
+- [3ab3fd1] 模型调用取消与 HTTP 中断：新增 CancellationHandle / ChatCall / HttpCall 取消承载对象，ChatModel、StreamingChatModel 与 HttpTransport 支持取消回调，OpenAI / Anthropic 非流式与流式同步适配
+- [cc2e01a] Agent 状态持久化、运行恢复与主动停止：新增 AgentExecutionState / RunningToolState、AgentRunControl / AgentRunRegistry 与 AgentExecutionStateStore SPI，IAgent 扩展 executionId / cancel / 状态查询并新增 IResumableAgent，ReActAgent 支持 resume / resumeStream 与取消收口，补齐消息链补偿与核心单测
+- [57d4496] 任务计划 Todo 能力：新增 todoplan 工具包与 TodoPlanTool / TodoPlanMiddleware / TodoPlanListener / TodoValidator，Agent 能力配置新增 planEnabled 开关，前端新增 TodoBoard 与 todo 事件归并展示
+- [857064a] 二段式可重连流式对话与消息事件存储：新增 chat task 提交/停止/订阅接口、MessageEventStore SPI 与 MySQL / InMemory 实现、StreamEventSink 事件出口及 MessageEvent 表，支持断线重连、终态快照、停止 signal 与超时取消
+- [5f800ce] 前端二段式对话适配：chatTransport 固定 detached 提交+订阅链路并新增 GET SSE 消费，sessionApi / sessionReplay 支持会话列表、事件序号与 CANCELLED / TIMEOUT_CANCELLED 回放，调试/发布页接入停止、断线重连与 Todo 卡片
+- [d291f34] HarnessAgent 与 Service Backend 拆分：新增 HarnessAgent 本地 Runtime、命令执行、工具集、工作区沙箱与 Prompt 渲染，新增 agentforge-service-backend 聚合模块与 protocol 协议模块，迁移 Service Web 及协议/测试并同步构建、Docker 与 README
+- [ae25c1f] 响应片段分层渲染与历史回放：新增 response_segment reducer 与展示组件，统一调试/发布流式事件收口、最终响应晋升及旧数据兼容
+- [6fb451e] ReAct Agent 权限治理与 HITL：新增权限模式、规则扩展、工具预检与拒绝链路，支持 AskUser 结构化提问及流式/非流式批次挂起恢复，中断回调统一纳入 IAgentMiddleware，恢复采用一次性批次消费并补齐单测与设计文档
+
+#### Changed
+
+- [1c56820] RoadMap 为 Agent 任务计划 Todo 列表展示补充设计文档引用链接
+- [0718c6d] RoadMap 补充 Agent State 持久化/运行恢复/停止完成项，并为一段式 SSE 长连接、一段式停止 signal、二段式重连、二段式停止与超时取消设计文档补充引用链接
+- [d80df43] RoadMap 补充核心 ReAct 框架、Agent State 持久化、运行恢复与主动停止设计文档引用，官网中英文及 version-1.0 RoadMap 同步 GitHub 绝对链接，补齐一段式/二段式流式对话与任务计划 Todo 条目
+
 ### v1.0.0 - 2026.09.13-2026.11.02
 
 状态：已发布

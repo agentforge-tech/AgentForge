@@ -118,7 +118,6 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         request.setMessage(body.getMessage().trim());
         request.setIsDebug(debug);
         request.setAiMessageId(init.getAiMessageId());
-        request.setSessionPk(init.getSessionPk());
         request.setSessionTitle(init.getTitle());
         return request;
     }

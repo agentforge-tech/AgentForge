@@ -31,10 +31,23 @@ export async function resumeChatStream(messageId, afterSeq, options) {
   return consumeDetached(messageId, afterSeq, options)
 }
 
+/** 一次性提交 HITL 批次的审批结果或 AskUser 回答。 */
+export async function resumeInterrupt(batchId, responses) {
+  const response = await fetch('/api/chat/tasks/interrupts/resume', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ batchId, responses })
+  })
+  const result = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(result.message || `HTTP ${response.status}`)
+  return result
+}
+
 async function consumeDetached(messageId, afterSeq, { signal, onEvent }) {
   let cursor = Number(afterSeq || 0)
   let terminal = false
-  while (!terminal) {
+  let lastEvent = null
+  while (true) {
     const url = `/api/chat/tasks/stream?messageId=${encodeURIComponent(messageId)}&afterSeq=${encodeURIComponent(cursor)}`
     try {
       await getSse(url, {
@@ -42,17 +55,28 @@ async function consumeDetached(messageId, afterSeq, { signal, onEvent }) {
         onEvent: (event) => {
           const seq = Number(event.eventSeq || 0)
           if (seq > cursor) cursor = seq
+          lastEvent = event
           terminal = event.event === 'resp_end' || event.event === 'error'
           onEvent(event)
         }
       })
     } catch (error) {
       if (error.name === 'AbortError' || signal?.aborted) throw error
+      if (isInterruptPause(lastEvent)) return { lastSeq: cursor, paused: true }
       await delay(500, signal)
       continue
     }
-    if (!terminal) await delay(300, signal)
+    if (terminal) break
+    // 只有“服务端在中断事件之后收口”才算暂停；历史回放中的旧中断不会提前截断。
+    if (isInterruptPause(lastEvent)) return { lastSeq: cursor, paused: true }
+    await delay(300, signal)
   }
+  return { lastSeq: cursor, paused: false }
+}
+
+/** 中断请求是 stream 的暂停点：服务端随后会关闭本次 SSE，恢复由新请求续流。 */
+export function isInterruptPause(event) {
+  return event && event.event === 'interrupt' && event.type === 'interrupt_requested'
 }
 
 function delay(ms, signal) {

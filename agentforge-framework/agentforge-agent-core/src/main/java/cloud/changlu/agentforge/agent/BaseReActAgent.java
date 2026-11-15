@@ -5,6 +5,7 @@ import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.domain.AgentRunState;
 import cloud.changlu.agentforge.agent.domain.ThinkResult;
 import cloud.changlu.agentforge.agent.exception.CancelException;
+import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
 import cloud.changlu.agentforge.agent.step.StepResult;
 import cloud.changlu.agentforge.agent.step.StepState;
 import cloud.changlu.agentforge.agent.stream.ReActTokenStream;
@@ -29,6 +30,11 @@ public abstract class BaseReActAgent extends Agent {
     protected abstract StreamingChatModel getStreamChatModel();
 
     protected abstract AgentToolExecutor getToolExecutor();
+
+    /** 权限与中断模块；未启用时返回 null。 */
+    protected PermissionInterruptModule getPermissionInterruptModule() {
+        return null;
+    }
 
     protected abstract List<ToolSpecification> getToolSpecifications();
 
@@ -73,7 +79,8 @@ public abstract class BaseReActAgent extends Agent {
                 getAgentSettings(),
                 getMiddlewareManager(),
                 control,
-                runRegistry);
+                runRegistry,
+                getPermissionInterruptModule());
     }
 
     // check任务是否被取消

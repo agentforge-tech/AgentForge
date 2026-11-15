@@ -78,7 +78,7 @@ export default {
 </script>
 
 <style scoped>
-.elegant-tool { margin: 7px 0 10px; }
+.elegant-tool { margin: 4px 0 6px; }
 .elegant-tool-head {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ package cloud.changlu.agentforge.agent.step;
  */
 public enum ChatResultState {
     RUNNING,
+    SUSPENDED,
     FINISHED,
     FAILED;
 }

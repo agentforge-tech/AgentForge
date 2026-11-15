@@ -1,6 +1,14 @@
 import { createAppendState, reduceAppendEvent } from './appendEventReducer'
 import { reduceCompactEvent } from './compactEventReducer'
 import { buildTodoCardPart } from './todoEventReducer'
+import { reduceInterruptAnswers, reduceInterruptEvent } from './interruptEventReducer'
+import {
+  appendResponseSegment,
+  closeOpenResponseSegment,
+  finishResponseSegments,
+  promoteLastResponseSegment,
+  shouldAppendResponseSegment
+} from './responseSegmentReducer'
 
 /**
  * 历史消息事件重放：把后端 events 字段（SSE 事件 JSON 数组字符串）还原成渲染所需的 message 结构。
@@ -21,13 +29,14 @@ function applyThink(message, event) {
   const last = message.parts[message.parts.length - 1]
   const open = last && last.type === 'think' && last.status === 'thinking' ? last : null
   const text = event.content || ''
+  if (!String(text).trim() && !open) return
   if (!event.isFinish) {
     if (open) open.content += text
     else message.parts.push({ type: 'think', content: text, status: 'thinking', startedAt: 0, duration: null })
     return
   }
   if (open) {
-    if (text) open.content = text
+    if (String(text).trim()) open.content = text
     open.status = 'end'
     open.duration = null
   } else if (text) {
@@ -84,6 +93,8 @@ function replaceWithTodoCard(message, part) {
 
 /** 把一条 AI 消息记录（含 events）还原为渲染用 message 对象 */
 export function replayMessage(record, appendState = createAppendState(), detailed = false) {
+  const events = parseEvents(record.events)
+  let sawRespEnd = false
   const message = {
     role: 'assistant',
     messageId: record.id,
@@ -96,26 +107,47 @@ export function replayMessage(record, appendState = createAppendState(), detaile
     elapsedMs: record.elapsedMs || null,
     lastEventSeq: 0
   }
-  parseEvents(record.events).forEach((event) => {
+  events.forEach((event) => {
     message.lastEventSeq = Math.max(message.lastEventSeq, Number(event.eventSeq || 0))
     switch (event.event) {
       case 'think':
+        closeOpenResponseSegment(message, () => 0)
         applyThink(message, event)
         break
       case 'resp':
-        message.content += event.content || ''
+        if (shouldAppendResponseSegment(message, event)) {
+          closeOpenThink(message)
+          appendResponseSegment(message, event, () => 0)
+        }
         break
       case 'tool_call':
+        closeOpenResponseSegment(message, () => 0)
         closeOpenThink(message)
         applyTool(message, event, detailed)
+        reduceInterruptAnswers(message, event)
         break
       case 'user_message':
+        closeOpenResponseSegment(message, () => 0)
         reduceAppendEvent(appendState, message, event)
         break
       case 'compact':
+        closeOpenResponseSegment(message, () => 0)
         reduceCompactEvent(message, event, detailed)
         break
+      case 'retry':
+        closeOpenResponseSegment(message, () => 0)
+        break
+      case 'interrupt':
+        closeOpenResponseSegment(message, () => 0)
+        closeOpenThink(message)
+        reduceInterruptEvent(message, event)
+        break
+      case 'resp_end':
+        sawRespEnd = true
+        promoteLastResponseSegment(message, () => 0)
+        break
       case 'error':
+        finishResponseSegments(message, () => 0)
         message.status = 'error'
         message.error =
           typeof event.content === 'string' ? event.content : JSON.stringify(event.content || '生成失败')
@@ -130,16 +162,25 @@ export function replayMessage(record, appendState = createAppendState(), detaile
   } else if (record.status === 4 || record.status === 6) {
     // 4=CANCELLED，6=TIMEOUT_CANCELLED：都属于取消，不是失败。
     message.status = 'cancelled'
+  } else if (record.status === 8) {
+    // 8=WAITING_HITL：等待用户确认，保留运行锁但不继续订阅。
+    message.status = 'waiting'
   } else if (record.status === 1 || record.status === 2 || record.status === 7) {
     // 1=CREATED，2=RUNNING，7=CANCELLING。
     message.status = 'running'
   }
-  if (!message.content && record.contentText) message.content = record.contentText
+  // 旧数据可能没有 resp_end；已成功的消息仍将最后响应片段视为最终回答。
+  if (message.status === 'success' && !sawRespEnd && !message.content) {
+    promoteLastResponseSegment(message, () => 0)
+  }
+  // 只有完全没有事件明细时才使用历史正文兜底，避免把已拼接的中间响应放回正文。
+  if (!events.length && !message.content && record.contentText) message.content = record.contentText
   // 运行中的消息仍可能有未结束的 think/tool，只有终态消息才强制收尾。
   if (message.status !== 'running') {
     message.parts.forEach((part) => {
       if (part.type === 'think' && part.status === 'thinking') part.status = 'end'
       if (part.type === 'tool_card' && !part.isFinish) part.isFinish = true
+      if (part.type === 'response_segment' && part.status === 'streaming') part.status = 'complete'
     })
   }
   return message

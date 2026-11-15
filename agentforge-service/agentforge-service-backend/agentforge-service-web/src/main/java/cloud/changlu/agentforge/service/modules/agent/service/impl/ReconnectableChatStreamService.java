@@ -6,6 +6,7 @@ import cloud.changlu.agentforge.service.modules.agent.event.store.StoredMessageE
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMessageMapper;
 import cloud.changlu.agentforge.service.modules.session.domain.AgentSessionMessagePojo;
 import cloud.changlu.agentforge.service.modules.session.enums.SessionMessageRoleEnum;
+import cloud.changlu.agentforge.service.modules.session.enums.SessionMessageStatusEnum;
 import cloud.changlu.agentforge.service.modules.session.enums.SessionStatusTransfer;
 import cloud.changlu.agentforge.service.modules.session.service.IAgentSessionService;
 import cloud.changlu.agentforge.service.protocol.StreamEventResponse;
@@ -87,6 +88,14 @@ public class ReconnectableChatStreamService {
                 }
                 AgentSessionMessagePojo message = messageMapper.selectById(messageId);
                 if (message == null) break;
+                if (isPaused(message.getStatus())) {
+                    // 中断挂起是本次订阅的暂停点：排空事件后主动收口 SSE。
+                    // 恢复后前端以 interrupt 事件的 eventSeq 作为 afterSeq 重新续流。
+                    if (eventStore.readAfter(messageId, cursor, 1).isEmpty()) {
+                        break;
+                    }
+                    continue;
+                }
                 if (isTerminal(message.getStatus())) {
                     // 观察到终态后再读一轮，排空与终态紧邻的尾事件。
                     if (eventStore.readAfter(messageId, cursor, 1).isEmpty()) {
@@ -120,5 +129,10 @@ public class ReconnectableChatStreamService {
 
     private static boolean isTerminal(Integer status) {
         return SessionStatusTransfer.isTerminal(status);
+    }
+
+    /** WAITING_HITL 不是终态，但对当前订阅而言是可安全断开的暂停点。 */
+    private static boolean isPaused(Integer status) {
+        return SessionMessageStatusEnum.WAITING_HITL.getCode().equals(status);
     }
 }

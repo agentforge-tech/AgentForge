@@ -124,7 +124,8 @@ public final class ToolSpecifications {
             if (description != null) {
                 definition.put("description", description);
             }
-            builder.addProperty(parameterName, definition, true);
+            boolean required = pAnnotation == null || pAnnotation.required();
+            builder.addProperty(parameterName, definition, required);
         }
         return builder.build();
     }
@@ -220,7 +221,9 @@ public final class ToolSpecifications {
                     }
                 }
                 properties.put(field.getName(), definition);
-                required.add(field.getName());
+                if (fieldAnnotation == null || fieldAnnotation.required()) {
+                    required.add(field.getName());
+                }
             }
             Map<String, Object> schema = typeSchema("object");
             schema.put("properties", properties);

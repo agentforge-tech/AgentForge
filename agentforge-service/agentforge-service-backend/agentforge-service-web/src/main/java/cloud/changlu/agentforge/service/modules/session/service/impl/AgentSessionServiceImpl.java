@@ -98,7 +98,6 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
 
         return new SessionInitResult(
                 resolvedSessionId,
-                session.getId(),
                 userMessage.getId(),
                 aiMessage.getId(),
                 aiSeq,

@@ -42,7 +42,7 @@ public interface AgentSessionMessageMapper {
             @Param("finishedAt") Date finishedAt,
             @Param("modifyTime") Date modifyTime);
 
-    /** 停止受理：仅当消息仍为 CREATED(1)/RUNNING(2) 时标记为 CANCELLING(7)，用于幂等。 */
+    /** 停止受理：仅当消息仍为 CREATED/RUNNING/WAITING_HITL 时标记为 CANCELLING。 */
     int markCancelling(
             @Param("id") Long id,
             @Param("status") Integer status,

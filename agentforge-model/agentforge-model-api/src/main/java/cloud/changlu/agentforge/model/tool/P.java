@@ -46,4 +46,11 @@ public @interface P {
      * @return parameter description
      */
     String description() default "";
+
+    /**
+     * Whether the parameter is required in the generated tool schema.
+     *
+     * @return {@code true} by default
+     */
+    boolean required() default true;
 }

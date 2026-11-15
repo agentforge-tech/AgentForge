@@ -10,7 +10,9 @@ const capabilityCards = [
   {index: '03', title: 'Tool Calling', text: '本地 Java 方法、HTTP 插件与 MCP 服务统一转换为 Function Call，参数绑定、执行与结果回写一次完成。', id: 'home.card.tool', accent: 'ACTION', to: '/docs/sdk/tool'},
   {index: '04', title: 'Middleware', text: '在模型调用、工具执行与 Loop 生命周期挂载日志、Trace、审计和脱敏逻辑，横切能力与主循环解耦。', id: 'home.card.middleware', accent: 'GOVERNANCE', to: '/docs/sdk/middleware'},
   {index: '05', title: 'Messages & Events', text: '统一消息模型与流式事件，让同步结果、推理增量、工具调用和前端 SSE 收敛到同一套语义。', id: 'home.card.events', accent: 'STREAM', to: '/docs/sdk/message-event'},
-  {index: '06', title: 'Service Workbench', text: '模型配置、Agent 调试、版本发布、会话重放与链路追踪开箱即用，直接体验完整 Agent 工作台。', id: 'home.card.service', accent: 'SERVICE', to: '/docs/service/introduction'},
+  {index: '06', title: 'Human-in-the-Loop', text: '权限 ALLOW / DENY / ASK 与 AskUser 共用中断内核：冻结工具批次、正常挂起为 SUSPENDED，再由业务提交结构化响应恢复。', id: 'home.card.hitl', accent: 'HITL', to: '/docs/sdk/permission-hitl'},
+  {index: '07', title: 'Harness Agent', text: '初版本地运行时：HarnessAgent 绑定 Workspace 与 LocalRuntime，提供文件、搜索、命令工具、提示词渲染与资源生命周期。', id: 'home.card.harness', accent: 'HARNESS', to: '/docs/harness/quickstart'},
+  {index: '08', title: 'Service Workbench', text: '模型配置、Agent 调试、版本发布、会话重放与链路追踪开箱即用，直接体验完整 Agent 工作台。', id: 'home.card.service', accent: 'SERVICE', to: '/docs/service/introduction'},
 ];
 
 const modules = [
@@ -27,7 +29,7 @@ const layers = [
   {tag: '02', title: 'Tool & Function Call', text: 'Local / HTTP / MCP 统一 ToolSpecification 与执行器', textId: 'home.layer.tool', note: '模型决策变成真实动作', noteId: 'home.layer.tool.note'},
   {tag: '03', title: 'ReAct Agent', text: 'Think → Act → 写回记忆，支持同步、流式、取消与重试', textId: 'home.layer.react', note: '一套内核，两种驱动器', noteId: 'home.layer.react.note'},
   {tag: '04', title: 'Middleware & Trace', text: 'Loop、模型、工具、停止阶段的可组合横切能力', textId: 'home.layer.middleware', note: '可观测、可治理、可扩展', noteId: 'home.layer.middleware.note'},
-  {tag: '05', title: 'Harness & Service', text: '权限、审批、沙箱与开箱即用的 Agent 工作台', textId: 'home.layer.service', note: '从框架走向生产', noteId: 'home.layer.service.note'},
+  {tag: '05', title: 'Harness & Service', text: '初版本地 Harness 运行时、HITL 审核恢复与开箱即用 Agent 工作台', textId: 'home.layer.service', note: '从框架走向生产', noteId: 'home.layer.service.note'},
 ];
 
 const quickCode = `ReActAgent agent = ReActAgent.builder()
@@ -68,12 +70,12 @@ export default function Home() {
           <div className={styles.heroCopy}>
             <div className={styles.release}><span/><Translate id="home.release">AgentForge v1.0 · Java Agent Framework</Translate></div>
             <h1><Translate id="home.title.line1">让智能不止于回答</Translate><br/><span><Translate id="home.title.line2">而是真正行动。</Translate></span></h1>
-            <p><Translate id="home.description">从统一 LLM 抽象到 Agent Runtime，AgentForge 为 Java 开发者提供透明、可控、可扩展的智能体工程底座。</Translate></p>
+            <p><Translate id="home.description">从统一 LLM 抽象到 ReAct / Harness Runtime，再到 HITL 审核与恢复，AgentForge 为 Java 开发者提供透明、可控、可扩展的智能体工程底座。</Translate></p>
             <div className={styles.actions}>
               <Link className={styles.primaryAction} to="/docs/quickstart/getting-started"><Translate id="home.start">开始构建</Translate><span>→</span></Link>
               <Link className={styles.secondaryAction} to="/docs/service/quick-deploy"><Translate id="home.deploy">本地部署 Service</Translate><span>↗</span></Link>
             </div>
-            <div className={styles.heroFacts}><span><b>Java 8+</b> native</span><span><b>OpenAI + Anthropic</b> providers</span><span><b>MIT</b> open source</span></div>
+            <div className={styles.heroFacts}><span><b>Java 8+</b> native</span><span><b>OpenAI + Anthropic</b> providers</span><span><b>HITL + Harness</b> ready</span><span><b>MIT</b> open source</span></div>
           </div>
           <RuntimePanel/>
         </div>
@@ -90,7 +92,7 @@ export default function Home() {
       </section>
 
       <section className={styles.capabilities}>
-        <div className={styles.sectionIntro}><span>BUILDING BLOCKS</span><h2><Translate id="home.capabilities.title">为 Agent 工程而生</Translate></h2><p><Translate id="home.capabilities.desc">六个核心能力覆盖模型接入、工具调用、执行治理与工作台落地。</Translate></p></div>
+        <div className={styles.sectionIntro}><span>BUILDING BLOCKS</span><h2><Translate id="home.capabilities.title">为 Agent 工程而生</Translate></h2><p><Translate id="home.capabilities.desc">八个核心能力覆盖模型接入、工具调用、HITL 审核、Harness 运行时与工作台落地。</Translate></p></div>
         <div className={styles.cardGrid}>{capabilityCards.map(card => <Link className={styles.card} key={card.index} to={card.to}>
           <div className={styles.cardTop}><small>{card.index}</small><span>{card.accent}</span></div><h3>{card.title}</h3><p><Translate id={card.id}>{card.text}</Translate></p><div className={styles.cardLine}/>
         </Link>)}</div>

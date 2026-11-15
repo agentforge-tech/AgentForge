@@ -8,7 +8,7 @@ displayed_sidebar: sdkSidebar
 
 # Meet AgentForge
 
-AgentForge is an open-source Agent Framework for Java developers. It starts from **LLM protocols and model abstractions**, then builds tool calling, conversation memory, middleware, reasoning loops, and the Agent Runtime layer by layer. Applications can turn model capabilities into executable tasks without binding themselves to a single model vendor.
+AgentForge is an open-source Agent Framework for Java developers. It starts from **LLM protocols and model abstractions**, then builds tool calling, conversation memory, middleware, reasoning loops, HITL interrupts, and the Agent Runtime layer by layer. Applications can turn model capabilities into executable tasks without binding themselves to a single model vendor.
 
 > **Forge Intelligence into Action.**
 
@@ -79,7 +79,7 @@ AgentForge
 │   └── agentforge-model-registry # Out-of-the-box ChatModel factory
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent runtime
-│   └── agentforge-harness-agent  # Harness runtime (planned)
+│   └── agentforge-harness-agent  # Harness runtime (initial local runtime)
 ├── agentforge-service            # Vue frontend + Spring Boot backend
 └── agentforge-examples           # Reference examples
 ```
@@ -93,7 +93,11 @@ AgentForge
 | Messages and events | Unified messages, streaming callbacks, and tool execution events | [Messages & Events](../sdk/message-event) |
 | Middleware | Attach custom logic to model calls, tool execution, and loop lifecycle | [Middleware](../sdk/middleware) |
 | Tool extensions | Local Java methods, HTTP plugins, and MCP services as Function Calls | [Tool Extensions](../sdk/tool) |
+| Human-in-the-Loop | Permission `ALLOW / DENY / ASK`, approval interrupts, AskUser and batch recovery | [Permission Design & HITL](../sdk/permission-hitl) |
+| Harness Agent | Initial local runtime: Workspace, LocalRuntime, engineering tools and resource lifecycle | [Build a HarnessAgent](../harness/quickstart) |
 | Service workbench | Model configuration, Agent debugging, versioning, sessions, and tracing | [Service](../service/introduction) |
+
+HITL is now initially available: permission approval and AskUser share one interrupt kernel with frozen tool batches, `SUSPENDED` outcomes, and explicit recovery. Harness Agent provides an initial local runtime that binds a Workspace and `LocalRuntime` with file, search, and command tools. Remote sandboxes, cross-process recovery, and Harness-level permission policy selection are still evolving.
 
 ## A minimal call
 
@@ -134,7 +138,30 @@ ChatResult result = agent.run(AgentRequest.builder()
 - **Understand the model layer**: read [Model](../sdk/model);
 - **Build a full Agent**: read [Agent](../sdk/agent) and [Tool Extensions](../sdk/tool);
 - **Add observability and governance**: read [Middleware](../sdk/middleware) and [Messages & Events](../sdk/message-event);
+- **Add permission approval and human confirmation**: read [Permission Design & HITL](../sdk/permission-hitl);
+- **Run an engineering Agent with workspace boundaries**: read [Build a HarnessAgent](../harness/quickstart);
 - **Use the ready-made workbench**: visit [AgentForge Service](../service/introduction).
+
+## SDK documentation map
+
+The SDK section is organized as "use first, understand next, extend last":
+
+```text
+Getting started
+  Meet AgentForge → Quick Start
+Harness implementation
+  Build a HarnessAgent → Runtime design and implementation
+Core components
+  Model → Agent → Permission Design & HITL → Messages & Events → Middleware → Tool → Memory
+Memory extensions
+  Window memory
+Agent Tool extensions
+  JavaLocalTool → HTTP → MCP
+Middleware extensions
+  Logging → Trace → Append
+```
+
+Tool and Middleware topic pages follow a three-layer structure: design rationale first, then how to compose them with an Agent, and finally how to replace storage, executors, event adapters, or formatting strategies. This lets you copy a minimal example first and extend it as your project grows.
 
 ## Service workbench
 

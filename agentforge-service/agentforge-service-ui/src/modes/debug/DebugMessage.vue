@@ -12,27 +12,30 @@
         <i :class="processOpen ? 'el-icon-caret-bottom' : 'el-icon-caret-right'"></i>
         <span class="process-title">{{ processTitle }}</span>
         <span class="process-meta">
-          {{ thinkCount }} 段思考<template v-if="toolCount"> · {{ toolCount }} 个工具</template>
+          <template v-if="responseCount">{{ responseCount }} 个响应片段 · </template>{{ thinkCount }} 段思考<template v-if="toolCount"> · {{ toolCount }} 个工具</template>
+          <template v-if="askCount"> · {{ askCount }} 次询问</template>
           <template v-if="elapsed"> · {{ elapsed }}</template>
         </span>
       </div>
       <el-collapse-transition>
         <div v-show="processOpen" class="process-body">
           <template v-for="(part, idx) in processParts">
-            <ThinkBlock v-if="part.type === 'think'" :key="'t' + idx" :part="part" />
+            <ResponseSegmentBlock v-if="part.type === 'response_segment'" :key="'r' + idx" :part="part" mode="debug" />
+            <ThinkBlock v-else-if="part.type === 'think'" :key="'t' + idx" :part="part" />
             <ToolCard v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
             <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
             <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" detailed />
+            <InterruptTraceItem v-else-if="part.type === 'interrupt_card'" :key="'i' + idx" :part="part" mode="debug" />
           </template>
         </div>
       </el-collapse-transition>
     </div>
 
     <!-- 最终回答 -->
-    <div v-if="message.content" class="answer">
+    <div v-if="displayContent" class="answer">
       <MarkdownView
-        :content="message.content"
-        :streaming="message.status === 'running'"
+        :content="displayContent"
+        :streaming="contentStreaming"
         mode="typewriter-blur"
         @render-complete="$emit('render-complete', $event)"
       />
@@ -62,21 +65,42 @@ import ToolCard from './ToolCard.vue'
 import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
 import RetryNotice from '../../components/RetryNotice.vue'
 import CompactNotice from '../../components/CompactNotice.vue'
+import ResponseSegmentBlock from '../../components/ResponseSegmentBlock.vue'
+import InterruptTraceItem from '../../components/InterruptTraceItem.vue'
 
 export default {
   name: 'DebugMessage',
-  components: { MarkdownView, ThinkBlock, ToolCard, AppendedUserMessage, RetryNotice, CompactNotice },
+  components: { MarkdownView, ThinkBlock, ToolCard, AppendedUserMessage, RetryNotice, CompactNotice, ResponseSegmentBlock, InterruptTraceItem },
   props: {
     message: { type: Object, required: true }
   },
   data() {
     return {
-      processOpen: this.message.status === 'running'
+      processOpen: this.message.status === 'running' || this.message.status === 'waiting'
     }
   },
   computed: {
     processParts() {
-      return (this.message.parts || []).filter((p) => p.type !== 'text' && p.type !== 'retry_notice')
+      return (this.message.parts || []).filter((p) =>
+        p.type !== 'text' &&
+        p.type !== 'retry_notice' &&
+        p !== this.activeResponseSegment &&
+        (p.type !== 'response_segment' || String(p.content || '').trim())
+      )
+    },
+    activeResponseSegment() {
+      const parts = this.message.parts || []
+      for (let index = parts.length - 1; index >= 0; index--) {
+        const part = parts[index]
+        if (part.type === 'response_segment' && part.status === 'streaming') return part
+      }
+      return null
+    },
+    displayContent() {
+      return this.message.content || this.activeResponseSegment?.content || ''
+    },
+    contentStreaming() {
+      return !this.message.content && !!this.activeResponseSegment && this.message.status === 'running'
     },
     retryNotice() {
       const parts = this.message.parts || []
@@ -88,11 +112,19 @@ export default {
     thinkCount() {
       return this.processParts.filter((p) => p.type === 'think').length
     },
+    responseCount() {
+      return this.processParts.filter((p) => p.type === 'response_segment').length
+    },
     toolCount() {
       return this.processParts.filter((p) => p.type === 'tool_card').length
     },
+    askCount() {
+      return this.processParts.filter((p) => p.type === 'interrupt_card').length
+    },
     processTitle() {
-      return this.message.status === 'running' ? '执行中...' : '执行过程'
+      if (this.message.status === 'running') return '执行中...'
+      if (this.message.status === 'waiting') return '等待确认'
+      return '执行过程'
     },
     elapsed() {
       return formatElapsedDuration(this.message.elapsedMs)
@@ -100,8 +132,8 @@ export default {
   },
   watch: {
     'message.status'(val) {
-      // 运行中自动展开，完成后自动收拢为一行摘要
-      this.processOpen = val === 'running'
+      // 运行中与等待确认时保持展开，只有完成/失败/取消才收拢。
+      this.processOpen = val === 'running' || val === 'waiting'
     }
   }
 }
