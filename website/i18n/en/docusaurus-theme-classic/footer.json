@@ -16,7 +16,8 @@
     "description": "The label of footer link with label=介绍 linking to /docs/guides/introduction"
   },
   "link.item.label.快速开始": {
-    "message": "Quick Start"
+    "message": "Quick Start",
+    "description": "The label of footer link with label=快速开始 linking to /docs/quickstart/getting-started"
   },
   "link.item.label.参与贡献": {
     "message": "Contributing",
@@ -24,7 +25,7 @@
   },
   "link.item.label.GitHub": {
     "message": "GitHub",
-    "description": "The label of the AgentForge GitHub link"
+    "description": "The label of footer link with label=GitHub linking to https://github.com/agentforge-tech/AgentForge"
   },
   "link.item.label.博客": {
     "message": "Blog",
@@ -43,30 +44,47 @@
     "description": "The footer copyright"
   },
   "link.title.Service": {
-    "message": "Service"
+    "message": "Service",
+    "description": "The title of the footer links column with title=Service in the footer"
   },
   "link.title.Community": {
-    "message": "Community"
+    "message": "Community",
+    "description": "The title of the footer links column with title=Community in the footer"
   },
   "link.item.label.2026 RoadMap": {
-    "message": "2026 RoadMap"
+    "message": "2026 RoadMap",
+    "description": "The label of footer link with label=2026 RoadMap linking to /docs/roadmap/roadmap"
   },
   "link.item.label.AgentForge 介绍": {
-    "message": "Meet AgentForge"
+    "message": "Meet AgentForge",
+    "description": "The label of footer link with label=AgentForge 介绍 linking to /docs/about/introduction"
   },
   "link.item.label.Model 模型协议层": {
-    "message": "Model Protocol Layer"
+    "message": "Model Protocol Layer",
+    "description": "The label of footer link with label=Model 模型协议层 linking to /docs/sdk/model"
   },
   "link.item.label.Agent 智能体": {
-    "message": "Agent"
+    "message": "Agent",
+    "description": "The label of footer link with label=Agent 智能体 linking to /docs/sdk/agent"
   },
   "link.item.label.Tool 扩展设计": {
-    "message": "Tool Extensions"
+    "message": "Tool Extensions",
+    "description": "The label of footer link with label=Tool 扩展设计 linking to /docs/sdk/tool"
   },
   "link.item.label.Service 介绍": {
-    "message": "Service Introduction"
+    "message": "Service Introduction",
+    "description": "The label of footer link with label=Service 介绍 linking to /docs/service/introduction"
   },
   "link.item.label.快速部署": {
-    "message": "Quick Deploy"
+    "message": "Quick Deploy",
+    "description": "The label of footer link with label=快速部署 linking to /docs/service/quick-deploy"
+  },
+  "link.item.label.Discussions": {
+    "message": "Discussions",
+    "description": "The label of footer link with label=Discussions linking to https://github.com/agentforge-tech/AgentForge/discussions"
+  },
+  "link.item.label.Issues": {
+    "message": "Issues",
+    "description": "The label of footer link with label=Issues linking to https://github.com/agentforge-tech/AgentForge/issues"
   }
 }
