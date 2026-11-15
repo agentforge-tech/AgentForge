@@ -70,6 +70,21 @@ docker run -d \
 
 > 不要把空的宿主机 `conf/` 直接挂载到 `/opt/agentforge/conf`，这会遮蔽镜像内的默认配置与前端静态资源。上面的命令使用 `/opt/agentforge/host-conf` 作为中转目录。
 
+### 2.3 部署完成后：跑通第一个 Agent
+
+服务启动后，工作台还是空数据。推荐按以下顺序完成第一次交付：
+
+| 步骤 | 页面 | 目标 |
+| --- | --- | --- |
+| 1 | [创建模型](./agent-components/model) | 接入一个可用模型并通过连接测试 |
+| 2 | [创建 HTTP 插件](./agent-components/http-plugin) / [创建 MCP 插件](./agent-components/mcp-plugin) | 按需接入外部工具 |
+| 3 | [创建通用 Agent](./agent-cockpit/create-agent) | 组合模型、Prompt、插件与记忆 |
+| 4 | [Agent 调试](./agent-cockpit/debug) | 验证工具调用与回答质量 |
+| 5 | [Agent 发布](./agent-cockpit/publish) | 保存版本并发布正式链接 |
+| 6 | [Agent Trace 监控](./agent-infrastructure/trace) | 观察耗时、Token 与工具链路 |
+
+第一次启动只需要完成第 1 步和第 3 步即可开始对话；插件和 Trace 可以在后续迭代中补充。
+
 ## 3. 修改端口
 
 例如改用 `8088`，需要同时修改端口映射和文件访问端口：

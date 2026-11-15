@@ -34,7 +34,9 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 - **工具生态** — 本地 Java `@Tool` 方法、HTTP 插件与 MCP Server 统一转换为 Function Call 协议，并为每次工具调用注入思考字段
 - **AgentForge Service** — 可运行的单用户 Agent 工作台，覆盖模型配置、Agent 构建 / 调试 / 版本 / 发布、会话历史与重放，基于 SQLite / MySQL 持久化
 - **流式与可观测** — 统一 SSE 事件协议，`debug` / `elegant` 双渲染模式，会话事件重放，以及包含火焰图与流程图的 Agent Loop Trace
-- **后续规划** — Harness 运行时（沙箱、HITL 审核、可恢复执行）、上下文压缩、分场景异常重试、定时任务、钉钉 / 飞书渠道，以及 CLI / Desktop / Platform 多形态
+- **Human-in-the-Loop（初步支持）** — `ALLOW / DENY / ASK` 权限决策，权限审核与 `ask_user` 中断，冻结工具批次、`SUSPENDED` 挂起与结构化响应恢复
+- **Harness Agent（初版本地运行时）** — `HarnessAgent` 绑定 `Workspace` 与 `LocalRuntime`，提供 `read / write / edit / glob / grep / rg / bash` 工具、命令执行、提示词渲染与资源生命周期
+- **后续规划** — 远程沙箱运行时（Docker / E2B / K8s）、持久化与跨进程中断 Store、多级审批、Harness 层权限策略选择、上下文压缩、分场景异常重试、定时任务、钉钉 / 飞书渠道，以及 CLI / Desktop / Platform 多形态
 
 ---
 
@@ -42,7 +44,7 @@ Tool、Memory、Middleware、Reasoning 与 Agent Runtime 等能力。
 
 AgentForge 遵循 [Roadmap](https://github.com/agentforge-tech/AgentForge/issues/1) 中的两部分设计：
 
-1. **Agent 框架层** —— 可复用的核心基础组件：统一模型协议、通用 ReAct Agent 运行时、Harness Agent 运行时（权限、沙箱、HITL 审核、可恢复执行），以及工具、记忆、Middleware、链路追踪与 Token 统计。
+1. **Agent 框架层** —— 可复用的核心基础组件：统一模型协议、通用 ReAct Agent 运行时、HITL 权限审核与 AskUser 中断、Harness Agent 运行时（初版本地 Workspace 运行时，远程沙箱与 Harness 层审批接入为下一阶段），以及工具、记忆、Middleware、链路追踪与 Token 统计。
 2. **Agent Service 业务层** —— `agentforge-service`，标准 Agent 基础设施最佳实践的开箱即用实现：模型配置、Agent 构建 / 调试 / 版本 / 发布，以及会话运营。
 
 `agentforge-agent-core` 是框架的核心，它把大模型的原始智能逐层锻造成真实行动：
@@ -66,8 +68,8 @@ Real Action
 | Tool / Skill / MCP | `ToolService` 与统一的工具描述 / 执行器 SPI：本地 `@Tool`、HTTP 插件与 MCP Server |
 | Reasoning / Planning | ReAct think → act → observe 循环，支持步长上限与中断检查 |
 | Agent Runtime | 同步 `ReActAgent`、流式 `ReActTokenStream`、Middleware 链路、重试与取消 |
-| Multi-Agent / Sandbox / Observability | Agent Loop Trace Middleware 与 Token 统计；Agent Team 与 Harness 沙箱在 Roadmap 中 |
-| Real Action | 通过工具执行器产生真实副作用；审批与沙箱能力随 Harness 运行时落地 |
+| Multi-Agent / Sandbox / Observability | Agent Loop Trace Middleware 与 Token 统计；初版 Harness 本地运行时含 Workspace 与命令沙箱；Agent Team 与远程沙箱在 Roadmap 中 |
+| Real Action | 通过工具执行器产生真实副作用；HITL 权限审核与 AskUser 恢复已落在 ReAct 层；Harness 层审批策略选择为下一阶段 |
 
 ### 工程结构
 
@@ -83,7 +85,7 @@ AgentForge
 │   └── agentforge-model-registry # 开箱即用的 ChatModel 工厂
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent 运行时
-│   └── agentforge-harness-agent  # Harness 运行时（设计阶段）
+│   └── agentforge-harness-agent  # Harness 运行时（初版本地运行时）
 ├── agentforge-service            # 开箱即用服务（Vue 前端 + Spring Boot 后端）
 │   ├── agentforge-service-ui     # Vue 2 + Vite 前端
 │   └── agentforge-service-web    # Spring Boot 后端
@@ -123,6 +125,22 @@ agentforge-service-web
     ├── session    # 会话、消息与 SSE 事件重放
     └── plugins    # HTTP / MCP 插件
 ```
+
+### Harness Agent（初版本地运行时）
+
+`HarnessAgent` 保持标准 `IAgent` 对外接口，内部组合 `ReActAgent` 与执行环境 `Runtime`：
+
+```text
+HarnessAgent
+  ├── ReActAgent          # 推理循环、记忆、Middleware
+  └── Runtime             # Workspace / 工具集 / 执行参数 / 生命周期
+        └── LocalRuntime  # 初版实现
+```
+
+- `Workspace` 固定文件与命令边界，路径解析拒绝 `..` 越界与符号链接逃逸；
+- `LocalRuntime` 提供 `read / write / edit / glob / grep / rg / bash` 工具、命令超时与输出限制；
+- `HarnessAgent` 实现 `AutoCloseable`，取消会传播到 Runtime 并终止活动本地命令；
+- HITL 权限审核与 AskUser 当前落在 ReAct 层，Harness 按运行时选择权限策略属于下一阶段。
 
 ### 设计原则
 

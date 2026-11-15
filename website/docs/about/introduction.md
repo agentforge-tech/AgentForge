@@ -8,7 +8,7 @@ displayed_sidebar: sdkSidebar
 
 # 认识 AgentForge
 
-AgentForge 是一个面向 Java 开发者的开源 Agent Framework。它从 **LLM 协议与模型抽象** 出发，逐层构建工具调用、会话记忆、中间件、推理循环与 Agent Runtime，让应用可以在不绑定单一模型厂商的前提下，把模型能力转化为可执行的任务。
+AgentForge 是一个面向 Java 开发者的开源 Agent Framework。它从 **LLM 协议与模型抽象** 出发，逐层构建工具调用、会话记忆、中间件、推理循环、HITL 中断与 Agent Runtime，让应用可以在不绑定单一模型厂商的前提下，把模型能力转化为可执行的任务。
 
 > **Forge Intelligence into Action. 将智能锻造成行动。**
 
@@ -79,7 +79,7 @@ AgentForge
 │   └── agentforge-model-registry # 开箱即用的 ChatModel 工厂
 ├── agentforge-framework
 │   ├── agentforge-agent-core     # ReAct Agent 运行时
-│   └── agentforge-harness-agent  # Harness 运行时（规划中）
+│   └── agentforge-harness-agent  # Harness 运行时（初版本地运行时）
 ├── agentforge-service            # Vue 前端 + Spring Boot 后端
 └── agentforge-examples           # 参考示例
 ```
@@ -93,7 +93,11 @@ AgentForge
 | 消息与事件 | 统一 Message 模型、流式回调与工具执行事件 | [消息事件](../sdk/message-event) |
 | Middleware | 在模型调用、工具执行、Loop 生命周期挂载自定义逻辑 | [Middleware 设计](../sdk/middleware) |
 | Tool 扩展 | 本地 Java 方法、HTTP 插件、MCP 服务统一转换为 Function Call | [Tool 扩展设计](../sdk/tool) |
+| Human-in-the-Loop | 权限 `ALLOW / DENY / ASK`、审批中断、AskUser 与批次恢复 | [权限设计 & HITL](../sdk/permission-hitl) |
+| Harness Agent | 初版本地运行时：Workspace、LocalRuntime、工程工具集与资源生命周期 | [快速构建 HarnessAgent](../harness/quickstart) |
 | Service 工作台 | 模型配置、Agent 调试、版本发布、会话与链路追踪 | [Service](#service-工作台) |
+
+当前 HITL 已初步落地：权限审核与 AskUser 共用同一中断内核，支持冻结工具批次、`SUSPENDED` 挂起与显式恢复；Harness Agent 已提供初版本地运行时，可绑定 Workspace 与 `LocalRuntime`，使用文件、搜索与命令工具。远程沙箱、跨进程恢复和 Harness 层权限策略选择仍在演进中。
 
 ## 一次最小调用
 
@@ -134,6 +138,8 @@ ChatResult result = agent.run(AgentRequest.builder()
 - **想理解模型层**：阅读 [Model 模型协议层](../sdk/model)；
 - **想搭建完整 Agent**：阅读 [Agent 智能体](../sdk/agent) 与 [Tool 扩展设计](../sdk/tool)；
 - **想做可观测与治理**：阅读 [Middleware 设计](../sdk/middleware) 与 [消息事件](../sdk/message-event)；
+- **想做权限审核与人工确认**：阅读 [权限设计 & HITL](../sdk/permission-hitl)；
+- **想运行带工作区边界的工程 Agent**：阅读 [快速构建 HarnessAgent](../harness/quickstart)；
 - **想直接使用成品工作台**：访问 [AgentForge Service](../service/introduction)。
 
 ## SDK 文档地图
@@ -143,8 +149,10 @@ SDK 栏目按“先使用、再理解、最后扩展”的顺序组织：
 ```text
 开始使用
   认识 AgentForge → 快速开始
+Harness 实现
+  快速构建 HarnessAgent → 运行时设计实现
 核心组件
-  Model → Agent → 消息事件 → Middleware → Tool → 会话记忆
+  Model → Agent → 权限设计 & HITL → 消息事件 → Middleware → Tool → 会话记忆
 会话记忆扩展
   窗口会话记忆
 Agent Tool 扩展
