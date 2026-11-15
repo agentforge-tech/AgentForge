@@ -10,6 +10,7 @@ import cloud.changlu.agentforge.agent.extend.middlewares.LoggingIAgentMiddleware
 import cloud.changlu.agentforge.agent.extend.middlewares.compact.CompactSummarizationMiddleware;
 import cloud.changlu.agentforge.agent.extend.middlewares.todoplan.tool.TodoPlanTool;
 import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
+import cloud.changlu.agentforge.agent.governance.interrupt.spi.AgentInterruptStore;
 import cloud.changlu.agentforge.agent.governance.permission.domain.PermissionMode;
 import cloud.changlu.agentforge.agent.tool.local.LocalToolFactory;
 import cloud.changlu.agentforge.model.registry.LlmFactory;
@@ -60,6 +61,7 @@ public class ReActAgentFactory {
     private final HttpAgentToolLoader httpAgentToolLoader;
     private final TodoPlanTool todoPlanTool;
     private final ServiceTodoPlanMiddleware todoPlanMiddleware;
+    private final AgentInterruptStore agentInterruptStore;
 
     public ReActAgentFactory(
             ModelConfigMapper modelConfigMapper,
@@ -72,7 +74,8 @@ public class ReActAgentFactory {
             McpAgentToolLoader mcpAgentToolLoader,
             HttpAgentToolLoader httpAgentToolLoader,
             TodoPlanTool todoPlanTool,
-            ServiceTodoPlanMiddleware todoPlanMiddleware) {
+            ServiceTodoPlanMiddleware todoPlanMiddleware,
+            AgentInterruptStore agentInterruptStore) {
         this.modelConfigMapper = modelConfigMapper;
         this.openReachTools = openReachTools;
         this.userMessageAppendMiddleware = userMessageAppendMiddleware;
@@ -84,6 +87,7 @@ public class ReActAgentFactory {
         this.httpAgentToolLoader = httpAgentToolLoader;
         this.todoPlanTool = todoPlanTool;
         this.todoPlanMiddleware = todoPlanMiddleware;
+        this.agentInterruptStore = agentInterruptStore;
     }
 
     public ReActAgent createReActAgent(String agentName, StandardAgentConfig standardAgentConfig) {
@@ -158,6 +162,7 @@ public class ReActAgentFactory {
             builder.permissionInterruptModule(
                     PermissionInterruptModule.builder()
                             .activePermissionMode(PermissionMode.DEFAULT)
+                            .interruptStore(agentInterruptStore)
                             .enableAskUser()
                             .build());
         }
