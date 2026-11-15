@@ -115,7 +115,7 @@ export default function Home() {
           <pre><code>{`<dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 </dependency>`}</code></pre>
         </div>
       </section>

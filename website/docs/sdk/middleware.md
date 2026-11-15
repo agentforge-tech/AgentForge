@@ -16,7 +16,7 @@ Middleware 用于把日志、链路追踪、审计、脱敏、限流、动态提
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 </dependency>
 ```
 

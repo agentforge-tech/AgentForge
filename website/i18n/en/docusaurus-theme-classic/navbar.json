@@ -16,21 +16,31 @@
     "description": "Navbar item with label 博客"
   },
   "item.label.Home": {
-    "message": "Home"
+    "message": "Home",
+    "description": "Navbar item with label Home"
   },
   "item.label.RoadMap": {
-    "message": "RoadMap"
+    "message": "RoadMap",
+    "description": "Navbar item with label RoadMap"
   },
   "item.label.SDK": {
-    "message": "SDK"
+    "message": "SDK",
+    "description": "Navbar item with label SDK"
   },
   "item.label.Service": {
-    "message": "Service"
+    "message": "Service",
+    "description": "Navbar item with label Service"
   },
   "item.label.Blog": {
-    "message": "Blog"
+    "message": "Blog",
+    "description": "Navbar item with label Blog"
   },
   "item.label.Community": {
-    "message": "Community"
+    "message": "Community",
+    "description": "Navbar item with label Community"
+  },
+  "item.label.更新日志": {
+    "message": "Changelog",
+    "description": "Navbar item with label 更新日志"
   }
 }

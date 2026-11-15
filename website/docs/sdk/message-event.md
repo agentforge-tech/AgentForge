@@ -21,7 +21,7 @@ AgentForge 把「模型说了什么」和「Agent 正在做什么」拆成两类
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -31,7 +31,7 @@ AgentForge 把「模型说了什么」和「Agent 正在做什么」拆成两类
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-api</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 </dependency>
 ```
 
