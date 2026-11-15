@@ -227,7 +227,7 @@ AgentForge
 
 
 **支持HITL：**
-- [x] HITL支持询问用户问题，用户回答作为工具结果：支持权限审核确认任务tool执行：[Agent页面HITL中断事件与恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/支持HITL/Agent页面HITL中断事件与恢复设计方案.md)
+- [x] HITL支持询问用户问题，用户回答作为工具结果：支持权限审核确认任务tool执行：[Agent页面HITL中断事件与恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/支持HITL/0、Agent页面HITL中断事件与恢复设计方案)
 
 
 

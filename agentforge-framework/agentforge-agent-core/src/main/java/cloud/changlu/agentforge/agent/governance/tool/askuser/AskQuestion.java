@@ -59,6 +59,29 @@ public final class AskQuestion {
 
     public AskQuestion() {}
 
+    public AskQuestion(
+            String id,
+            String title,
+            String description,
+            AskUserAnswerType type,
+            Boolean required,
+            List<AskUserOption> options,
+            Integer minSelections,
+            Integer maxSelections,
+            Integer maxLength,
+            String placeholder) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.type = type;
+        this.required = required;
+        this.options = options;
+        this.minSelections = minSelections;
+        this.maxSelections = maxSelections;
+        this.maxLength = maxLength;
+        this.placeholder = placeholder;
+    }
+
     public String getId() {
         return id;
     }

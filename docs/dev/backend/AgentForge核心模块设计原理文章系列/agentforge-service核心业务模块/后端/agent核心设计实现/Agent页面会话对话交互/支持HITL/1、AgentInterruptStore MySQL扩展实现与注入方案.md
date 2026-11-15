@@ -175,11 +175,12 @@ Service 目前有独立的 `AgentInterruptRuntimeRegistry`，负责：
 | `create_time` | DATETIME | 创建时间 |
 | `modify_time` | DATETIME | 更新时间 |
 
-索引：
+索引（首期最小集合）：
 
-- `uk_batch_id(batch_id)`：防止重复保存；
-- `idx_memory_status(memory_id, status)`：按会话查询待恢复批次；
-- `idx_status_modify(status, modify_time)`：过期扫描与清理。
+- `PRIMARY KEY (id)`：主键；
+- `uk_batch_id(batch_id)`：防止重复保存。
+
+首期不建 `idx_memory_status(memory_id, status)` 与 `idx_status_modify(status, modify_time)`。当前恢复入口只按 `batch_id` 精确查询，两列索引没有实际读取路径；等二期页面待办列表、过期扫描或清理任务落地时，再随查询语句一并补索引，避免过早承担索引维护成本。
 
 ### 4.2 MySQL 增量 SQL
 
@@ -204,9 +205,7 @@ CREATE TABLE IF NOT EXISTS `ai_agent_interrupt_snapshot` (
     `create_time`         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `modify_time`         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_batch_id` (`batch_id`),
-    KEY `idx_memory_status` (`memory_id`, `status`),
-    KEY `idx_status_modify` (`status`, `modify_time`)
+    UNIQUE KEY `uk_batch_id` (`batch_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Agent中断冻结快照表';
 ```
 
@@ -232,12 +231,6 @@ CREATE TABLE IF NOT EXISTS ai_agent_interrupt_snapshot (
     modify_time         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (batch_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_ai_agent_interrupt_snapshot_memory_status
-    ON ai_agent_interrupt_snapshot (memory_id, status);
-
-CREATE INDEX IF NOT EXISTS idx_ai_agent_interrupt_snapshot_status_modify
-    ON ai_agent_interrupt_snapshot (status, modify_time);
 ```
 
 ### 4.4 SQL 发布顺序
@@ -798,7 +791,7 @@ resume
 
 1. 不允许删除或改写快照来伪造业务状态；
 2. 孤儿行不会被恢复，因为恢复入口先经过 Service Registry，Registry 已取消或已丢失；
-3. 保留行作为审计记录；后续增加清理任务，按 `status='PENDING' AND modify_time < now - retention` 归档或删除；
+3. 保留行作为审计记录；后续增加清理任务，按 `status='PENDING' AND modify_time < now - retention` 归档或删除（清理任务上线时同步补 `idx_status_modify`）；
 4. 二期若实现跨重启恢复，必须扩展 SPI 增加 `cancel/expire`，并在 Service 取消时同步调用；在那之前不要在 `InterruptBatchStatus` 中新增状态。
 
 ---
@@ -914,7 +907,7 @@ MySQL Store 在多节点下的价值是：即使两个节点误收到同一批�
 | 风险 | 影响 | 缓解 |
 | --- | --- | --- |
 | 快照包含原始工具参数 | 敏感命令、路径、令牌可能落库 | 限制表访问权限、开启磁盘加密、禁止日志打印 `snapshot_json`、设置保留期 |
-| 表持续增长 | 审计数据膨胀 | 按 `status + modify_time` 定期归档/删除；保留期由业务配置 |
+| 表持续增长 | 审计数据膨胀 | 按 `status + modify_time` 定期归档/删除（届时补 `idx_status_modify`）；保留期由业务配置 |
 | 大参数导致行过大 | 插入失败或复制延迟 | `LONGTEXT` 兜底；监控单行大小；必要时限制 Tool 参数长度 |
 | 升级后 payload 结构变化 | 旧批次无法恢复 | `schemaVersion` 门禁；payload 原样保存；升级前回归旧数据读测试 |
 | 孤儿 `PENDING` 行 | 审计噪音、后续跨重启误恢复 | 首期靠 Service Registry 拦截；二期增加 `cancel/expire` SPI 与清理任务 |
