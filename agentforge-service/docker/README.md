@@ -49,7 +49,7 @@ docker/
 ```bash
 cd agentforge-service/docker
 cp .env.example .env          # 按需修改端口等配置
-./scripts/build.sh 1.0.0
+./scripts/build.sh 1.0.1
 ./scripts/deploy.sh
 ```
 
@@ -120,30 +120,30 @@ docker compose up -d --force-recreate agentforge
 
 ```bash
 cd agentforge-service/docker
-IMAGE_REPO=dockerhub-user/agentforge-service ./scripts/push.sh 1.0.0
+IMAGE_REPO=codercl/agentforge-service ./scripts/push.sh 1.0.1
 ```
 
-默认构建 `linux/amd64` 与 `linux/arm64` 并推送 `1.0.0` 与 `latest`。
+默认构建 `linux/amd64` 与 `linux/arm64` 并推送 `1.0.1` 与 `latest`。
 
 ## 7. 离线打包与分发
 
 ```bash
 cd agentforge-service/docker
-./scripts/package.sh 1.0.0
-# 产物：docker/dist/agentforge-1.0.0.tar
+./scripts/package.sh 1.0.1
+# 产物：docker/dist/agentforge-1.0.1.tar
 ```
 
 目标机器：
 
 ```bash
-docker load -i agentforge-1.0.0.tar
+docker load -i agentforge-1.0.1.tar
 mkdir -p data logs upload
 # 1) 先执行 SQLite 迁移（一次性容器；归档目录放到 data 卷，保证幂等判断持久化）
 docker run --rm \
   -v "$PWD/data":/opt/agentforge/data \
   -e AGENTFORGE_SQLITE_APPLIED_DIR=/opt/agentforge/data/sql-applied \
   --entrypoint /opt/agentforge/bin/upgrade-sql.sh \
-  agentforge-service:1.0.0
+  agentforge-service:1.0.1
 # 2) 启动服务
 docker run -d --name agentforge --restart unless-stopped \
   -p 17080:8080 \
@@ -152,7 +152,7 @@ docker run -d --name agentforge --restart unless-stopped \
   -v "$PWD/upload":/opt/agentforge/upload \
   -e AGENTFORGE_FILE_VISIT_HOST=127.0.0.1 \
   -e AGENTFORGE_FILE_VISIT_PORT=17080 \
-  agentforge-service:1.0.0
+  agentforge-service:1.0.1
 ```
 
 ## 8. 常用环境变量

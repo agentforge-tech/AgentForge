@@ -2,7 +2,7 @@ name: ${COMPOSE_PROJECT_NAME:-agentforge}
 
 services:
   agentforge:
-    image: ${IMAGE_REPO:-agentforge-service}:${IMAGE_TAG:-1.0.0}
+    image: ${IMAGE_REPO:-agentforge-service}:${IMAGE_TAG:-1.0.1}
     build:
       context: ../..
       dockerfile: agentforge-service/docker/Dockerfile

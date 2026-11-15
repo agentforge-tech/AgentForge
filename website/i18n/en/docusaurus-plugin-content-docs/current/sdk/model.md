@@ -16,7 +16,7 @@ The Model layer is AgentForge's lowest and most stable model access abstraction.
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-openai</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -26,7 +26,7 @@ Anthropic:
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-anthropic</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -36,7 +36,7 @@ To select a Provider dynamically from configuration, add the registry:
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-registry</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -48,7 +48,7 @@ You can also manage versions with the BOM:
         <dependency>
             <groupId>cloud.changlu.agentforge</groupId>
             <artifactId>agentforge-ai-bom</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1-SNAPSHOT</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
