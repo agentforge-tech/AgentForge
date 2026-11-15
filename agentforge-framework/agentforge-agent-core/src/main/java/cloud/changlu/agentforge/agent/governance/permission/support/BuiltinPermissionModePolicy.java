@@ -34,7 +34,8 @@ public final class BuiltinPermissionModePolicy implements PermissionModePolicy {
                     ? PermissionDecision.ALLOW
                     : PermissionDecision.DENY;
         }
-        return candidate == null ? PermissionDecision.ASK : candidate;
+        // DEFAULT 只执行规则：命中规则按规则决策，未命中直接放行。
+        return candidate == null ? PermissionDecision.ALLOW : candidate;
     }
 
     private PermissionMode mode(PermissionContext context) {

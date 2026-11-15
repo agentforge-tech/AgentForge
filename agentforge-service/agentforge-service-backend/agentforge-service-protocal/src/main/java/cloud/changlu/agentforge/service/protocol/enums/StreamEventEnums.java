@@ -28,6 +28,14 @@ public final class StreamEventEnums {
                 TypeEnum.APPEND_EFFECTIVE,
                 TypeEnum.APPEND_DEFERRED,
                 TypeEnum.APPEND_CANCELED),
+        INTERRUPT(
+                "interrupt",
+                "HITL 中断事件",
+                TypeEnum.INTERRUPT_REQUESTED,
+                TypeEnum.INTERRUPT_RESUMING,
+                TypeEnum.INTERRUPT_RESUMED,
+                TypeEnum.INTERRUPT_RESUME_FAILED,
+                TypeEnum.INTERRUPT_CANCELLED),
         RESP_END("resp_end", "AI回答结束"),
         ERROR("error", "异常事件", TypeEnum.TEXT);
 
@@ -73,7 +81,12 @@ public final class StreamEventEnums {
         APPEND_QUEUED("append_queued", "追加已排队"),
         APPEND_EFFECTIVE("append_effective", "追加已生效"),
         APPEND_DEFERRED("append_deferred", "追加未赶上本轮"),
-        APPEND_CANCELED("append_canceled", "追加已取消");
+        APPEND_CANCELED("append_canceled", "追加已取消"),
+        INTERRUPT_REQUESTED("interrupt_requested", "等待人工处理"),
+        INTERRUPT_RESUMING("interrupt_resuming", "正在恢复"),
+        INTERRUPT_RESUMED("interrupt_resumed", "已恢复"),
+        INTERRUPT_RESUME_FAILED("interrupt_resume_failed", "恢复失败"),
+        INTERRUPT_CANCELLED("interrupt_cancelled", "中断已取消");
 
         private final String code;
         private final String msg;

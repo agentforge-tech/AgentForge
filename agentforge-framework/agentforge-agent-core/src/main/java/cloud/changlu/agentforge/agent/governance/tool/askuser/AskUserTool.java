@@ -14,6 +14,8 @@ public final class AskUserTool {
             value =
                     "Ask the user for missing decisions before continuing. Group related questions into one call. "
                             + "Supported types are single_choice, multiple_choice and text. Use stable readable ids. "
+                            + "Only list real candidate options; the client already provides a custom answer input, "
+                            + "so never add placeholder options such as 'Other' or 'I will fill in'. "
                             + "Call this tool alone; the runtime pauses until the user answers.")
     public String ask(
             @P(name = "questions", description = "One to ten questions to present to the user")

@@ -1,6 +1,7 @@
 import { createAppendState, reduceAppendEvent } from './appendEventReducer'
 import { reduceCompactEvent } from './compactEventReducer'
 import { buildTodoCardPart } from './todoEventReducer'
+import { reduceInterruptAnswers, reduceInterruptEvent } from './interruptEventReducer'
 import {
   appendResponseSegment,
   closeOpenResponseSegment,
@@ -123,6 +124,7 @@ export function replayMessage(record, appendState = createAppendState(), detaile
         closeOpenResponseSegment(message, () => 0)
         closeOpenThink(message)
         applyTool(message, event, detailed)
+        reduceInterruptAnswers(message, event)
         break
       case 'user_message':
         closeOpenResponseSegment(message, () => 0)
@@ -134,6 +136,11 @@ export function replayMessage(record, appendState = createAppendState(), detaile
         break
       case 'retry':
         closeOpenResponseSegment(message, () => 0)
+        break
+      case 'interrupt':
+        closeOpenResponseSegment(message, () => 0)
+        closeOpenThink(message)
+        reduceInterruptEvent(message, event)
         break
       case 'resp_end':
         sawRespEnd = true
@@ -155,6 +162,9 @@ export function replayMessage(record, appendState = createAppendState(), detaile
   } else if (record.status === 4 || record.status === 6) {
     // 4=CANCELLED，6=TIMEOUT_CANCELLED：都属于取消，不是失败。
     message.status = 'cancelled'
+  } else if (record.status === 8) {
+    // 8=WAITING_HITL：等待用户确认，保留运行锁但不继续订阅。
+    message.status = 'waiting'
   } else if (record.status === 1 || record.status === 2 || record.status === 7) {
     // 1=CREATED，2=RUNNING，7=CANCELLING。
     message.status = 'running'

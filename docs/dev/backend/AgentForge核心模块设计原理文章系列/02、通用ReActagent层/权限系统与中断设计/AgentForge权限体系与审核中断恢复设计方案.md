@@ -222,16 +222,17 @@ PermissionDecision
     +-- ASK  ：创建 PERMISSION_APPROVAL 中断
 ```
 
-一句话概括：**规则处理器先做权限判定；只有无规则命中时才由 Mode 作为默认策略兜底，三态是最终输出。** Mode 不参与规则匹配，也不能覆盖已命中的显式规则。
+一句话概括：**规则处理器先做权限判定；无规则命中时由 Mode 决定兜底：`DEFAULT/BYPASS` 放行，`DONT_ASK` 拒绝。** Mode 不参与规则匹配，也不能覆盖已命中的显式规则。
 
 | Mode | 只读操作 | 工作区内普通编辑 | Shell/外部副作用 | 最终出现 ASK 时 |
 | --- | --- | --- | --- | --- |
-| `DEFAULT` | 默认 ASK | 默认 ASK | 默认 ASK | 保持 ASK |
+| `DEFAULT` | 默认 ALLOW | 默认 ALLOW | 默认 ALLOW | 保持 ASK |
 | `BYPASS` | 默认 ALLOW | 默认 ALLOW | 默认 ALLOW | 转为 ALLOW，仅显式 DENY 保留 |
 | `DONT_ASK` | 按规则判断 | 按规则判断 | 按规则判断 | 转为 DENY，仅显式 ALLOW 保留 |
 
 需要特别注意：
 
+- `DEFAULT` 不预置兜底审核：没有命中规则就直接放行，需要审核的操作必须在规则里显式配置 `ASK`；
 - `BYPASS` 不是关闭权限系统：显式 DENY 和不可绕过的安全检查仍有效，但显式 ASK 会放行；
 - `DONT_ASK` 不是全部拒绝：显式 ALLOW 仍放行，ASK 和无规则调用都会降级成 DENY；
 - 只读、编辑等更细粒度模式不进入首期内置枚举，由 `PermissionModePolicy` 实现；
@@ -288,7 +289,7 @@ public enum PermissionMode {
 
 | 模式 | 规则命中 `ASK` | 无规则命中 | 真实场景 |
 | --- | --- | --- | --- |
-| `DEFAULT` | 保持 `ASK`，进入审核中断 | `ASK` | 在线编码助手：读操作放行，写文件和 Shell 询问用户 |
+| `DEFAULT` | 保持 `ASK`，进入审核中断 | `ALLOW` | 在线编码助手：规则显式声明写文件和 Shell 需询问，其余直接放行 |
 | `BYPASS` | 转为 `ALLOW` | `ALLOW` | 可信沙箱：除危险命令、敏感路径显式 `DENY` 外自动放行 |
 | `DONT_ASK` | 转为 `DENY` | `DENY` | 无人值守巡检：仅白名单只读工具 `ALLOW`，其余拒绝且不暂停 |
 
@@ -324,7 +325,7 @@ PermissionInterruptModule module =
 
 `BYPASS` 不是关闭安全系统。显式 `DENY`、不可绕过检查、平台业务鉴权仍然有效。
 
-执行顺序固定为：规则先生成候选决策，Mode/ModePolicy 再结合候选做最终决策；无规则命中时由 Mode 生成兜底决策。
+执行顺序固定为：规则先生成候选决策，Mode/ModePolicy 再结合候选做最终决策；无规则命中时由 Mode 生成兜底决策（`DEFAULT/BYPASS` 放行，`DONT_ASK` 拒绝）。
 
 #### 2.3.3 权限规则
 
@@ -391,7 +392,7 @@ SYSTEM > TENANT > PROJECT > AGENT > USER > SESSION
 2. 命中的显式 `DENY` 优先于 `ASK` 和 `ALLOW`；
 3. 命中的显式 `ASK` 优先于 `ALLOW`；
 4. 同行为规则再按 scope、priority、specificity、version 选取；
-5. 没有规则命中时才进入 Mode 兜底。
+5. 没有规则命中时才进入 Mode 兜底：`DEFAULT/BYPASS` 放行，`DONT_ASK` 拒绝。
 
 不要由权限核心直接解释所有 `matcherValue`。不同工具应通过匹配 SPI 理解自身参数：
 
@@ -435,7 +436,7 @@ public enum ToolEffect {
 }
 ```
 
-一个调用可以对应多个 effect。`UNKNOWN` 在 `DEFAULT` 下必须 ASK，在 `DONT_ASK` 下必须 DENY。
+一个调用可以对应多个 effect。`UNKNOWN` 在 `DEFAULT` 下按无规则处理为 ALLOW；若未知操作必须审核或拒绝，需要显式配置 `ASK`/`DENY` 规则（`DONT_ASK` 下仍为 DENY）。
 
 ---
 
@@ -1016,7 +1017,6 @@ public class AskQuestion {
     private AskUserAnswerType type;
     private Boolean required;
     private List<AskUserOption> options;
-    private String customPlaceholder;
     private Integer minSelections;
     private Integer maxSelections;
     private Integer maxLength;
@@ -1053,6 +1053,38 @@ public class AskUserAnswer {
     // 构造器与访问方法省略
 }
 ```
+
+##### AskUserTool 规则设计
+
+`AskUserTool` 是模型向宿主声明“当前任务缺少决策信息”的结构化工具，不是普通的聊天提问。模型只需要描述问题、类型和预设选项；“选择题可以输入自定义答案”是 AgentForge 宿主的默认交互能力，不需要模型通过额外字段开启。
+
+###### 模型调用规则
+
+- 只在缺少会影响后续执行的信息、选择或决策时调用 `ask_user`；
+- 能从当前上下文稳定推断的内容不重复询问；
+- 相关问题尽量合并为一次 Tool Call，一次最多 10 题；
+- `ask_user` 应单独调用，不应在同一轮并行发起依赖用户答案的副作用工具；
+- 权限审批、Workspace 越界、数据外发等场景必须使用 `PERMISSION_APPROVAL`，不得伪装成 AskUser 绕过权限引擎。
+
+###### 问题 Schema 规则
+
+- `id` 在单次 Tool Call 内唯一且稳定，恢复时使用 `questionId` 关联；
+- `title` 必填并表达完整问题，`description` 只用于补充背景；
+- 选择题包含 2—20 个选项，option `id` 在题目内唯一；页面展示 `label`，提交时使用 `id`；
+- `required` 缺省按必填处理；`minSelections / maxSelections` 只约束多选；文本最长 4000 字符；
+- 模型无需感知自定义输入框，所有 `SINGLE_CHOICE / MULTIPLE_CHOICE` 都由宿主页面默认补充该能力。
+
+###### 选择题的自定义输入规则
+
+| 问题类型 | 页面交互 | 提交协议 | Framework 校验 |
+| --- | --- | --- | --- |
+| `SINGLE_CHOICE` | 展示预设单选项和“自定义回答”输入框，用于预设项均不满足用户的情况 | 选中预设项时提交一个 `selectedOptionId`；输入自定义内容时提交 `customValue` | 二者严格互斥，最多只能有一种答案 |
+| `MULTIPLE_CHOICE` | 展示预设复选项和“补充回答”输入框，用于在已选内容之外继续补充 | `selectedOptionIds` 与 `customValue` 可同时提交 | 补充内容按一个答案计入 `minSelections / maxSelections` |
+| `TEXT` | 显示单行或多行输入框 | 文本放入 `customValue` | 校验必填和 `maxLength` |
+
+前端在调用恢复接口前先执行相同的快速校验：单选的预设项与自定义内容二选一；多选允许两者并存，但总数必须满足选择数约束。前端校验只用于交互反馈，Framework 仍必须以冻结问题为准重新校验，并把 `selectedOptionIds + customValue` 稳定包装为原 `ask_user` Tool Call 的 Tool Result。
+
+多题场景在页面上采用单题分页，支持上一题、下一题和返回修改。切换问题只修改前端草稿，不消费中断批次；所有问题完成后一次性提交完整批次。
 
 ##### 配套 AskUser Tool
 
@@ -1108,7 +1140,8 @@ AskUserSupport 解析并校验 arguments
 - 只有任务确实缺少必要信息或需要用户选择时才调用 `ask_user`；
 - 能从上下文推断的信息不要重复询问；
 - 权限审批不得通过 `ask_user` 发起，必须交给权限网关；
-- 一次问题尽量结构化并提供清晰选项。
+- 一次问题尽量结构化并提供清晰选项；
+- 不要为“是否支持自定义输入”生成额外字段，这是宿主对所有选择题的默认能力。
 
 AskUser 恢复逻辑的职责不是把用户回答追加成一条新的 UserMessage，而是：
 
@@ -1806,7 +1839,7 @@ ASK_USER
 | 常用 Fluent 装配 | 为少量 Tool 参数配置 allow/ask/deny | Mode、AskUser 开关、规则 DSL |
 | 深度 SPI 定制 | 自定义 Store、Mode、Descriptor、事件和策略 | 完整 Core 扩展契约 |
 
-##### 2.10.7.1 最快装配：安全默认值
+##### 2.10.7.1 最快装配：规则默认值（safeDefaults）
 
 ```java
 PermissionInterruptModule module =
@@ -1819,12 +1852,13 @@ ReActAgent agent = ReActAgent.builder()
 
 当前 `safeDefaults()` 等价于：
 
-- `PermissionMode.DEFAULT`；
+- `PermissionMode.DEFAULT`：只执行规则，未命中规则时直接放行；
 - 不预置任何权限规则；
 - 注册内置 `regex` 规则处理器；
 - 使用默认 `InMemoryAgentInterruptStore`；
 - AskUser 默认关闭，调用 `enableAskUser()` 后才启用；
-- 启用 AskUser 时，`ReActAgent` 自动注册 `AskUserTool`。
+- 启用 AskUser 时，`ReActAgent` 自动注册 `AskUserTool`；
+- 需要任何审核时必须显式添加 `ask` 规则，不能再依赖“无规则默认 ASK”。
 
 ##### 2.10.7.2 常用装配：AskUser + 少量 Tool 正则规则
 
@@ -2123,11 +2157,10 @@ AskUserRequest
     type = SINGLE_CHOICE | MULTIPLE_CHOICE | TEXT
     required
     options[] (id / label / description)
-    minSelections / maxSelections
-    customPlaceholder / maxLength / placeholder
+    minSelections / maxSelections / maxLength / placeholder
 ```
 
-对接层应直接按 `questions` 顺序渲染表单；选择题的 `options` 与文本题的 `customPlaceholder` 都可以直接映射到前端组件。
+对接层应直接按 `questions` 顺序渲染表单；选择题渲染 `options`，单选默认附加“自定义回答”输入框，多选默认附加“补充回答”输入框，文本题使用 `placeholder`。
 
 #### 2.11.3 恢复入参：如何把用户选择映射为 Command
 
@@ -2286,29 +2319,32 @@ PermissionRule + PermissionRuleHandler  ->  候选决策
 
 | 模式 | 规则命中 `DENY` | 规则命中 `ASK` | 规则命中 `ALLOW` | 无规则命中 |
 | --- | --- | --- | --- | --- |
-| `DEFAULT` | `DENY` | `ASK`（进入中断） | `ALLOW` | `ASK` |
+| `DEFAULT` | `DENY` | `ASK`（进入中断） | `ALLOW` | `ALLOW` |
 | `BYPASS` | `DENY` | `ALLOW` | `ALLOW` | `ALLOW` |
 | `DONT_ASK` | `DENY` | `DENY` | `ALLOW` | `DENY` |
 
 三者可以概括为：
 
-- `DEFAULT`：**保守询问**，规则优先，不确定就停下来问；
+- `DEFAULT`：**规则为准**，命中规则按其决策执行，未命中规则直接放行；
 - `BYPASS`：**只拦红线**，显式 DENY 之外全部放行；
 - `DONT_ASK`：**只放白名单**，显式 ALLOW 之外全部拒绝，且不产生任何等待。
 
-#### 2.12.1 DEFAULT：人工在线的安全默认
+#### 2.12.1 DEFAULT：规则驱动的交互默认
+
+`DEFAULT` 不预设任何审核行为，只把规则结果原样落地；没有规则命中时直接放行。因此“是否询问”完全由规则决定。
 
 适用场景：
 
 - IDE 编码助手、桌面 Agent、在线客服/运维助手；
 - 用户在页面或终端前，可以处理权限卡片；
-- 读操作频繁、写操作和外部副作用需要确认。
+- 已经有一份可维护的工具权限规则，希望按工具粒度控制审核范围。
 
 规则搭配建议：
 
 - 读、查询、搜索类工具配置 `allow`；
 - 写文件、执行 Shell、访问外部网络配置 `ask`；
-- 删除、读取密钥、生产数据库写入配置 `deny`。
+- 删除、读取密钥、生产数据库写入配置 `deny`；
+- 敏感工具必须显式配置 `ask`/`deny`，否则会按无规则直接放行。
 
 ```java
 PermissionInterruptModule module =
@@ -2428,12 +2464,12 @@ PermissionInterruptModule module =
 1. **运行期间有没有人处理审批？**
    - 没有：优先 `DONT_ASK`；
    - 有：进入下一题。
-2. **环境是否可信且可回滚？**
-   - 是，且只需要拦住极少数红线：`BYPASS`；
-   - 否：`DEFAULT`。
-3. **是否希望模型遇到不确定操作就暂停？**
-   - 是：`DEFAULT`；
-   - 否，但必须保留显式红线：`BYPASS`。
+2. **是否已经有一份明确的工具权限规则？**
+   - 有，且需要按工具粒度控制放行/审核/拒绝：`DEFAULT`；
+   - 没有，只需要拦住少数硬红线：`BYPASS`。
+3. **环境是否可信且可回滚？**
+   - 是，且只保留显式 `DENY`：`BYPASS`；
+   - 否，需要规则显式声明审核范围：`DEFAULT`。
 
 常见反模式：
 
@@ -2441,7 +2477,8 @@ PermissionInterruptModule module =
 | --- | --- |
 | `DONT_ASK` 配置大量 `ask` 规则 | 所有 ASK 都会变 DENY，规则意图与运行结果不一致 |
 | `BYPASS` 只配置宽松 allow，没有 DENY | 危险操作可能直接执行 |
-| `DEFAULT` 用于夜间无人任务 | 任务会停在等待审核状态 |
+| `DEFAULT` 配置了 `ask` 规则却用于夜间无人任务 | 任务会停在等待审核状态 |
+| `DEFAULT` 期望“无规则自动询问” | 未命中规则会直接放行，敏感工具缺少 `ask` 规则会绕过审核 |
 | 三种模式共用一份规则 | Mode 变换后行为完全不同，难以审计 |
 
 最终原则：**规则描述“什么操作”，Mode 描述“这个场景下如何处理这些操作”**。两者必须一起设计、一起评审。
@@ -3162,7 +3199,7 @@ default void onInterruptResumeError(
 - 自定义 Mode 不能覆盖硬 DENY 和显式 DENY；
 - 规则类型未注册处理器、重复处理器类型或规则决策为空时，Engine 构建失败；
 - 自定义 ModePolicy 可通过 `decide(context, candidate)` 把 ASK 转成 DENY；
-- `safeDefaults()` 使用 DEFAULT 模式、内置 regex 处理器和默认内存 Store；
+- `safeDefaults()` 使用 DEFAULT 模式（未命中规则直接放行）、内置 regex 处理器和默认内存 Store；
 - `enableAskUser()` 不需要开发者手工注册 Tool、Factory、Handler；
 - allow/ask/deny 正则快捷规则会转换为标准 PermissionRule；
 - 非法正则、未知 Tool 参数和重复规则在 Module 构建期失败；
@@ -3467,8 +3504,8 @@ AskUser 中断不是一个普通字符串问题。外部 SDK 应读取
 
 | AskUser 类型 | UI 控件 | 回复构造 |
 | --- | --- | --- |
-| `SINGLE_CHOICE` | 单选框 / 下拉框 | `AskUserAnswer.single(questionId, optionId)` |
-| `MULTIPLE_CHOICE` | 多选框 | `AskUserAnswer.multiple(questionId, optionIds)` |
+| `SINGLE_CHOICE` | 单选框 / 下拉框 + 默认“自定义回答” | 预设 option ID 或 `customValue`，二选一 |
+| `MULTIPLE_CHOICE` | 多选框 + 默认“补充回答” | 多个 option ID，可同时带 `customValue` |
 | `TEXT` | 单行或多行输入框 | `AskUserAnswer.text(questionId, text)` |
 
 ```java
@@ -3483,6 +3520,8 @@ InterruptResponse response =
 ```
 
 必须回传 option ID，不要回传界面展示 label。Core 会校验必填、选择数量、选项 ID、重复项和文本长度。
+
+AskUser 表单应固定展示在聊天输入区上方，不作为普通消息追加在对话列表底部。多题使用单题分页和进度指示，允许返回修改；调试侧边栏采用紧凑两列选项布局，长文本在选项内自然换行，窄屏退化为单列。
 
 ### 5.7 审批 UI 与中间件对接
 
@@ -3526,7 +3565,7 @@ ReActAgent agent =
 
 | PermissionMode | 行为 | 推荐用途 |
 | --- | --- | --- |
-| `DEFAULT` | 显式规则优先，未命中时 ASK | 默认桌面交互模式，最推荐 |
+| `DEFAULT` | 仅规则生效，未命中时 ALLOW | 已有明确工具权限规则时的桌面交互模式 |
 | `DONT_ASK` | 只有显式 ALLOW 才执行，其余 DENY | 无人值守、后台自动化 |
 | `BYPASS` | 保留显式 DENY，其余 ALLOW | 受控调试或已隔离沙箱，不建议作为桌面默认值 |
 
@@ -3881,7 +3920,7 @@ ReActAgent -> Model: continue think
 1. Workspace 内只读工具直接执行，不展示审批；
 2. 写入工具产生权限审批，`APPROVE_ONCE` 后只执行一次；
 3. `REJECT` 不执行工具，但会向 ChatMemory 写入拒绝 Tool Result 并继续 ReAct；
-4. AskUser 单选、多选和文本答案正确映射；
+4. AskUser 单选、多选和文本答案正确映射；单选的预设项与自定义输入互斥，多选可同时提交选项与自定义内容；
 5. AskUser 缺少必填项时不消费批次；
 6. 同一批次内多个中断项必须一次性完整提交；
 7. 重复点击恢复不会再次执行工具；

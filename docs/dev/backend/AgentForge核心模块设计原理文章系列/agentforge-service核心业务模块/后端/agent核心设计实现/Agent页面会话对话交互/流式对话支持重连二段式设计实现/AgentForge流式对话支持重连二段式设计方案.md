@@ -284,6 +284,8 @@ POST tasks/stop(messageId)
 ```text
 先请求 detail 并渲染已有 events
     ├─ 最新 AI 消息 RUNNING：订阅 messageId
+    ├─ 最新 AI 消息 WAITING_HITL：不建立 SSE，直接用 events 重建确认卡片；
+    │  恢复成功后再从本次 interrupt_requested.eventSeq 续流
     ├─ 已终态但 events 为空：仍订阅，触发暂存事件补发/快照修复
     └─ 已终态且 events 完整：无需建立 SSE
 ```
@@ -487,6 +489,16 @@ while 连接有效:
         等待 pollInterval 后继续
         continue
 
+    // HITL 暂停不是终态，但必须收口当前订阅：先排空尾事件，再关闭 SSE。
+    // 前端等待用户提交，恢复成功后用本批 interrupt_requested.eventSeq 作为 afterSeq 续流。
+    if message.status == WAITING_HITL:
+        tail = readAfter(messageId, cursor)
+        if tail 非空:
+            继续发送并排空
+            continue
+        complete SSE
+        break
+
     // 已终态也不能立即结束，必须再做一次非阻塞尾读
     tail = readAfter(messageId, cursor)
     if tail 非空:
@@ -505,6 +517,8 @@ while 连接有效:
 MySQL 没有 Redis `XREAD BLOCK`，建议使用自适应轮询：有数据时立即连续拉取；无数据时从 `100ms` 退避到 `500ms`，心跳间隔 `15s`。同实例可增加 `Condition/CompletableFuture` 本地唤醒以降低延迟，但数据库轮询仍是跨实例正确性的兜底，不能只依赖内存通知。
 
 ### 7.3 为什么终态后还要尾读
+
+HITL 暂停点同理：`WAITING_HITL` 更新必须发生在 `interrupt_requested` 事件成功写入之后，订阅端才能先看到事件再看到暂停状态。若顺序颠倒，订阅端可能只观察到暂停而提前收口，导致确认卡片丢失。
 
 即使生产约束是“先事件、后终态”，订阅连接也可能先查到某次空结果，随后正好发生最后事件 INSERT 和终态 UPDATE。观察到终态后再次 `readAfter(cursor)`，可以覆盖查询时序窗口。建议将“最后事件 INSERT + 消息终态 UPDATE”放在同一短事务中，进一步保证其他事务不会只看到终态却看不到尾事件；大模型调用本身绝不能放进事务。
 

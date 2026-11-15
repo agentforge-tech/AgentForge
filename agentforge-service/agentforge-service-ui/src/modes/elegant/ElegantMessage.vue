@@ -24,6 +24,7 @@
             <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
             <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" />
             <TodoBoard v-else-if="part.type === 'todo_card'" :key="'d' + idx" :state="part" />
+            <InterruptTraceItem v-else-if="part.type === 'interrupt_card'" :key="'i' + idx" :part="part" mode="elegant" />
           </template>
         </div>
       </el-collapse-transition>
@@ -64,22 +65,23 @@ import RetryNotice from '../../components/RetryNotice.vue'
 import CompactNotice from '../../components/CompactNotice.vue'
 import TodoBoard from '../../components/TodoBoard.vue'
 import ResponseSegmentBlock from '../../components/ResponseSegmentBlock.vue'
+import InterruptTraceItem from '../../components/InterruptTraceItem.vue'
 
 export default {
   name: 'ElegantMessage',
-  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice, TodoBoard, ResponseSegmentBlock },
+  components: { MarkdownView, ElegantThinkItem, ElegantToolItem, AppendedUserMessage, RetryNotice, CompactNotice, TodoBoard, ResponseSegmentBlock, InterruptTraceItem },
   props: {
     message: { type: Object, required: true }
   },
   data() {
-    return { open: this.message.status === 'running' }
+    return { open: this.message.status === 'running' || this.message.status === 'waiting' }
   },
   computed: {
     processParts() {
       return (this.message.parts || []).filter((p) =>
         (p.type !== 'response_segment' || String(p.content || '').trim()) &&
         p !== this.activeResponseSegment &&
-        (p.type === 'response_segment' || p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice' || p.type === 'todo_card')
+        (p.type === 'response_segment' || p.type === 'think' || p.type === 'tool_card' || p.type === 'appended_user_message' || p.type === 'compact_notice' || p.type === 'todo_card' || p.type === 'interrupt_card')
       )
     },
     activeResponseSegment() {
@@ -108,6 +110,7 @@ export default {
     },
     statusTitle() {
       if (this.message.status === 'running') return '正在处理'
+      if (this.message.status === 'waiting') return '等待确认'
       if (this.message.status === 'error') return '处理失败'
       if (this.message.status === 'cancelled') return '已取消'
       return '已完成'
@@ -118,7 +121,7 @@ export default {
   },
   watch: {
     'message.status'(val) {
-      this.open = val === 'running'
+      this.open = val === 'running' || val === 'waiting'
     }
   }
 }

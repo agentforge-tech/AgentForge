@@ -284,8 +284,6 @@ public final class AskUserSupport {
                 .type(type)
                 .required(Boolean.valueOf(booleanValue(map.get("required"), true)))
                 .options(options)
-                .customPlaceholder(
-                        firstNonBlank(map.get("customPlaceholder"), map.get("custom_placeholder")))
                 .minSelections(integerValue(map.get("minSelections")))
                 .maxSelections(integerValue(map.get("maxSelections")))
                 .maxLength(integerValue(map.get("maxLength")))
@@ -434,11 +432,6 @@ public final class AskUserSupport {
 
         private AskQuestionBuilder options(List<AskUserOption> options) {
             question.options = options;
-            return this;
-        }
-
-        private AskQuestionBuilder customPlaceholder(String customPlaceholder) {
-            question.customPlaceholder = customPlaceholder;
             return this;
         }
 

@@ -20,9 +20,17 @@ import static org.junit.Assert.assertTrue;
 public class PermissionModeSemanticsTest {
 
     @Test
-    public void shouldAskByDefaultWhenNoRuleMatches() {
+    public void shouldAllowUnmatchedToolUnderDefaultMode() {
         PermissionPreflightResult result =
                 preflight(PermissionInterruptModule.safeDefaults().build());
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void shouldInterruptWhenAskRuleMatchesUnderDefaultMode() {
+        PermissionPreflightResult result =
+                preflight(PermissionInterruptModule.safeDefaults().ask("write_.*", ".*").build());
 
         assertTrue(result.isSuspended());
         assertFalse(result.hasDenials());

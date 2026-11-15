@@ -1,6 +1,7 @@
 package cloud.changlu.agentforge.service.config;
 
 import cloud.changlu.agentforge.service.env.EnvironmentContext;
+import cloud.changlu.agentforge.service.modules.agent.interrupt.AgentInterruptRuntimeRegistry;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMapper;
@@ -16,8 +17,15 @@ import org.springframework.context.annotation.Configuration;
 public class AgentConfiguration {
 
     @Bean
-    public ServiceStreamingMiddleware serviceStreamingMiddleware() {
-        return new ServiceStreamingMiddleware();
+    public AgentInterruptRuntimeRegistry agentInterruptRuntimeRegistry() {
+        return new AgentInterruptRuntimeRegistry();
+    }
+
+    @Bean
+    public ServiceStreamingMiddleware serviceStreamingMiddleware(
+            AgentInterruptRuntimeRegistry interruptRegistry,
+            SessionLifecycleMiddleware lifecycleMiddleware) {
+        return new ServiceStreamingMiddleware(interruptRegistry, lifecycleMiddleware);
     }
 
     @Bean

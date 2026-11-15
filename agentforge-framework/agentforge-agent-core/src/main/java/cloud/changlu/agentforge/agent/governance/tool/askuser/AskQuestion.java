@@ -29,15 +29,12 @@ public final class AskQuestion {
 
     @P(
             name = "options",
-            description = "Two to twenty options for choice questions; empty for text",
+            description =
+                    "Two to twenty real options for choice questions; empty for text. "
+                            + "Do not add placeholder options like 'Other' or 'I will fill in'; the client "
+                            + "always renders a custom answer input next to the options.",
             required = false)
     List<AskUserOption> options;
-
-    @P(
-            name = "customPlaceholder",
-            description = "Placeholder for the custom-answer input on choice questions",
-            required = false)
-    String customPlaceholder;
 
     @P(
             name = "minSelections",
@@ -88,10 +85,6 @@ public final class AskQuestion {
 
     public List<AskUserOption> getOptions() {
         return options;
-    }
-
-    public String getCustomPlaceholder() {
-        return customPlaceholder;
     }
 
     public Integer getMinSelections() {

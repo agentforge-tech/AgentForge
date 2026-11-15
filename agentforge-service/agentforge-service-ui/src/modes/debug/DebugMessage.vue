@@ -13,6 +13,7 @@
         <span class="process-title">{{ processTitle }}</span>
         <span class="process-meta">
           <template v-if="responseCount">{{ responseCount }} 个响应片段 · </template>{{ thinkCount }} 段思考<template v-if="toolCount"> · {{ toolCount }} 个工具</template>
+          <template v-if="askCount"> · {{ askCount }} 次询问</template>
           <template v-if="elapsed"> · {{ elapsed }}</template>
         </span>
       </div>
@@ -24,6 +25,7 @@
             <ToolCard v-else-if="part.type === 'tool_card'" :key="'c' + idx" :part="part" />
             <AppendedUserMessage v-else-if="part.type === 'appended_user_message'" :key="'a' + idx" :part="part" />
             <CompactNotice v-else-if="part.type === 'compact_notice'" :key="'m' + idx" :part="part" detailed />
+            <InterruptTraceItem v-else-if="part.type === 'interrupt_card'" :key="'i' + idx" :part="part" mode="debug" />
           </template>
         </div>
       </el-collapse-transition>
@@ -64,16 +66,17 @@ import AppendedUserMessage from '../../components/AppendedUserMessage.vue'
 import RetryNotice from '../../components/RetryNotice.vue'
 import CompactNotice from '../../components/CompactNotice.vue'
 import ResponseSegmentBlock from '../../components/ResponseSegmentBlock.vue'
+import InterruptTraceItem from '../../components/InterruptTraceItem.vue'
 
 export default {
   name: 'DebugMessage',
-  components: { MarkdownView, ThinkBlock, ToolCard, AppendedUserMessage, RetryNotice, CompactNotice, ResponseSegmentBlock },
+  components: { MarkdownView, ThinkBlock, ToolCard, AppendedUserMessage, RetryNotice, CompactNotice, ResponseSegmentBlock, InterruptTraceItem },
   props: {
     message: { type: Object, required: true }
   },
   data() {
     return {
-      processOpen: this.message.status === 'running'
+      processOpen: this.message.status === 'running' || this.message.status === 'waiting'
     }
   },
   computed: {
@@ -115,8 +118,13 @@ export default {
     toolCount() {
       return this.processParts.filter((p) => p.type === 'tool_card').length
     },
+    askCount() {
+      return this.processParts.filter((p) => p.type === 'interrupt_card').length
+    },
     processTitle() {
-      return this.message.status === 'running' ? '执行中...' : '执行过程'
+      if (this.message.status === 'running') return '执行中...'
+      if (this.message.status === 'waiting') return '等待确认'
+      return '执行过程'
     },
     elapsed() {
       return formatElapsedDuration(this.message.elapsedMs)
@@ -124,8 +132,8 @@ export default {
   },
   watch: {
     'message.status'(val) {
-      // 运行中自动展开，完成后自动收拢为一行摘要
-      this.processOpen = val === 'running'
+      // 运行中与等待确认时保持展开，只有完成/失败/取消才收拢。
+      this.processOpen = val === 'running' || val === 'waiting'
     }
   }
 }

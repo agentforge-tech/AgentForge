@@ -46,7 +46,7 @@
         </button>
       </div>
     </div>
-    <div ref="feed" class="agent-debug-feed" @scroll.passive="onFeedScroll">
+    <div ref="feed" class="agent-debug-feed" :class="{ 'has-interrupt': !!activeInterrupt }" @scroll.passive="onFeedScroll">
       <div v-if="!messages.length" class="agent-debug-empty"><span>✦</span><b>开始一次调试对话</b><p>支持调试事件时间线与发布后交互展示两种模式。</p></div>
       <template v-for="(message, index) in messages">
         <div v-if="message.role === 'user'" :key="index" class="agent-debug-message-row agent-debug-message-row--user">
@@ -100,7 +100,9 @@
         </div>
       </transition-group>
     </div>
-    <div class="agent-debug-input">
+    <div class="agent-debug-composer">
+      <InterruptCard v-if="activeInterrupt" class="agent-debug-interrupt" :part="activeInterrupt" compact @resumed="continueAfterResume" />
+      <div class="agent-debug-input">
       <textarea
         v-model="draft"
         :placeholder="running ? '输入补充指令，将在下一轮处理…' : '输入调试问题...'"
@@ -115,6 +117,7 @@
         :title="running && draft.trim() ? '发送追加消息' : (running ? '停止' : '发送')"
         @click="running && !draft.trim() ? stop() : send()"
       >{{ running && !draft.trim() ? '停止' : (running ? '追加' : '发送') }}</button>
+      </div>
     </div>
   </aside>
 </template>
@@ -122,6 +125,7 @@
 <script>
 import { RENDER_MODES, DEFAULT_RENDER_MODE } from '../../modes'
 import AgentMessageContent from '../../components/AgentMessageContent.vue'
+import InterruptCard from '../../components/InterruptCard.vue'
 import chatAutoScroll from '../../utils/chatAutoScroll'
 import { fetchDebugSessionList, fetchSessionMessages } from '../../utils/sessionApi'
 import { replaySession } from '../../utils/sessionReplay'
@@ -129,6 +133,7 @@ import { chatTransportMode, setChatTransportMode, runChatStream, resumeChatStrea
 import { reduceAppendEvent } from '../../utils/appendEventReducer'
 import { reduceCompactEvent } from '../../utils/compactEventReducer'
 import { buildTodoCardPart } from '../../utils/todoEventReducer'
+import { reduceInterruptAnswers, reduceInterruptEvent } from '../../utils/interruptEventReducer'
 import {
   appendResponseSegment,
   closeOpenResponseSegment,
@@ -140,7 +145,7 @@ import {
 const MODE_KEY = 'agentforge.render.mode'
 export default {
   name: 'AgentDebugPanel',
-  components: { AgentMessageContent },
+  components: { AgentMessageContent, InterruptCard },
   mixins: [chatAutoScroll],
   props: {
     aid: { type: String, required: true },
@@ -150,7 +155,14 @@ export default {
   data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, transportMode: chatTransportMode(), draft: '', composing: false, running: false, stopping: false, currentMessageId: null, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [], pendingAppends: [], deferredAppends: [], remotePollTimer: null, historyOpen: false, historyLoading: false, historySessions: [] } },
   computed: {
     renderModes() { return RENDER_MODES },
-    displayAgentName() { return this.agentName || 'AgentForge' }
+    displayAgentName() { return this.agentName || 'AgentForge' },
+    activeInterrupt() {
+      for (let i = this.messages.length - 1; i >= 0; i -= 1) {
+        const part = (this.messages[i].parts || []).find((item) => item.type === 'interrupt_card' && item.status === 'PENDING')
+        if (part) return part
+      }
+      return null
+    }
   },
   watch: {
     mode(value) { localStorage.setItem(MODE_KEY, value) },
@@ -171,6 +183,62 @@ export default {
       event.preventDefault()
       this.send()
     },
+    applyInterruptStatus(answer, event) {
+      if (event.type === 'interrupt_requested') {
+        answer.status = 'waiting'
+        this.running = true
+        if (answer.messageId) this.currentMessageId = answer.messageId
+      } else if (event.type === 'interrupt_resuming') {
+        answer.status = 'running'
+      }
+    },
+    applyStreamPauseState(answer) {
+      if (answer.status === 'waiting') {
+        this.running = true
+        this.currentMessageId = answer.messageId || this.currentMessageId
+        return
+      }
+      this.running = false
+      this.currentMessageId = null
+    },
+    async continueAfterResume(payload) {
+      if (!payload) return
+      const answers = [...this.messages].reverse().filter((item) => item.role === 'assistant')
+      const answer = answers.find((item) => String(item.messageId) === String(payload.messageId)) || answers[0]
+      if (!answer || !answer.messageId) return
+      const requestVersion = ++this.requestVersion
+      if (this.controller) this.controller.abort()
+      this.currentMessageId = answer.messageId
+      answer.status = 'running'
+      this.running = true
+      this.controller = new AbortController()
+      const controller = this.controller
+      try {
+        await resumeChatStream(answer.messageId, Number(payload.afterSeq || 0), {
+          signal: controller.signal,
+          onEvent: (event) => {
+            if (requestVersion !== this.requestVersion) return
+            answer.lastEventSeq = Math.max(answer.lastEventSeq || 0, Number(event.eventSeq || 0))
+            this.handleEvent(answer, event)
+          }
+        })
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          answer.status = 'error'
+          answer.error = error.message || '恢复调试流式对话失败'
+          this.finishParts(answer)
+        }
+      } finally {
+        if (requestVersion === this.requestVersion) {
+          if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
+          this.applyStreamPauseState(answer)
+          this.controller = null
+          this.restoreDeferredAppends()
+          this.scroll()
+        }
+        if (this.historyOpen) this.loadHistory()
+      }
+    },
     async send() {
       const text = this.draft.trim(); if (!text) return
       if (this.running) { await this.sendAppend(text); return }
@@ -179,14 +247,14 @@ export default {
       try {
         await runChatStream({ aid: this.aid, sessionId: this.sessionId, message: text, isDebug: true }, {
           signal: controller.signal,
-          onSubmitted: (task) => { this.currentMessageId = task.messageId; this.sessionId = task.sessionId },
+          onSubmitted: (task) => { this.currentMessageId = task.messageId; answer.messageId = task.messageId; this.sessionId = task.sessionId },
           onEvent: (event) => this.handleEvent(answer, event)
         })
       } catch (e) {
         if (e.name !== 'AbortError') { answer.status = 'error'; answer.error = e.message || '调试失败'; this.finishParts(answer) }
       } finally {
         if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
-        if (requestVersion === this.requestVersion) { this.running = false; this.currentMessageId = null; this.controller = null; this.restoreDeferredAppends(); this.scroll() }
+        if (requestVersion === this.requestVersion) { this.applyStreamPauseState(answer); this.controller = null; this.restoreDeferredAppends(); this.scroll() }
         if (this.historyOpen) this.loadHistory()
       }
     },
@@ -223,6 +291,15 @@ export default {
       else if (name === 'FAILED') { answer.status = 'error'; if (!answer.error) answer.error = '生成失败' }
       else answer.status = 'cancelled'
       this.finishParts(answer)
+      if (answer.status === 'cancelled') this.cancelOpenInterrupts(answer)
+    },
+    /** 等待确认期间没有活动订阅，停止后需本地收口仍在等待的中断卡片。 */
+    cancelOpenInterrupts(answer) {
+      ;(answer.parts || []).forEach((part) => {
+        if (part.type === 'interrupt_card' && (part.status === 'PENDING' || part.status === 'RESUMING')) {
+          part.status = 'CANCELLED'
+        }
+      })
     },
     async sendAppend(text) {
       try {
@@ -339,7 +416,7 @@ export default {
     },
     syncRemoteRun(sessionRefId, messages) {
       const last = [...(messages || [])].reverse().find((item) => item.role === 'assistant')
-      const running = !!(last && last.status === 'running')
+      const running = !!(last && (last.status === 'running' || last.status === 'waiting'))
       if (running && !this.controller) {
         this.running = true
         if (this.transportMode === 'detached' && last.messageId) this.resumeDetachedRun(last)
@@ -350,6 +427,11 @@ export default {
       }
     },
     async resumeDetachedRun(answer) {
+      if (answer.status === 'waiting') {
+        this.currentMessageId = answer.messageId
+        this.running = true
+        return
+      }
       const requestVersion = ++this.requestVersion
       this.controller = new AbortController(); this.currentMessageId = answer.messageId
       answer.parts = []; answer.content = ''; answer.error = ''; answer.lastEventSeq = 0
@@ -367,7 +449,8 @@ export default {
       } finally {
         if (requestVersion === this.requestVersion) {
           if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
-          this.running = false; this.controller = null; this.currentMessageId = null
+          this.applyStreamPauseState(answer)
+          this.controller = null
           if (this.historyOpen) this.loadHistory()
         }
       }
@@ -434,7 +517,8 @@ export default {
             appendResponseSegment(answer, event)
           }
           break
-        case 'tool_call': this.clearRetryNotice(answer); closeOpenResponseSegment(answer); this.closeOpenThink(answer); this.applyTool(answer, event, this.mode === 'debug'); break
+        case 'tool_call': this.clearRetryNotice(answer); closeOpenResponseSegment(answer); this.closeOpenThink(answer); this.applyTool(answer, event, this.mode === 'debug'); reduceInterruptAnswers(answer, event); break
+        case 'interrupt': this.clearRetryNotice(answer); closeOpenResponseSegment(answer); this.closeOpenThink(answer); reduceInterruptEvent(answer, event); this.applyInterruptStatus(answer, event); break
         case 'user_message': closeOpenResponseSegment(answer); this.applyAppendEvent(answer, event); break
         case 'retry': closeOpenResponseSegment(answer); this.applyRetryEvent(answer, event); break
         case 'compact': closeOpenResponseSegment(answer); reduceCompactEvent(answer, event, this.mode === 'debug'); break

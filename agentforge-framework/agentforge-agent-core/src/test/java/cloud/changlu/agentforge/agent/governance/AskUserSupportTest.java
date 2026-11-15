@@ -70,6 +70,55 @@ public class AskUserSupportTest {
         AskUserSupport.validate(request, response);
     }
 
+    @Test
+    public void shouldAcceptCustomValueForSingleChoice() {
+        AskUserRequest request =
+                AskUserSupport.parse(
+                        tool(
+                                "{\"questions\":[{\"id\":\"style\",\"title\":\"回答形式\","
+                                        + "\"type\":\"single_choice\","
+                                        + "\"options\":[{\"id\":\"brief\",\"label\":\"简洁\"},"
+                                        + "{\"id\":\"detail\",\"label\":\"详细\"}]}]}"));
+
+        AskUserResponse response = AskUserResponse.of(new AskUserAnswer("style", null, "先给结论再展开"));
+
+        AskUserSupport.validate(request, response);
+        assertTrue(
+                AskUserSupport.renderToolResult(request, response, "int_custom")
+                        .contains("\"customValue\":\"先给结论再展开\""));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectOptionAndCustomValueForSingleChoice() {
+        AskUserRequest request =
+                AskUserSupport.parse(
+                        tool(
+                                "{\"questions\":[{\"id\":\"env\",\"title\":\"选择环境\","
+                                        + "\"type\":\"single_choice\","
+                                        + "\"options\":[{\"id\":\"test\",\"label\":\"测试\"},"
+                                        + "{\"id\":\"prod\",\"label\":\"生产\"}]}]}"));
+
+        AskUserSupport.validate(
+                request,
+                AskUserResponse.of(new AskUserAnswer("env", Arrays.asList("test"), "自定义环境")));
+    }
+
+    @Test
+    public void shouldAcceptOptionsAndCustomValueForMultipleChoice() {
+        AskUserRequest request =
+                AskUserSupport.parse(
+                        tool(
+                                "{\"questions\":[{\"id\":\"mods\",\"title\":\"选择模块\","
+                                        + "\"type\":\"multiple_choice\",\"maxSelections\":3,"
+                                        + "\"options\":[{\"id\":\"api\",\"label\":\"API\"},"
+                                        + "{\"id\":\"web\",\"label\":\"Web\"}]}]}"));
+
+        AskUserSupport.validate(
+                request,
+                AskUserResponse.of(
+                        new AskUserAnswer("mods", Arrays.asList("api", "web"), "desktop")));
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectMultipleChoiceOutOfRange() {
         AskUserRequest request =

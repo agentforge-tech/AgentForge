@@ -62,6 +62,12 @@ public class StandardAgentConfig {
                 || Boolean.TRUE.equals(capabilityConfig.getPlanEnabled());
     }
 
+    /** 是否开启 AskUser/HITL；未配置时默认关闭。 */
+    public boolean isAskUserEnabled() {
+        return capabilityConfig != null
+                && Boolean.TRUE.equals(capabilityConfig.getAskUserEnabled());
+    }
+
     public static String toJson(StandardAgentConfig config, ObjectMapper objectMapper) {
         try {
             return objectMapper.writeValueAsString(config);

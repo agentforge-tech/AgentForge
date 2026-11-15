@@ -112,6 +112,8 @@ button, textarea { font: inherit; }
 }
 .chat-scroll { flex: 1; width: 100%; overflow-y: auto; background: #fff; }
 .chat-inner { max-width: 860px; margin: 0 auto; padding: 24px 24px 8px; }
+/* 中断确认卡悬浮时给消息流留出底部空间，避免覆盖“等待用户确认”等过程文案 */
+.chat-scroll.has-interrupt .chat-inner { padding-bottom: 72px; }
 
 /* 新对话：欢迎 + 输入框整体居中；发送消息后输入框置底 */
 .message-input-wrapper {
@@ -184,7 +186,9 @@ button, textarea { font: inherit; }
 
 /* ------------------------------ 输入框 ------------------------------ */
 .composer-wrap { flex-shrink: 0; width: 100%; background: #fff; }
-.composer-inner { max-width: 860px; margin: 0 auto; padding: 12px 24px 30px; }
+.composer-inner { position: relative; max-width: 860px; margin: 0 auto; padding: 12px 24px 10px; }
+/* 中断确认卡浮在输入框上方，覆盖执行过程底部，不挤压消息区高度 */
+.composer-interrupt { position: absolute !important; z-index: 20; left: 24px; right: 24px; bottom: calc(100% + 8px); width: auto !important; margin: 0 !important; }
 .append-queue { width: 100%; max-height: 132px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; margin: 0 0 7px; padding: 1px 2px 7px; box-sizing: border-box; }
 .append-queue-head { position: sticky; z-index: 2; top: -1px; display: flex; min-height: 24px; align-items: center; justify-content: flex-start; gap: 8px; padding: 1px 4px 3px; background: #fff; }
 .append-queue-status { display: inline-flex; align-items: center; gap: 5px; color: #5d6f8d; font-size: 11px; font-weight: 500; }
@@ -233,7 +237,8 @@ button, textarea { font: inherit; }
 .send-btn.stop { background: #d64545; box-shadow: 0 2px 8px rgba(214, 69, 69, 0.35); }
 .send-btn.stop:hover:not(:disabled) { filter: none; background: #bf3b3b; box-shadow: 0 3px 10px rgba(214, 69, 69, 0.45); }
 .composer-tip {
-  position: absolute; left: 0; right: 0; bottom: 6px;
+  flex-shrink: 0;
+  padding: 0 24px 8px;
   text-align: center; font-size: 11.5px; color: #b0b8c4;
   pointer-events: none;
 }
@@ -241,5 +246,6 @@ button, textarea { font: inherit; }
 @media (max-width: 760px) {
   .sidebar { display: none; }
   .chat-inner, .composer-inner { padding-left: 16px; padding-right: 16px; }
+  .composer-interrupt { left: 16px; right: 16px; }
   .user-block { max-width: 88%; }
 }

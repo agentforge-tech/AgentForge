@@ -70,9 +70,9 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
     }
 
     /** 二段式任务入队前预注册运行状态，使线程池拒绝或初始化异常也能可靠收口占位消息。 */
-    public void registerRun(Object memoryId, String sessionId, Long sessionPk, Long aiMessageId) {
+    public void registerRun(Object memoryId, String sessionId, Long aiMessageId) {
         if (memoryId == null || aiMessageId == null) return;
-        states.putIfAbsent(memoryId, new RunState(memoryId, sessionId, sessionPk, aiMessageId));
+        states.putIfAbsent(memoryId, new RunState(memoryId, sessionId, aiMessageId));
     }
 
     @Override
@@ -228,6 +228,60 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
         }
     }
 
+    /** HITL 挂起不收口 RunState，仅刷新事件并把会话置为等待人工处理。 */
+    public void markWaitingForHitl(Object memoryId, StreamEventResponse event) {
+        RunState state = memoryId == null ? null : states.get(memoryId);
+        if (state == null) {
+            return;
+        }
+        if (event != null) {
+            state.collect(event, true);
+        }
+        Date now = new Date();
+        safeRun(
+                "mark waiting hitl",
+                () -> {
+                    agentSessionMessageMapper.updateStatus(
+                            state.aiMessageId,
+                            SessionMessageStatusEnum.WAITING_HITL.getCode(),
+                            now);
+                    agentSessionMapper.updateStatusBySessionId(
+                            state.sessionId, SessionStatusEnum.WAITING_HITL.getCode(), now);
+                });
+    }
+
+    /** 恢复原 RunState，不创建新 AI 消息。 */
+    public void markResuming(Object memoryId, StreamEventResponse event) {
+        RunState state = memoryId == null ? null : states.get(memoryId);
+        if (state == null) {
+            return;
+        }
+        if (event != null) {
+            state.collect(event, true);
+        }
+        Date now = new Date();
+        safeRun(
+                "mark resuming hitl",
+                () -> {
+                    agentSessionMessageMapper.updateStatus(
+                            state.aiMessageId, SessionMessageStatusEnum.RUNNING.getCode(), now);
+                    agentSessionMapper.updateStatusBySessionId(
+                            state.sessionId, SessionStatusEnum.RUNNING.getCode(), now);
+                });
+    }
+
+    /** 等待 HITL 时用户主动停止，直接收口原 AI 消息。 */
+    public void cancelWaitingForHitl(Object memoryId, StreamEventResponse event) {
+        RunState state = memoryId == null ? null : states.get(memoryId);
+        if (state == null) {
+            return;
+        }
+        if (event != null) {
+            state.collect(event, true);
+        }
+        finishState(state, SessionMessageStatusEnum.CANCELLED, "用户取消了等待中的人工交互");
+    }
+
     /** 模型调用重试事件：记录“第几轮、第几次、等待秒数”，供历史重放与审计。 */
     @Override
     public void onAiCallRetry(
@@ -283,8 +337,8 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
                             elapsed,
                             finishedAt,
                             finishedAt);
-                    agentSessionMapper.updateStatus(
-                            state.sessionPk, SessionStatusEnum.FINISHED.getCode(), finishedAt);
+                    agentSessionMapper.updateStatusBySessionId(
+                            state.sessionId, SessionStatusEnum.FINISHED.getCode(), finishedAt);
                 } catch (RuntimeException e) {
                     log.warn(
                             "会话收口写入失败, sessionId={}, aiMessageId={}",
@@ -327,12 +381,7 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
         if (sessionId == null || aiMessageId == null) {
             return null;
         }
-        RunState created =
-                new RunState(
-                        memoryId,
-                        String.valueOf(sessionId),
-                        toLong(chatContext.getExtension("session.sessionPk")),
-                        toLong(aiMessageId));
+        RunState created = new RunState(memoryId, String.valueOf(sessionId), toLong(aiMessageId));
         RunState previous = states.putIfAbsent(memoryId, created);
         return previous == null ? created : previous;
     }
@@ -370,7 +419,6 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
     private final class RunState {
         private final Object memoryId;
         private final String sessionId;
-        private final Long sessionPk;
         private final Long aiMessageId;
         private final Date startedAt = new Date();
         private final StringBuilder content = new StringBuilder();
@@ -380,10 +428,9 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
                 new java.util.concurrent.atomic.AtomicBoolean(false);
         private long lastEventPersistAt = 0L;
 
-        private RunState(Object memoryId, String sessionId, Long sessionPk, Long aiMessageId) {
+        private RunState(Object memoryId, String sessionId, Long aiMessageId) {
             this.memoryId = memoryId;
             this.sessionId = sessionId;
-            this.sessionPk = sessionPk;
             this.aiMessageId = aiMessageId;
         }
 
