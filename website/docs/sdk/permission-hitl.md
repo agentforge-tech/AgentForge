@@ -20,7 +20,7 @@ AgentForge 把「能不能执行」与「执行什么」分开：权限系统只
 
 | 层 | 职责 | 当前实现 |
 | --- | --- | --- |
-| 权限判定层 | 对每个 Tool Call 输出 `ALLOW / DENY / ASK` | `PermissionEngine`、`PermissionRule`、`PermissionMode` |
+| 权限判定层 | 对每个 Tool Call 输出 `ALLOW / DENY / ASK`，查询会话历史授权 | `PermissionEngine`、`PermissionRule`、`PermissionMode`、`PermissionApprovalStore` |
 | 中断运行时 | 冻结对象、保存快照、暂停、校验响应、恢复 | `PermissionInterruptModule`、`AgentInterruptSnapshot`、`AgentInterruptStore` |
 | 交互适配层 | 把权限审核和 AskUser 的 payload 转成工具结果 | `InterruptType`、`AskUserSupport`、调用方 UI |
 
@@ -163,7 +163,7 @@ return effectiveModePolicy.decide(context, candidate);
 
 ### 2.5 统一装配入口
 
-`ReActAgent.Builder` 只接收一个 `PermissionInterruptModule`，权限模式、规则、处理器、中断 Store 和 AskUser 开关都在模块内装配：
+`ReActAgent.Builder` 只接收一个 `PermissionInterruptModule`，权限模式、规则、处理器、审批授权 Store、中断 Store 和 AskUser 开关都在模块内装配：
 
 ```java
 PermissionInterruptModule module =
@@ -183,12 +183,13 @@ ReActAgent agent = ReActAgent.builder()
         .build();
 ```
 
-模块对外只暴露三个运行入口：
+模块的核心运行入口如下：
 
 | 方法 | 作用 |
 | --- | --- |
 | `preflight(step, requests, context)` | 按原始顺序评估整批 Tool Call，返回放行、拒绝或挂起结果 |
 | `resolve(command)` | 校验整批响应并原子占有快照 |
+| `applyApprovals(batch, context)` | 将三种审批结果与恢复阶段的 `AgentChatContext` 交给审批授权 Store |
 | `complete(batch)` | 冻结批次应用完成后标记批次结束 |
 
 `safeDefaults()` 的语义需要明确：
@@ -197,9 +198,10 @@ ReActAgent agent = ReActAgent.builder()
 - 不预置任何权限规则，因此未命中的调用直接放行；
 - 注册内置 `regex` 规则处理器；
 - 使用默认 `InMemoryAgentInterruptStore`；
+- 使用默认 `InMemorySessionPermissionApprovalStore`，按 `memoryId` 隔离 `APPROVE_ALWAYS`；
 - AskUser 默认关闭，调用 `enableAskUser()` 后才启用，并由 `ReActAgent` 自动注册 `AskUserTool`。
 
-`APPROVE_ALWAYS` 在当前实现中是在模块实例内保存「工具名 + 原始参数」指纹，后续完全相同的调用直接放行。它不持久化、不跨节点、不跨 Workspace 实例。多 Workspace 场景应各自持有独立的 Module。
+`APPROVE_ALWAYS` 默认按「`memoryId` + 工具名 + 原始参数」保存在进程内，后续只有同一会话中的完全相同调用才会直接放行。它不持久化、不跨进程或节点；需要长期保存或扩大业务作用域时，应注入自定义 `PermissionApprovalStore`。
 
 ## 3. 中断事件与恢复
 
@@ -704,7 +706,114 @@ PermissionInterruptModule module =
 
 自定义策略注入后完全接管最终决策，内置 `DEFAULT / BYPASS / DONT_ASK` 不再参与。因此策略本身必须显式保留 `DENY` 的优先级。
 
-### 5.3 自定义中断 Store：跨进程与集群恢复
+### 5.3 自定义审批授权 Store：接管审核确认记录
+
+权限审核仍然只有三种操作：
+
+| `ApprovalAction` | 当前冻结 Tool Call | 默认后续行为 |
+| --- | --- | --- |
+| `APPROVE_ONCE` | 执行 | 不记录授权，后续重新判断 |
+| `APPROVE_ALWAYS` | 执行 | 记录当前会话授权，相同调用后续直接放行 |
+| `REJECT` | 不执行，写入拒绝 Tool Result | 不记录授权 |
+
+框架通过 `PermissionApprovalStore` 抽象“是否已有授权”和“处理本次审批结果”：
+
+```java
+public interface PermissionApprovalStore {
+
+    boolean isApproved(
+            AgentChatContext context,
+            ToolExecutionRequest request);
+
+    void addApproval(
+            AgentChatContext context,
+            ToolExecutionRequest request,
+            ApprovalAction action);
+}
+```
+
+两个方法处于不同阶段：
+
+```text
+首次执行或恢复后的权限预检
+  -> isApproved(chatContext, toolRequest)
+  -> 命中则直接 ALLOW，未命中再进入 PermissionEngine
+
+用户提交中断响应
+  -> resolve(command) 校验并抢占批次
+  -> ReActAgent 构造恢复阶段 AgentChatContext
+  -> addApproval(chatContext, frozenToolRequest, actualAction)
+  -> Core 根据 action 执行冻结调用或写入拒绝结果
+```
+
+`isApproved` 不接收 `ApprovalAction`，因为权限预检时还没有发生本次审批；它查询的是此前由 `APPROVE_ALWAYS` 形成的授权。`addApproval` 会收到用户本次真实选择的三种 Action，业务实现可以统一记录审计，但只有 `APPROVE_ALWAYS` 应形成后续可命中的授权。
+
+默认 `InMemorySessionPermissionApprovalStore` 使用：
+
+```text
+memoryId -> Set<toolName + rawArguments>
+```
+
+因此同一个 `PermissionInterruptModule` 可以复用于多个会话，会话 A 的“始终允许”不会自动放行会话 B。默认实现只保存在当前进程，服务重启后授权消失。
+
+如果需要持久化或接入业务审批中心，可以实现自己的 Store：
+
+```java
+public final class JdbcPermissionApprovalStore
+        implements PermissionApprovalStore {
+
+    private final PermissionApprovalRepository repository;
+
+    @Override
+    public boolean isApproved(
+            AgentChatContext context,
+            ToolExecutionRequest request) {
+        return repository.exists(
+                context.getMemoryId(),
+                request.name(),
+                request.arguments());
+    }
+
+    @Override
+    public void addApproval(
+            AgentChatContext context,
+            ToolExecutionRequest request,
+            ApprovalAction action) {
+        repository.saveAudit(
+                context.getMemoryId(), request.id(), action.name());
+
+        if (action != ApprovalAction.APPROVE_ALWAYS) {
+            return;
+        }
+
+        repository.save(
+                context.getMemoryId(),
+                request.name(),
+                request.arguments());
+    }
+}
+```
+
+通过 Builder 注入：
+
+```java
+PermissionInterruptModule module =
+        PermissionInterruptModule.safeDefaults()
+                .ask("shell", ".*")
+                .permissionApprovalStore(
+                        new JdbcPermissionApprovalStore(repository))
+                .build();
+```
+
+自定义实现会收到对应运行阶段的 `AgentChatContext`，可读取 `memoryId`、`executionId`、`AgentRequest` 和业务 `extensions`。需要注意：
+
+- 会话标识必须来自服务端 `chatContext`，不能信任前端响应中的自报 ID；
+- 恢复阶段传入的是快照中的原始冻结 Tool Call，自定义实现不能修改后再执行；
+- `APPROVE_ONCE` 和 `REJECT` 可以用于审计，但不能被扩大成长期放行；
+- `isApproved` 或 `addApproval` 抛出异常时按 fail-closed 处理，不会静默放行或把 `APPROVE_ALWAYS` 降级成 `APPROVE_ONCE`；
+- 流式与非流式恢复共用 `applyInterruptBatch`，两种入口都会经过同一个 Store。
+
+### 5.4 自定义中断 Store：跨进程与集群恢复
 
 默认 `InMemoryAgentInterruptStore` 只适用于单进程。需要跨重启或多节点恢复时，实现 `AgentInterruptStore`：
 
@@ -737,7 +846,7 @@ PermissionInterruptModule module =
 
 替换 Store 不能改变状态机语义，尤其不能让两个恢复请求同时从 `PENDING` 进入 `RESUMING`。跨进程恢复还要求 ChatMemory 同步持久化。
 
-### 5.4 工具层边界：权限规则不能替代路径校验
+### 5.5 工具层边界：权限规则不能替代路径校验
 
 权限系统是纵深防御的一层，不是沙箱的替代品。文件工具在执行前必须自己完成路径规范化与越界检查：
 
@@ -758,7 +867,7 @@ if (!target.startsWith(root)) {
 | Workspace 内写入、覆盖、删除、Shell | `ASK` | UI 展示冻结的工具名和参数 |
 | Workspace 外访问、敏感路径、不可逆高危命令 | `DENY` 或工具层拒绝 | 不要把全部风险都交给人工确认 |
 
-### 5.5 审批事件桥接
+### 5.6 审批事件桥接
 
 桌面端、IDE 插件或 Web 后端可以通过中间件统一推送中断事件，而不侵入业务调用：
 
@@ -833,7 +942,7 @@ ReActAgent agent =
 
 - 权限引擎异常不应放行工具，异常应向上抛出并终止当前执行；
 - `DENY` 与 `REJECT` 都必须写入 Tool Result，保证消息链闭合，但不执行工具；
-- `APPROVE_ALWAYS` 不能用于危险路径、破坏性命令等高风险操作；当前实现只在模块实例内生效；
+- `APPROVE_ALWAYS` 不能用于危险路径、破坏性命令等高风险操作；默认实现只在当前进程内生效，并按 `memoryId` 隔离会话；
 - UI 不能回传或改写 Tool arguments，恢复始终使用冻结的原始调用；
 - 工具自身必须保留参数校验与工作区边界检查，权限审核不能替代沙箱和业务鉴权。
 

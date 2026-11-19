@@ -1,11 +1,14 @@
 package cloud.changlu.agentforge.harness.agent;
 
 import cloud.changlu.agentforge.agent.IAgent;
+import cloud.changlu.agentforge.agent.IInterruptibleAgent;
 import cloud.changlu.agentforge.agent.ReActAgent;
 import cloud.changlu.agentforge.agent.component.middleware.IAgentMiddleware;
 import cloud.changlu.agentforge.agent.component.state.domain.AgentExecutionState;
 import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
+import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
+import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchResumeCommand;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.stream.TokenStream;
@@ -43,8 +46,15 @@ import java.util.Optional;
  * <p>Each instance is bound to exactly one Workspace. Runtime tools are responsible for enforcing
  * that boundary and for releasing commands, sessions and other runtime resources when this Agent is
  * closed.
+ *
+ * <p>Governance is optional and supplied by the caller through {@link
+ * Builder#permissionInterruptModule(PermissionInterruptModule)}. When present, the module is passed
+ * through to the delegate ReActAgent, so run and runStream can suspend on permission approval or
+ * AskUser interrupts, and {@link #resumeInterrupt(InterruptBatchResumeCommand)} / {@link
+ * #resumeInterruptStream(InterruptBatchResumeCommand)} continue the frozen batch. HarnessAgent does
+ * not choose a default permission profile from the runtime type; callers keep explicit control.
  */
-public final class HarnessAgent implements IAgent, AutoCloseable {
+public final class HarnessAgent implements IInterruptibleAgent, AutoCloseable {
 
     private final Runtime runtime;
     private final ReActAgent delegate;
@@ -63,7 +73,8 @@ public final class HarnessAgent implements IAgent, AutoCloseable {
         this.runtime = builder.runtime;
 
         ToolService toolService = new ToolService();
-        toolService.tools(LocalToolFactory.buildLocalTools(runtime.tools().toolObjects()));
+        toolService.tools(
+                LocalToolFactory.buildLocalToolsWithThought(runtime.tools().toolObjects(), true));
         for (Object tool : builder.additionalTools) {
             toolService.tools(
                     LocalToolFactory.buildLocalTools(Collections.<Object>singletonList(tool)));
@@ -85,6 +96,7 @@ public final class HarnessAgent implements IAgent, AutoCloseable {
                                 builder.agentSettings == null
                                         ? AgentSettings.defaultSettings()
                                         : builder.agentSettings)
+                        .permissionInterruptModule(builder.permissionInterruptModule)
                         .middlewares(builder.middlewares);
         this.delegate = delegateBuilder.build();
     }
@@ -127,6 +139,30 @@ public final class HarnessAgent implements IAgent, AutoCloseable {
     public TokenStream runStream(AgentRequest request) {
         ensureOpen();
         return delegate.runStream(request);
+    }
+
+    @Override
+    public ChatResult resume(Object memoryId, String executionId) {
+        ensureOpen();
+        return delegate.resume(memoryId, executionId);
+    }
+
+    @Override
+    public TokenStream resumeStream(Object memoryId, String executionId) {
+        ensureOpen();
+        return delegate.resumeStream(memoryId, executionId);
+    }
+
+    @Override
+    public ChatResult resumeInterrupt(InterruptBatchResumeCommand command) {
+        ensureOpen();
+        return delegate.resumeInterrupt(command);
+    }
+
+    @Override
+    public TokenStream resumeInterruptStream(InterruptBatchResumeCommand command) {
+        ensureOpen();
+        return delegate.resumeInterruptStream(command);
     }
 
     @Override
@@ -176,6 +212,7 @@ public final class HarnessAgent implements IAgent, AutoCloseable {
         private StreamingChatModel streamingChatModel;
         private ChatMemoryProvider chatMemoryProvider;
         private AgentSettings agentSettings;
+        private PermissionInterruptModule permissionInterruptModule;
         private final List<IAgentMiddleware> middlewares = new ArrayList<IAgentMiddleware>();
         private final List<Object> additionalTools = new ArrayList<Object>();
         private final List<Map<ToolSpecification, ToolExecutor>> additionalToolMaps =
@@ -220,6 +257,12 @@ public final class HarnessAgent implements IAgent, AutoCloseable {
 
         public Builder agentSettings(AgentSettings value) {
             this.agentSettings = value;
+            return this;
+        }
+
+        /** 注入权限与中断模块；未配置时不启用审批和 AskUser。 */
+        public Builder permissionInterruptModule(PermissionInterruptModule value) {
+            this.permissionInterruptModule = value;
             return this;
         }
 

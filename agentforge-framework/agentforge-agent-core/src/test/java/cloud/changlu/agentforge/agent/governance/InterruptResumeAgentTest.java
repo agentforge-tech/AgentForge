@@ -79,6 +79,42 @@ public class InterruptResumeAgentTest {
     }
 
     @Test
+    public void shouldScopeApproveAlwaysBySessionForNonStreaming() {
+        ScriptedChatModel chatModel =
+                new ScriptedChatModel()
+                        .enqueueToolCall("call_1", "getWeather", "{\"city\":\"Hangzhou\"}")
+                        .enqueueText("首次恢复完成")
+                        .enqueueToolCall("call_2", "getWeather", "{\"city\":\"Hangzhou\"}")
+                        .enqueueText("同会话直接完成")
+                        .enqueueToolCall("call_3", "getWeather", "{\"city\":\"Hangzhou\"}");
+        PermissionInterruptModule module =
+                PermissionInterruptModule.safeDefaults().ask("getWeather", ".*").build();
+        ReActAgent agent =
+                agent(
+                        chatModel,
+                        null,
+                        toolService(),
+                        new MessageWindowChatMemoryProvider(100),
+                        module);
+
+        ChatResult first = agent.run(request("session-a", "exec-a1", "首次调用"));
+        InterruptRequest firstInterrupt = first.getSuspendInfo().getInterrupts().get(0);
+        ChatResult resumed =
+                agent.resumeInterrupt(
+                        approval(
+                                first.getSuspendInfo(),
+                                firstInterrupt,
+                                ApprovalAction.APPROVE_ALWAYS));
+        ChatResult sameSession = agent.run(request("session-a", "exec-a2", "再次调用"));
+        ChatResult otherSession = agent.run(request("session-b", "exec-b1", "其他会话调用"));
+
+        assertEquals(ChatResultState.FINISHED, resumed.getChatResultState());
+        assertEquals(ChatResultState.FINISHED, sameSession.getChatResultState());
+        assertEquals("同会话直接完成", sameSession.getRes());
+        assertEquals(ChatResultState.SUSPENDED, otherSession.getChatResultState());
+    }
+
+    @Test
     public void shouldResumeAskUserWithAnswerByNonStreaming() {
         ScriptedChatModel chatModel =
                 new ScriptedChatModel()
@@ -295,13 +331,62 @@ public class InterruptResumeAgentTest {
         assertTrue(toolResult.text().contains("22 degrees Celsius"));
     }
 
+    @Test
+    public void shouldScopeApproveAlwaysBySessionForStreaming() {
+        ScriptedStreamingChatModel streamingModel =
+                new ScriptedStreamingChatModel()
+                        .enqueueToolCall("call_1", "getWeather", "{\"city\":\"Hangzhou\"}")
+                        .enqueueText("首次流式恢复完成")
+                        .enqueueToolCall("call_2", "getWeather", "{\"city\":\"Hangzhou\"}")
+                        .enqueueText("同会话流式直接完成")
+                        .enqueueToolCall("call_3", "getWeather", "{\"city\":\"Hangzhou\"}");
+        PermissionInterruptModule module =
+                PermissionInterruptModule.safeDefaults().ask("getWeather", ".*").build();
+        ReActAgent agent =
+                agent(
+                        null,
+                        streamingModel,
+                        toolService(),
+                        new MessageWindowChatMemoryProvider(100),
+                        module);
+        AtomicReference<AgentSuspendInfo> firstSuspend = new AtomicReference<AgentSuspendInfo>();
+        AtomicReference<ChatResponse> resumed = new AtomicReference<ChatResponse>();
+        AtomicReference<ChatResponse> sameSession = new AtomicReference<ChatResponse>();
+        AtomicReference<AgentSuspendInfo> otherSuspend = new AtomicReference<AgentSuspendInfo>();
+
+        agent.runStream(request("stream-session-a", "stream-exec-a1", "首次调用"))
+                .onSuspended(consumeSuspend(firstSuspend))
+                .start();
+        InterruptRequest firstInterrupt = firstSuspend.get().getInterrupts().get(0);
+        agent.resumeInterruptStream(
+                        approval(firstSuspend.get(), firstInterrupt, ApprovalAction.APPROVE_ALWAYS))
+                .onCompleteResponse(consumeResponse(resumed))
+                .start();
+        agent.runStream(request("stream-session-a", "stream-exec-a2", "再次调用"))
+                .onCompleteResponse(consumeResponse(sameSession))
+                .start();
+        agent.runStream(request("stream-session-b", "stream-exec-b1", "其他会话调用"))
+                .onSuspended(consumeSuspend(otherSuspend))
+                .start();
+
+        assertNotNull(resumed.get());
+        assertEquals("首次流式恢复完成", resumed.get().aiMessage().text());
+        assertNotNull(sameSession.get());
+        assertEquals("同会话流式直接完成", sameSession.get().aiMessage().text());
+        assertNotNull(otherSuspend.get());
+    }
+
     private static InterruptBatchResumeCommand approve(
             AgentSuspendInfo suspendInfo, InterruptRequest interrupt) {
+        return approval(suspendInfo, interrupt, ApprovalAction.APPROVE_ONCE);
+    }
+
+    private static InterruptBatchResumeCommand approval(
+            AgentSuspendInfo suspendInfo, InterruptRequest interrupt, ApprovalAction action) {
         return new InterruptBatchResumeCommand(
                 suspendInfo.getBatchId(),
                 Collections.singletonList(
-                        new InterruptResponse(
-                                interrupt.getInterruptId(), ApprovalAction.APPROVE_ONCE, null)));
+                        new InterruptResponse(interrupt.getInterruptId(), action, null)));
     }
 
     private static Consumer<AgentSuspendInfo> consumeSuspend(
@@ -350,9 +435,13 @@ public class InterruptResumeAgentTest {
     }
 
     private static AgentRequest request(String question) {
+        return request(MEMORY_ID, "test-execution", question);
+    }
+
+    private static AgentRequest request(Object memoryId, String executionId, String question) {
         return AgentRequest.builder()
-                .memoryId(MEMORY_ID)
-                .executionId("test-execution")
+                .memoryId(memoryId)
+                .executionId(executionId)
                 .question(question)
                 .build();
     }
