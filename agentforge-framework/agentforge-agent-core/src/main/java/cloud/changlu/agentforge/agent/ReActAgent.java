@@ -500,6 +500,7 @@ public class ReActAgent extends BaseReActAgent implements IInterruptibleAgent {
                 new InterruptResumeContext(snapshot, resolved.getResponses());
         middlewareManager.triggerOnBeforeInterruptResume(resumeContext, context);
         try {
+            permissionInterruptModule.applyApprovals(resolved, context);
             for (ToolExecutionRequest toolRequest : snapshot.getToolRequests()) {
                 PermissionDenial denial = findDenial(snapshot, toolRequest.id());
                 if (denial != null) {

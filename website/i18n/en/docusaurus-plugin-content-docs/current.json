@@ -58,6 +58,10 @@
     "message": "Middleware Extensions",
     "description": "The label for category 'Middleware 扩展' in sidebar 'sdkSidebar'"
   },
+  "sidebar.sdkSidebar.category.权限审批扩展": {
+    "message": "Permission Approval Extensions",
+    "description": "The label for category '权限审批扩展' in sidebar 'sdkSidebar'"
+  },
   "sidebar.sdkSidebar.doc.认识 AgentForge": {
     "message": "Meet AgentForge",
     "description": "The label for the doc item '认识 AgentForge' in sidebar 'sdkSidebar', linking to the doc about/introduction"
@@ -101,6 +105,10 @@
   "sidebar.sdkSidebar.doc.上下文阈值压缩 Middleware": {
     "message": "Context Compaction Middleware",
     "description": "The label for the doc item '上下文阈值压缩 Middleware' in sidebar 'sdkSidebar', linking to the doc sdk/middleware/compact"
+  },
+  "sidebar.sdkSidebar.doc.内存级会话审批确认": {
+    "message": "In-Memory Conversation Approval",
+    "description": "The label for the doc item '内存级会话审批确认' in sidebar 'sdkSidebar', linking to the doc sdk/permission-approval/in-memory-session"
   },
   "sidebar.serviceSidebar.category.Agent组件": {
     "message": "Agent Components",

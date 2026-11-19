@@ -20,7 +20,7 @@ Permissions and interrupts are not two branches of one module; they are three co
 
 | Layer | Responsibility | Current implementation |
 | --- | --- | --- |
-| Permission decision | Produce `ALLOW / DENY / ASK` for each Tool Call | `PermissionEngine`, `PermissionRule`, `PermissionMode` |
+| Permission decision | Produce `ALLOW / DENY / ASK` for each Tool Call and query conversation-scoped grants | `PermissionEngine`, `PermissionRule`, `PermissionMode`, `PermissionApprovalStore` |
 | Interrupt runtime | Freeze objects, save snapshots, suspend, validate responses, resume | `PermissionInterruptModule`, `AgentInterruptSnapshot`, `AgentInterruptStore` |
 | Interaction adapter | Turn permission approval and AskUser payloads into tool results | `InterruptType`, `AskUserSupport`, caller UI |
 
@@ -163,7 +163,7 @@ This order guarantees three things:
 
 ### 2.5 Unified assembly entry
 
-`ReActAgent.Builder` accepts a single `PermissionInterruptModule`. Permission mode, rules, handlers, interrupt store, and the AskUser switch are all assembled inside the module:
+`ReActAgent.Builder` accepts a single `PermissionInterruptModule`. Permission mode, rules, handlers, approval store, interrupt store, and the AskUser switch are all assembled inside the module:
 
 ```java
 PermissionInterruptModule module =
@@ -183,12 +183,13 @@ ReActAgent agent = ReActAgent.builder()
         .build();
 ```
 
-The module exposes only three runtime entries:
+The module's core runtime entries are:
 
 | Method | Purpose |
 | --- | --- |
 | `preflight(step, requests, context)` | Evaluate the whole batch of Tool Calls in original order and return allowed, denied, or suspended |
 | `resolve(command)` | Validate the whole batch of responses and atomically claim the snapshot |
+| `applyApprovals(batch, context)` | Pass all three approval actions and the recovery `AgentChatContext` to the approval store |
 | `complete(batch)` | Mark the batch finished after the frozen batch has been applied |
 
 The semantics of `safeDefaults()` must be clear:
@@ -197,9 +198,10 @@ The semantics of `safeDefaults()` must be clear:
 - Presets no permission rules, so unmatched calls are allowed;
 - Registers the built-in `regex` rule handler;
 - Uses the default `InMemoryAgentInterruptStore`;
+- Uses the default `InMemorySessionPermissionApprovalStore`, which isolates `APPROVE_ALWAYS` by `memoryId`;
 - AskUser is disabled by default; it is enabled by `enableAskUser()`, after which `ReActAgent` automatically registers `AskUserTool`.
 
-In the current implementation, `APPROVE_ALWAYS` stores a "tool name + raw arguments" fingerprint inside the module instance, and later identical calls are allowed directly. It is not persisted, not shared across nodes, and not shared across Workspace instances. Multi-Workspace deployments should hold separate modules.
+By default, `APPROVE_ALWAYS` stores `memoryId + tool name + raw arguments` in process memory. Only an identical call in the same conversation is allowed directly. The grant is not persisted or shared across processes or nodes. Inject a custom `PermissionApprovalStore` when grants must survive restarts or use a wider business scope.
 
 ## 3. Interrupt events and recovery
 
@@ -704,7 +706,115 @@ PermissionInterruptModule module =
 
 After a custom policy is injected, it fully takes over the final decision; the built-in `DEFAULT / BYPASS / DONT_ASK` no longer participate. Therefore the policy itself must explicitly preserve the priority of `DENY`.
 
-### 5.3 Custom interrupt store: cross-process and cluster recovery
+### 5.3 Custom approval store: take control of approval records
+
+Permission approval still has only three operations:
+
+| `ApprovalAction` | Current frozen Tool Call | Default behavior for later calls |
+| --- | --- | --- |
+| `APPROVE_ONCE` | Execute | Do not record a grant; evaluate again next time |
+| `APPROVE_ALWAYS` | Execute | Record a conversation grant; allow an identical call in the same conversation |
+| `REJECT` | Do not execute; write a rejection Tool Result | Do not record a grant |
+
+`PermissionApprovalStore` abstracts both checking an existing grant and processing the current approval response:
+
+```java
+public interface PermissionApprovalStore {
+
+    boolean isApproved(
+            AgentChatContext context,
+            ToolExecutionRequest request);
+
+    void addApproval(
+            AgentChatContext context,
+            ToolExecutionRequest request,
+            ApprovalAction action);
+}
+```
+
+The two methods run at different points:
+
+```text
+Permission preflight for an initial or resumed execution
+  -> isApproved(chatContext, toolRequest)
+  -> grant found: ALLOW directly
+  -> no grant: continue through PermissionEngine
+
+The user submits an interrupt response
+  -> resolve(command) validates and claims the batch
+  -> ReActAgent creates the recovery AgentChatContext
+  -> addApproval(chatContext, frozenToolRequest, actualAction)
+  -> Core executes the frozen call or writes a rejection result
+```
+
+`isApproved` does not take an `ApprovalAction` because the current approval has not happened during preflight. It queries grants previously created by `APPROVE_ALWAYS`. `addApproval` receives the user's actual action, so a custom implementation can audit all three actions, but only `APPROVE_ALWAYS` should create a grant that later calls can match.
+
+The default `InMemorySessionPermissionApprovalStore` uses:
+
+```text
+memoryId -> Set<toolName + rawArguments>
+```
+
+The same `PermissionInterruptModule` can therefore serve multiple conversations without allowing conversation B because conversation A selected “always allow.” The default store is process-local and loses grants on restart.
+
+To persist grants or integrate a business approval service, provide a custom store:
+
+```java
+public final class JdbcPermissionApprovalStore
+        implements PermissionApprovalStore {
+
+    private final PermissionApprovalRepository repository;
+
+    @Override
+    public boolean isApproved(
+            AgentChatContext context,
+            ToolExecutionRequest request) {
+        return repository.exists(
+                context.getMemoryId(),
+                request.name(),
+                request.arguments());
+    }
+
+    @Override
+    public void addApproval(
+            AgentChatContext context,
+            ToolExecutionRequest request,
+            ApprovalAction action) {
+        repository.saveAudit(
+                context.getMemoryId(), request.id(), action.name());
+
+        if (action != ApprovalAction.APPROVE_ALWAYS) {
+            return;
+        }
+
+        repository.save(
+                context.getMemoryId(),
+                request.name(),
+                request.arguments());
+    }
+}
+```
+
+Inject it through the builder:
+
+```java
+PermissionInterruptModule module =
+        PermissionInterruptModule.safeDefaults()
+                .ask("shell", ".*")
+                .permissionApprovalStore(
+                        new JdbcPermissionApprovalStore(repository))
+                .build();
+```
+
+A custom implementation receives the `AgentChatContext` for the relevant execution phase and can read `memoryId`, `executionId`, `AgentRequest`, and business `extensions`. Keep these boundaries:
+
+- Obtain the conversation identity from the server-side `chatContext`, never from a client-asserted response field;
+- Recovery passes the original frozen Tool Call from the snapshot; a custom store must not mutate it before execution;
+- `APPROVE_ONCE` and `REJECT` may be audited but must not be expanded into persistent allow grants;
+- Exceptions from `isApproved` or `addApproval` fail closed; the framework does not silently allow the call or downgrade `APPROVE_ALWAYS` to `APPROVE_ONCE`;
+- Streaming and non-streaming recovery share `applyInterruptBatch`, so both go through the same store.
+
+### 5.4 Custom interrupt store: cross-process and cluster recovery
 
 The default `InMemoryAgentInterruptStore` only works in a single process. To recover across restarts or nodes, implement `AgentInterruptStore`:
 
@@ -737,7 +847,7 @@ PermissionInterruptModule module =
 
 Replacing the store must not change state-machine semantics; in particular, two resume requests must never both move `PENDING` to `RESUMING`. Cross-process recovery also requires ChatMemory to be persisted synchronously.
 
-### 5.4 Tool-layer boundary: permission rules cannot replace path validation
+### 5.5 Tool-layer boundary: permission rules cannot replace path validation
 
 The permission system is one layer of defense in depth, not a replacement for a sandbox. File tools must normalize paths and check workspace boundaries before execution:
 
@@ -758,7 +868,7 @@ For existing targets, also call `toRealPath()` to prevent symlink escapes. Recom
 | Write, overwrite, delete, or Shell inside the workspace | `ASK` | The UI shows the frozen tool name and arguments |
 | Access outside the workspace, sensitive paths, irreversible high-risk commands | `DENY` or reject in the tool layer | Do not delegate every risk to human confirmation |
 
-### 5.5 Approval event bridging
+### 5.6 Approval event bridging
 
 Desktop apps, IDE plugins, or web backends can push interrupt events through middleware without intruding on business call sites:
 
@@ -833,7 +943,7 @@ Expecting `DEFAULT` to "ask automatically when no rule matches" is a common anti
 
 - Permission engine errors must not allow tools; exceptions should propagate and terminate the current execution;
 - Both `DENY` and `REJECT` must write a Tool Result to close the message chain, but must not execute the tool;
-- `APPROVE_ALWAYS` must not be used for dangerous paths, destructive commands, or other high-risk operations; the current implementation only applies within the module instance;
+- `APPROVE_ALWAYS` must not be used for dangerous paths, destructive commands, or other high-risk operations; the default implementation is process-local and isolates grants by `memoryId`;
 - The UI must not send back or rewrite Tool arguments; recovery always uses the frozen original call;
 - Tools must keep their own argument validation and workspace boundary checks; permission approval cannot replace sandboxes or business authorization.
 

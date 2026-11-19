@@ -108,7 +108,8 @@ AgentForge
 
 #### Human in the Loop（审核确认机制）
 
-- [x] AgentForge权限体系与审核中断恢复设计方案：[AgentForge权限体系与统一中断恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/权限系统与中断设计/AgentForge权限体系与审核中断恢复设计方案.md)
+- [x] AgentForge权限体系与审核中断恢复设计方案：[AgentForge权限体系与统一中断恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/权限系统与中断设计/0、AgentForge权限体系与审核中断恢复设计方案)
+- [x] 会话级审批确认级别扩展实现方案（可扩展）：[会话级权限审批存储扩展设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/权限系统与中断设计/1、会话级权限审批存储扩展设计方案.md)
 
 
 

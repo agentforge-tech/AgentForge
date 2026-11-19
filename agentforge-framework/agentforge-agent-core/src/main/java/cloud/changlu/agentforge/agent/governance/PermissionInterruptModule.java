@@ -3,7 +3,6 @@ package cloud.changlu.agentforge.agent.governance;
 import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentInterruptSnapshot;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentSuspendInfo;
-import cloud.changlu.agentforge.agent.governance.interrupt.domain.ApprovalAction;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchResumeCommand;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptRequest;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptResponse;
@@ -18,8 +17,10 @@ import cloud.changlu.agentforge.agent.governance.permission.domain.PermissionRul
 import cloud.changlu.agentforge.agent.governance.permission.domain.RegexPermissionRule;
 import cloud.changlu.agentforge.agent.governance.permission.engine.PermissionContext;
 import cloud.changlu.agentforge.agent.governance.permission.engine.PermissionEngine;
+import cloud.changlu.agentforge.agent.governance.permission.spi.PermissionApprovalStore;
 import cloud.changlu.agentforge.agent.governance.permission.spi.PermissionModePolicy;
 import cloud.changlu.agentforge.agent.governance.permission.spi.PermissionRuleHandler;
+import cloud.changlu.agentforge.agent.governance.permission.support.InMemorySessionPermissionApprovalStore;
 import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserResponse;
 import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserSupport;
 import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserTool;
@@ -30,9 +31,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** 权限与中断能力的统一装配入口。 */
 public final class PermissionInterruptModule {
@@ -40,20 +39,17 @@ public final class PermissionInterruptModule {
     private final PermissionMode mode;
     private final PermissionEngine engine;
     private final AgentInterruptStore store;
+    private final PermissionApprovalStore approvalStore;
     private final boolean askUserEnabled;
-
-    /**
-     * APPROVE_ALWAYS 授权记录：key 为工具名与原始参数的指纹。
-     *
-     * <p>命中后该模块实例内后续相同工具、相同参数的调用直接放行，不再重复发起权限中断；生命周期与 module 实例一致，重启或更换 module 后需要重新授权。
-     */
-    private final Set<String> acceptedCalls =
-            Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     private PermissionInterruptModule(Builder builder) {
         this.mode = builder.mode;
         this.engine = new PermissionEngine(builder.rules, builder.ruleHandlers, builder.modePolicy);
         this.store = builder.store == null ? new InMemoryAgentInterruptStore() : builder.store;
+        this.approvalStore =
+                builder.approvalStore == null
+                        ? new InMemorySessionPermissionApprovalStore()
+                        : builder.approvalStore;
         this.askUserEnabled = builder.askUserEnabled;
     }
 
@@ -82,8 +78,8 @@ public final class PermissionInterruptModule {
      * <ol>
      *   <li>启用了 AskUser 且工具名为 {@code ask_user}：这是“询问用户”，直接转为 {@link InterruptType#ASK_USER}，跳过权限规则和
      *       Mode 判定；
-     *   <li>命中 {@link #acceptedCalls}：这是“历史总是允许”，当前模块生命周期内已通过 {@code APPROVE_ALWAYS}
-     *       批准过相同工具名与相同参数，直接放行且不再重复审核；
+     *   <li>命中 {@link PermissionApprovalStore}：当前上下文已通过 {@code APPROVE_ALWAYS}
+     *       批准过相同工具调用，直接放行且不再重复审核；
      *   <li>其余调用才进入真正的权限判定：调用 {@link PermissionEngine#decide}，先按注册顺序匹配权限规则 得到候选决策，再由自定义 ModePolicy
      *       或内置 Mode 结合候选做场景级最终决策。
      * </ol>
@@ -121,8 +117,8 @@ public final class PermissionInterruptModule {
                 }
                 // 询问用户：交互工具不参与权限审核，直接生成 ASK_USER 中断。
                 type = InterruptType.ASK_USER;
-            } else if (acceptedCalls.contains(fingerprint(request))) {
-                // 历史总是允许：APPROVE_ALWAYS 的临时内存授权，同工具 + 同参数直接放行。
+            } else if (approvalStore.isApproved(context, request)) {
+                // 历史总是允许：默认实现按 memoryId 隔离相同工具 + 相同参数的授权。
                 continue;
             } else {
                 // 真正的权限判定：由 PermissionEngine.decide 做规则优先、Mode 兜底。
@@ -177,7 +173,6 @@ public final class PermissionInterruptModule {
         if (command == null) throw new IllegalArgumentException("resume command must not be null");
         AgentInterruptSnapshot snapshot = store.get(command.getBatchId());
         Map<String, InterruptResponse> responses = new LinkedHashMap<String, InterruptResponse>();
-        List<ToolExecutionRequest> alwaysApproved = new ArrayList<ToolExecutionRequest>();
         for (InterruptResponse response : command.getResponses()) {
             if (responses.put(response.getInterruptId(), response) != null) {
                 throw new IllegalArgumentException(
@@ -203,28 +198,33 @@ public final class PermissionInterruptModule {
                 }
                 AskUserSupport.validate(interrupt.getAskUserRequest(), structured);
             }
-            if (response.getAction() == ApprovalAction.APPROVE_ALWAYS) {
-                alwaysApproved.add(interrupt.getToolRequest());
-            }
         }
         if (responses.size() != snapshot.getInterrupts().size()) {
             throw new IllegalArgumentException("resume contains unknown interrupt response");
         }
         store.claim(command.getBatchId());
-        // APPROVE_ALWAYS 表示在当前模块生命周期内“之前已经批准过”：把本次工具名 + 参数指纹登记到
-        // 临时内存，后续同一实例内再次遇到完全相同的工具执行时直接放行，不再进入权限判定和中断。
-        for (ToolExecutionRequest request : alwaysApproved) {
-            acceptedCalls.add(fingerprint(request));
-        }
         return new ResolvedInterruptBatch(snapshot, responses);
+    }
+
+    /** 将权限中断的三种审批结果连同恢复上下文交给授权存储处理。 */
+    public void applyApprovals(ResolvedInterruptBatch batch, AgentChatContext context) {
+        if (batch == null) {
+            throw new IllegalArgumentException("resolved interrupt batch must not be null");
+        }
+        if (context == null) {
+            throw new IllegalArgumentException("chat context must not be null");
+        }
+        for (InterruptRequest interrupt : batch.getSnapshot().getInterrupts()) {
+            if (interrupt.getType() != InterruptType.PERMISSION_APPROVAL) {
+                continue;
+            }
+            InterruptResponse response = batch.responseOf(interrupt);
+            approvalStore.addApproval(context, interrupt.getToolRequest(), response.getAction());
+        }
     }
 
     public void complete(ResolvedInterruptBatch batch) {
         store.complete(batch.getSnapshot().getBatchId());
-    }
-
-    private static String fingerprint(ToolExecutionRequest request) {
-        return request.name() + "\n" + request.arguments();
     }
 
     public static final class ResolvedInterruptBatch {
@@ -257,6 +257,7 @@ public final class PermissionInterruptModule {
         private final List<PermissionRuleHandler> ruleHandlers =
                 new ArrayList<PermissionRuleHandler>();
         private AgentInterruptStore store;
+        private PermissionApprovalStore approvalStore;
         private PermissionModePolicy modePolicy;
         private boolean askUserEnabled;
 
@@ -306,6 +307,14 @@ public final class PermissionInterruptModule {
 
         public Builder interruptStore(AgentInterruptStore store) {
             this.store = store;
+            return this;
+        }
+
+        public Builder permissionApprovalStore(PermissionApprovalStore approvalStore) {
+            if (approvalStore == null) {
+                throw new IllegalArgumentException("approvalStore must not be null");
+            }
+            this.approvalStore = approvalStore;
             return this;
         }
 
