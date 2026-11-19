@@ -62,6 +62,14 @@ const sidebars = {
         {type: 'doc', id: 'sdk/middleware/compact', label: '上下文阈值压缩 Middleware'},
       ],
     },
+    {
+      type: 'category',
+      label: '权限审批扩展',
+      collapsed: false,
+      items: [
+        {type: 'doc', id: 'sdk/permission-approval/in-memory-session', label: '内存级会话审批确认'},
+      ],
+    },
   ],
   serviceSidebar: [
     {
