@@ -6,6 +6,7 @@ import cloud.changlu.agentforge.model.chat.message.ChatMessageType;
 import cloud.changlu.agentforge.model.chat.message.Content;
 import cloud.changlu.agentforge.model.chat.message.ContentType;
 import cloud.changlu.agentforge.model.chat.message.CustomMessage;
+import cloud.changlu.agentforge.model.chat.message.ImageContent;
 import cloud.changlu.agentforge.model.chat.message.SystemMessage;
 import cloud.changlu.agentforge.model.chat.message.TextContent;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
@@ -36,6 +37,10 @@ public final class ChatMessageCodec {
     private static final String FIELD_CONTENTS = "contents";
     private static final String FIELD_ATTRIBUTES = "attributes";
     private static final String FIELD_CONTENT_TYPE = "contentType";
+    private static final String FIELD_URL = "url";
+    private static final String FIELD_BASE64 = "base64";
+    private static final String FIELD_MIME_TYPE = "mimeType";
+    private static final String FIELD_DETAIL_LEVEL = "detailLevel";
 
     /** 把消息列表编码为 JSON 数组字符串 */
     public String encodeAll(List<? extends ChatMessage> messages) {
@@ -106,11 +111,22 @@ public final class ChatMessageCodec {
         for (Content content : message.contents()) {
             Map<String, Object> encoded = new LinkedHashMap<String, Object>();
             encoded.put(FIELD_CONTENT_TYPE, content.type().name());
-            if (!(content instanceof TextContent)) {
+            if (content instanceof TextContent) {
+                encoded.put(FIELD_TEXT, ((TextContent) content).text());
+            } else if (content instanceof ImageContent) {
+                ImageContent image = (ImageContent) content;
+                // 只存引用，不存 Base64，避免记忆表膨胀
+                if (image.isUrl()) {
+                    encoded.put(FIELD_URL, image.url());
+                } else {
+                    encoded.put(FIELD_BASE64, image.base64Data());
+                    encoded.put(FIELD_MIME_TYPE, image.mimeType());
+                }
+                encoded.put(FIELD_DETAIL_LEVEL, image.detailLevel().name());
+            } else {
                 throw new IllegalArgumentException(
                         "Unsupported chat content type: " + content.type());
             }
-            encoded.put(FIELD_TEXT, ((TextContent) content).text());
             contents.add(encoded);
         }
         map.put(FIELD_CONTENTS, contents);
@@ -206,7 +222,31 @@ public final class ChatMessageCodec {
         if (ContentType.TEXT.name().equals(contentType)) {
             return new TextContent(Json.string(map.get(FIELD_TEXT)));
         }
+        if (ContentType.IMAGE.name().equals(contentType)) {
+            String url = Json.string(map.get(FIELD_URL));
+            if (url != null && !url.trim().isEmpty()) {
+                return ImageContent.fromUrl(
+                        url, parseDetailLevel(Json.string(map.get(FIELD_DETAIL_LEVEL))));
+            }
+            String base64 = Json.string(map.get(FIELD_BASE64));
+            String mimeType = Json.string(map.get(FIELD_MIME_TYPE));
+            if (base64 == null || mimeType == null) {
+                throw new IllegalStateException("Image content requires url or base64+mimeType");
+            }
+            return ImageContent.fromBase64(base64, mimeType);
+        }
         throw new IllegalStateException("Unsupported chat content type: " + contentType);
+    }
+
+    private static ImageContent.DetailLevel parseDetailLevel(String value) {
+        if (value == null) {
+            return ImageContent.DetailLevel.AUTO;
+        }
+        try {
+            return ImageContent.DetailLevel.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            return ImageContent.DetailLevel.AUTO;
+        }
     }
 
     private AiMessage decodeAiMessage(Map<String, Object> map) {

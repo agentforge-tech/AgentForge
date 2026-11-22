@@ -8,11 +8,13 @@ public final class ChatModelProperties {
     private final Integer timeout;
     private final Integer maxTokens;
     private final Boolean returnThinking;
+    private final String userAgent;
 
     private ChatModelProperties(Builder builder) {
         this.timeout = builder.timeout;
         this.maxTokens = builder.maxTokens;
         this.returnThinking = builder.returnThinking;
+        this.userAgent = builder.userAgent;
     }
 
     public static Builder builder() {
@@ -30,6 +32,9 @@ public final class ChatModelProperties {
         if (returnThinking != null) {
             properties.setProperty(LlmConstant.RETURN_THINKING, String.valueOf(returnThinking));
         }
+        if (userAgent != null && !userAgent.trim().isEmpty()) {
+            properties.setProperty(LlmConstant.USER_AGENT, userAgent.trim());
+        }
         return properties;
     }
 
@@ -37,6 +42,7 @@ public final class ChatModelProperties {
         private Integer timeout = 60;
         private Integer maxTokens;
         private Boolean returnThinking = false;
+        private String userAgent;
 
         private Builder() {}
 
@@ -56,6 +62,16 @@ public final class ChatModelProperties {
             if (returnThinking != null) {
                 this.returnThinking = returnThinking;
             }
+            return this;
+        }
+
+        /**
+         * 设置客户端 User-Agent。为空时由 framework transport 使用内置值。
+         *
+         * <p>用于标识真实调用方，并规避 Cloudflare 对 JDK 默认 UA 的 BIC 拦截（403/1010）。
+         */
+        public Builder userAgent(String userAgent) {
+            this.userAgent = userAgent;
             return this;
         }
 

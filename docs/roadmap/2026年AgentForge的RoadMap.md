@@ -113,6 +113,10 @@ AgentForge
 
 
 
+#### 文件图片附件场景
+
+- [x] Agent附件同步提交执行SDK与多模态协议转换设计：[Agent附件同步提交执行SDK与多模态协议转换设计](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/文件附件场景/Agent附件同步提交执行SDK与多模态协议转换设计.md)
+
 
 
 ---
@@ -131,7 +135,8 @@ AgentForge
 - [x] Agent 对话追加middleware（Agent Loop过程中追加消息）：[内置middleware扩展：追加对话到Agent.md](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：追加对话到Agent.md)
 - [x] 上下文压缩middleware（阈值比例压缩机制）：[内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middlware扩展：上下文压缩middlware（阈值比例压缩机制）.md)
   - 实现：`CompactSummarizationMiddleware` 在 `beforeModelCall` 按阈值压缩历史并重建请求，在 `afterToolExecution` / `afterConcurrentToolExecution` 截断超大工具结果，通过 `CompactLifecycleHook` 向业务层发布压缩事件 → `...agent.extend.middlewares.compact`
-- [x] 支持任务计划middleware：
+- [x] 支持任务计划middleware：[内置middleware扩展：任务计划TodoPlanMiddleware实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：任务计划TodoPlanMiddleware实现.md)
+- [x] 支持无状态ReadTool阅读图片资源与附件装配实现middleware：[内置middleware扩展：无状态ReadTool与附件装配实现](../dev/backend/AgentForge核心模块设计原理文章系列/02、通用ReActagent层/middleware/内置middleware扩展：无状态ReadTool与附件装配实现.md)
 
 
 
@@ -227,7 +232,17 @@ AgentForge
 
 
 
+**文件上传：**
+
+- [x] Agent会话文件上传与图片识图消息设计实现：[Agent会话文件上传与图片识图消息设计实现](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/文件上传/Agent会话文件上传与图片识图消息设计实现.md)
+- [x] 无状态Agent读取资源tool对接实现（ReActAgentFactory）：[无状态Agent读取资源tool对接实现（ReActAgentFactory）](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/文件上传/无状态Agent读取资源tool对接实现（ReActAgentFactory）.md)
+
+
+
+
+
 **支持HITL：**
+
 - [x] HITL支持询问用户问题，用户回答作为工具结果：支持权限审核确认任务tool执行：[Agent页面HITL中断事件与恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/支持HITL/0、Agent页面HITL中断事件与恢复设计方案)
 
 
@@ -246,6 +261,8 @@ AgentForge
 - [x] Agent 上下文阈值压缩交互设计：[Agent 上下文阈值压缩交互设计](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/Agent页面会话对话交互/Agent%20上下文阈值压缩交互设计.md)
   - 实现：`ServiceCompactSummarizationMiddleware` 将 Core 压缩钩子转为 `compact` SSE 事件，经 `ServiceStreamingMiddleware` 实时推送、`SessionLifecycleMiddleware` 落库回放；前端调试模式展示压缩前/后两条，发布模式合并为一条 → `...agent.middleware.compact`
 - [ ] ...
+
+
 
 
 

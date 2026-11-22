@@ -42,13 +42,16 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SessionInitResult initChat(
-            String aid, String sessionId, String message, Long createUserId, boolean debug) {
+            String aid,
+            String sessionId,
+            String message,
+            String reqJson,
+            Long createUserId,
+            boolean debug) {
         if (aid == null || aid.trim().isEmpty()) {
             throw new IllegalArgumentException("aid 不能为空");
         }
-        if (message == null || message.trim().isEmpty()) {
-            throw new IllegalArgumentException("对话内容不能为空");
-        }
+        String safeMessage = message == null ? "" : message;
         String trimmedAid = aid.trim();
         Long userId = createUserId == null ? 1L : createUserId;
         Date now = new Date();
@@ -64,7 +67,7 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
             session = new AgentSessionPojo();
             session.setSessionId(resolvedSessionId);
             session.setAid(trimmedAid);
-            session.setTitle(SessionTitleUtil.resolve(message));
+            session.setTitle(SessionTitleUtil.resolve(safeMessage));
             session.setStatus(SessionStatusEnum.IDLE.getCode());
             session.setIsDebug(
                     debug ? SessionDebugEnum.DEBUG.getCode() : SessionDebugEnum.FORMAL.getCode());
@@ -84,7 +87,8 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
         userMessage.setSeqNum(userSeq);
         userMessage.setRoleType(SessionMessageRoleEnum.USER.getCode());
         userMessage.setStatus(SessionMessageStatusEnum.SUCCEEDED.getCode());
-        userMessage.setContent(message);
+        userMessage.setContent(safeMessage);
+        userMessage.setReq(reqJson);
         userMessage.setCreateUserId(userId);
         agentSessionMessageMapper.insert(userMessage);
 
@@ -233,6 +237,7 @@ public class AgentSessionServiceImpl implements IAgentSessionService {
         vo.setElapsedMs(message.getElapsedMs());
         vo.setContentText(message.getContent());
         vo.setEvents(message.getEvents());
+        vo.setReq(message.getReq());
         vo.setIsDeleted(message.getIsDeleted());
         vo.setCreateUserId(message.getCreateUserId());
         vo.setCreateTime(message.getCreateTime());

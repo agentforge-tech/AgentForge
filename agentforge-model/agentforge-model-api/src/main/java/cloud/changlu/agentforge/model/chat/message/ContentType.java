@@ -11,7 +11,10 @@ package cloud.changlu.agentforge.model.chat.message;
 public enum ContentType {
 
     /** Text content. */
-    TEXT(TextContent.class);
+    TEXT(TextContent.class),
+
+    /** Image content. */
+    IMAGE(ImageContent.class);
 
     private final Class<? extends Content> contentClass;
 

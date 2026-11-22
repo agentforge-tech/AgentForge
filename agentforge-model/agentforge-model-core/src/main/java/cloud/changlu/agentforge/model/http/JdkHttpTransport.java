@@ -47,6 +47,26 @@ public final class JdkHttpTransport implements HttpTransport {
                         }
                     });
 
+    private final String userAgent;
+
+    /** 使用框架内置的 User-Agent。 */
+    public JdkHttpTransport() {
+        this(HttpUserAgent.defaultUserAgent());
+    }
+
+    /**
+     * 使用自定义 User-Agent。传入空白值时回退到框架内置值。
+     *
+     * <p>显式设置可让网关侧识别真实调用方；同时避免 JDK 默认的 {@code Java/1.8.0_x} 被 Cloudflare Browser Integrity Check
+     * 直接拒绝（HTTP 403 / error code: 1010）。
+     */
+    public JdkHttpTransport(String userAgent) {
+        this.userAgent =
+                userAgent == null || userAgent.trim().isEmpty()
+                        ? HttpUserAgent.defaultUserAgent()
+                        : userAgent.trim();
+    }
+
     @Override
     public HttpResponse execute(HttpRequest request) throws IOException {
         return newCall(request).execute();
@@ -54,7 +74,7 @@ public final class JdkHttpTransport implements HttpTransport {
 
     @Override
     public HttpCall newCall(final HttpRequest request) {
-        return new JdkHttpCall(request);
+        return new JdkHttpCall(request, userAgent);
     }
 
     @Override
@@ -73,12 +93,13 @@ public final class JdkHttpTransport implements HttpTransport {
             throw new IllegalArgumentException("handler must not be null");
         }
         final JdkStreamingCancellationHandle cancellation = new JdkStreamingCancellationHandle();
+        final String streamingUserAgent = userAgent;
         Future<?> future =
                 STREAM_EXECUTOR.submit(
                         new Runnable() {
                             @Override
                             public void run() {
-                                stream(request, handler, cancellation);
+                                stream(request, handler, cancellation, streamingUserAgent);
                             }
                         });
         cancellation.setFuture(future);
@@ -88,11 +109,12 @@ public final class JdkHttpTransport implements HttpTransport {
     private static void stream(
             HttpRequest request,
             StreamingHttpResponseHandler handler,
-            JdkStreamingCancellationHandle cancellation) {
+            JdkStreamingCancellationHandle cancellation,
+            String userAgent) {
         HttpURLConnection connection = null;
         try {
             if (cancellation.isCancelled()) return;
-            connection = openConnection(request);
+            connection = openConnection(request, userAgent);
             cancellation.setConnection(connection);
             writeBody(connection, request.body());
             if (cancellation.isCancelled()) return;
@@ -189,19 +211,21 @@ public final class JdkHttpTransport implements HttpTransport {
 
     private static final class JdkHttpCall implements HttpCall {
         private final HttpRequest request;
+        private final String userAgent;
         private final AtomicBoolean cancelled = new AtomicBoolean(false);
         private final AtomicReference<HttpURLConnection> connection =
                 new AtomicReference<HttpURLConnection>();
         private final AtomicReference<InputStream> inputStream = new AtomicReference<InputStream>();
 
-        private JdkHttpCall(HttpRequest request) {
+        private JdkHttpCall(HttpRequest request, String userAgent) {
             this.request = request;
+            this.userAgent = userAgent;
         }
 
         @Override
         public HttpResponse execute() throws IOException {
             if (cancelled.get()) throw new IOException("HTTP call cancelled");
-            HttpURLConnection activeConnection = openConnection(request);
+            HttpURLConnection activeConnection = openConnection(request, userAgent);
             connection.set(activeConnection);
             try {
                 writeBody(activeConnection, request.body());
@@ -238,15 +262,26 @@ public final class JdkHttpTransport implements HttpTransport {
         }
     }
 
-    private static HttpURLConnection openConnection(HttpRequest request) throws IOException {
+    private static HttpURLConnection openConnection(HttpRequest request, String userAgent)
+            throws IOException {
         HttpURLConnection connection = (HttpURLConnection) new URL(request.url()).openConnection();
         connection.setRequestMethod(request.method());
         connection.setConnectTimeout(request.connectTimeoutMillis());
         connection.setReadTimeout(request.readTimeoutMillis());
         connection.setUseCaches(false);
 
+        boolean hasUserAgent = false;
         for (Map.Entry<String, String> header : request.headers().entrySet()) {
+            if (HttpUserAgent.HEADER.equalsIgnoreCase(header.getKey())) {
+                hasUserAgent = true;
+            }
             connection.setRequestProperty(header.getKey(), header.getValue());
+        }
+        // JDK 未设置 User-Agent 时会补上 Java/1.8.0_x，部分网关（Cloudflare BIC）会直接 403，
+        // 因此这里始终兜底一个产品化的 User-Agent；调用方显式设置时以调用方为准。
+        if (!hasUserAgent) {
+            String fallback = userAgent == null ? HttpUserAgent.defaultUserAgent() : userAgent;
+            connection.setRequestProperty(HttpUserAgent.HEADER, fallback);
         }
         return connection;
     }

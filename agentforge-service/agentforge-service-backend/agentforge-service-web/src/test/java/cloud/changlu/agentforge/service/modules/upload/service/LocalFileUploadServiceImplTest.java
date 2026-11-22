@@ -3,6 +3,7 @@ package cloud.changlu.agentforge.service.modules.upload.service;
 import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
 import cloud.changlu.agentforge.service.env.EnvironmentContext;
 import cloud.changlu.agentforge.service.modules.upload.config.LocalUploadProperties;
+import cloud.changlu.agentforge.service.modules.upload.domain.pojo.FileInfoPojo;
 import cloud.changlu.agentforge.service.modules.upload.domain.vo.UploadFileVo;
 import cloud.changlu.agentforge.service.modules.upload.service.impl.LocalFileUploadServiceImpl;
 
@@ -15,6 +16,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -39,6 +42,7 @@ public class LocalFileUploadServiceImplTest {
         assertEquals("demo.TXT", result.getOriginFileName());
         assertEquals("txt", result.getFileType());
         assertEquals(content.length, result.getFileSize());
+        assertTrue(result.getFileId() != null);
         assertArrayEquals(content, Files.readAllBytes(uploadRoot.resolve(result.getFileName())));
     }
 
@@ -79,6 +83,34 @@ public class LocalFileUploadServiceImplTest {
                         .withProperty("agentforge.file.local.storage-path", uploadRoot.toString())
                         .withProperty("agentforge.file.local.visit-path", "/upload");
         return new LocalFileUploadServiceImpl(
-                new LocalUploadProperties(new EnvironmentContext(environment)));
+                new LocalUploadProperties(new EnvironmentContext(environment)),
+                new InMemoryFileInfoService());
+    }
+
+    /** 测试用内存元数据实现，按插入顺序分配主键。 */
+    private static final class InMemoryFileInfoService implements FileInfoService {
+        private final List<FileInfoPojo> stored = new ArrayList<FileInfoPojo>();
+
+        @Override
+        public Long save(FileInfoPojo pojo) {
+            pojo.setId((long) (stored.size() + 1));
+            stored.add(pojo);
+            return pojo.getId();
+        }
+
+        @Override
+        public FileInfoPojo selectById(Long id) {
+            for (FileInfoPojo pojo : stored) {
+                if (pojo.getId().equals(id)) {
+                    return pojo;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public List<FileInfoPojo> selectByIds(List<Long> ids) {
+            return stored;
+        }
     }
 }

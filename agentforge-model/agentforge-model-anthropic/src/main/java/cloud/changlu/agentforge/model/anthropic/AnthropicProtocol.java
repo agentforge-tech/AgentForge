@@ -4,6 +4,7 @@ import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessageType;
 import cloud.changlu.agentforge.model.chat.message.Content;
+import cloud.changlu.agentforge.model.chat.message.ImageContent;
 import cloud.changlu.agentforge.model.chat.message.TextContent;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionResultMessage;
@@ -86,9 +87,35 @@ final class AnthropicProtocol {
                 block.put("type", "text");
                 block.put("text", ((TextContent) content).text());
                 blocks.add(block);
+            } else if (content instanceof ImageContent) {
+                blocks.add(anthropicImageBlock((ImageContent) content));
+            } else {
+                throw new IllegalArgumentException(
+                        "Unsupported chat content type: " + content.type());
             }
         }
         return blocks;
+    }
+
+    /**
+     * Anthropic 只接受 base64 source；外链图片必须先由调用方转成内联形态。
+     *
+     * <p>因此 Anthropic 场景下 URL 载荷会被路由层强制改写为 INLINE。
+     */
+    private static Map<String, Object> anthropicImageBlock(ImageContent content) {
+        if (!content.isInline()) {
+            throw new IllegalArgumentException(
+                    "Anthropic requires base64 image content; url image must be converted to inline first");
+        }
+        LinkedHashMap<String, Object> source = new LinkedHashMap<String, Object>();
+        source.put("type", "base64");
+        source.put("media_type", content.mimeType());
+        source.put("data", content.base64Data());
+
+        LinkedHashMap<String, Object> block = new LinkedHashMap<String, Object>();
+        block.put("type", "image");
+        block.put("source", source);
+        return block;
     }
 
     static List<Map<String, Object>> toolResultContent(ToolExecutionResultMessage message) {

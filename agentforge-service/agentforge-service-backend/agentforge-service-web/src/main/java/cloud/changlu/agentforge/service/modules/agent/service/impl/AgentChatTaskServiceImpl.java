@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.service.modules.agent.service.impl;
 
+import cloud.changlu.agentforge.agent.domain.AgentAttachment;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.ApprovalAction;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchResumeCommand;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptRequest;
@@ -10,6 +11,10 @@ import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserResponse;
 import cloud.changlu.agentforge.agent.governance.tool.askuser.AskUserSupport;
 import cloud.changlu.agentforge.service.domain.req.ChatStreamRequest;
 import cloud.changlu.agentforge.service.env.EnvironmentContext;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentChatAttachmentService;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentModelCapability;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentModelCapabilityResolver;
+import cloud.changlu.agentforge.service.modules.agent.attachment.ResolvedChatAttachment;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentInterruptResponseReq;
@@ -61,6 +66,8 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
     private final EnvironmentContext environmentContext;
     private final AgentInterruptRuntimeRegistry interruptRegistry;
     private final Executor taskExecutor;
+    private final AgentChatAttachmentService attachmentService;
+    private final AgentModelCapabilityResolver modelCapabilityResolver;
     private final Map<Long, Runnable> activeStops = new ConcurrentHashMap<Long, Runnable>();
 
     public AgentChatTaskServiceImpl(
@@ -75,6 +82,8 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
             AgentSessionMapper agentSessionMapper,
             EnvironmentContext environmentContext,
             AgentInterruptRuntimeRegistry interruptRegistry,
+            AgentChatAttachmentService attachmentService,
+            AgentModelCapabilityResolver modelCapabilityResolver,
             @Qualifier("chatTaskExecutor") Executor taskExecutor) {
         this.runtimeConfigResolver = runtimeConfigResolver;
         this.agentManagerFactory = agentManagerFactory;
@@ -87,6 +96,8 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         this.agentSessionMapper = agentSessionMapper;
         this.environmentContext = environmentContext;
         this.interruptRegistry = interruptRegistry;
+        this.attachmentService = attachmentService;
+        this.modelCapabilityResolver = modelCapabilityResolver;
         this.taskExecutor = taskExecutor;
     }
 
@@ -95,11 +106,22 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         validate(body);
         boolean debug = Boolean.TRUE.equals(body.getIsDebug());
         AgentRuntimeConfig config = runtimeConfigResolver.resolve(body.getAid(), debug);
+        // 附件校验先于会话初始化：避免「会话已建、AI 消息已插入」后因附件非法整轮失败。
+        AgentModelCapability capability = modelCapabilityResolver.resolve(config);
+        List<Long> fileIds = body.resolveFileIds();
+        List<ResolvedChatAttachment> resolved = attachmentService.resolve(fileIds, userId);
+        List<AgentAttachment> attachments =
+                attachmentService.toAgentAttachments(
+                        resolved,
+                        capability == null ? null : capability.getModelConfig(),
+                        capability == null ? null : capability.getProviderCode());
+        String reqJson = attachmentService.buildUserReqJson(body, resolved);
         IAgentSessionService.SessionInitResult init =
                 sessionService.initChat(
                         config.getAid(),
                         body.getSessionId(),
-                        body.getMessage().trim(),
+                        safeMessage(body),
+                        reqJson,
                         userId,
                         debug);
         IAgentManager<Object, Object> manager =
@@ -114,6 +136,7 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
                                 .channelId(AgentInitContext.WEBSITE_CHANNEL_ID)
                                 .build());
         AgentChatReq request = buildRequest(config, body, init, debug);
+        request.setAttachments(attachments);
         request.setExecutionId(manager.createExecutionId(agent));
         registerRun(init, manager, agent, request.getExecutionId(), config.getAid(), debug, userId);
         try {
@@ -471,7 +494,7 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         AgentChatReq request = new AgentChatReq();
         request.setAid(config.getAid());
         request.setSessionId(init.getSessionId());
-        request.setMessage(body.getMessage().trim());
+        request.setMessage(safeMessage(body));
         request.setIsDebug(debug);
         request.setAiMessageId(init.getAiMessageId());
         request.setSessionTitle(init.getTitle());
@@ -488,12 +511,19 @@ public class AgentChatTaskServiceImpl implements AgentChatTaskService {
         return result;
     }
 
+    private static String safeMessage(ChatStreamRequest body) {
+        return body == null || body.getMessage() == null ? "" : body.getMessage().trim();
+    }
+
     private static void validate(ChatStreamRequest body) {
         if (body == null || body.getAid() == null || body.getAid().trim().isEmpty()) {
             throw new IllegalArgumentException("aid 不能为空");
         }
-        if (body.getMessage() == null || body.getMessage().trim().isEmpty()) {
-            throw new IllegalArgumentException("对话内容不能为空");
+        java.util.List<Long> fileIds = body.resolveFileIds();
+        boolean hasMessage = body.getMessage() != null && !body.getMessage().trim().isEmpty();
+        boolean hasAttachments = fileIds != null && !fileIds.isEmpty();
+        if (!hasMessage && !hasAttachments) {
+            throw new IllegalArgumentException("对话内容或附件不能同时为空");
         }
     }
 }

@@ -61,6 +61,11 @@ public class AgentChatContext {
         return request == null ? null : request.getQuestion();
     }
 
+    /** 本次请求携带的附件，直接取自 AgentRequest。 */
+    public java.util.List<AgentAttachment> getAttachments() {
+        return request == null ? null : request.getAttachments();
+    }
+
     public ChatMemory getChatMemory() {
         return chatMemory;
     }

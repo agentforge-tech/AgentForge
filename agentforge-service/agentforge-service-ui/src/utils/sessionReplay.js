@@ -193,12 +193,36 @@ export function replayMessage(record, appendState = createAppendState(), detaile
  * 两者都由同一条事件序列经 {@link reduceAppendEvent} 推导，实时与历史语义一致。
  * 历史重放时 pending 正常情况下应为空：已完成的 Run 里 QUEUED 一定会有终态事件。
  */
+/** 从用户消息的 req 快照中解析文件 */
+export function parseUserAttachments(record) {
+  if (!record || !record.req) return []
+  let req
+  try {
+    req = typeof record.req === 'string' ? JSON.parse(record.req) : record.req
+  } catch (_error) {
+    return []
+  }
+  if (!req || !Array.isArray(req.files)) return []
+  return req.files
+    .filter((item) => item && item.visitUrl)
+    .map((item) => ({
+      fileId: item.fileId,
+      name: item.originFileName,
+      fileType: item.fileType,
+      fileSize: item.fileSize,
+      visitUrl: item.visitUrl
+    }))
+}
+
 export function replaySession(records, detailed = false) {
   const state = createAppendState()
   const messages = []
   ;(records || []).forEach((record) => {
     if (record.roleType === 1) {
-      messages.push({ role: 'user', text: record.contentText || '' })
+      const userMessage = { role: 'user', text: record.contentText || '' }
+      const attachments = parseUserAttachments(record)
+      if (attachments.length) userMessage.attachments = attachments
+      messages.push(userMessage)
       return
     }
     messages.push(replayMessage(record, state, detailed))

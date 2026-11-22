@@ -88,8 +88,31 @@
           <template v-for="(message, index) in messages">
             <div v-if="message.role === 'user'" :key="index" class="message-row user">
               <div class="user-block">
-                <div class="user-bubble">{{ message.text }}</div>
-                <div class="msg-actions">
+                <div v-if="message.attachments && message.attachments.length" class="user-attachments">
+                  <template v-for="(item, attachmentIndex) in message.attachments">
+                    <img
+                      v-if="isImage(item.fileType)"
+                      :key="'img-' + attachmentIndex"
+                      :src="item.visitUrl"
+                      :alt="item.name"
+                      class="bubble-image"
+                      @click="previewAttachment(item)"
+                    />
+                    <a
+                      v-else
+                      :key="'file-' + attachmentIndex"
+                      :href="item.visitUrl"
+                      target="_blank"
+                      rel="noopener"
+                      class="bubble-file"
+                    >
+                      <i class="el-icon-document"></i>
+                      <span :title="item.name">{{ item.name }}</span>
+                    </a>
+                  </template>
+                </div>
+                <div v-if="message.text" class="user-bubble">{{ message.text }}</div>
+                <div v-if="message.text" class="msg-actions">
                   <button class="mini-btn" title="复制" @click="copy(message.text)">
                     <i class="el-icon-document-copy"></i>
                   </button>
@@ -147,21 +170,76 @@
               </div>
             </transition-group>
           </div>
-          <div class="composer-box" :class="{ focus: focused, 'append-mode': running && draft.trim() }">
-            <textarea ref="composerInput" v-model="draft" rows="1" :disabled="!canChat" :placeholder="canChat ? (running ? '输入补充指令，将在下一轮处理…' : '发送消息...') : '请从有效的已发布 Agent 入口访问'" @focus="focused=true" @blur="focused=false" @input="autoGrow" @compositionstart="composing=true" @compositionend="composing=false" @keydown.enter="onEnter"></textarea>
-            <button
-              class="send-btn"
-              :class="{ stop: running && !draft.trim(), append: running && draft.trim() }"
-              :disabled="!canChat || (!running && !draft.trim())"
-              :title="running && draft.trim() ? '发送追加消息' : (running ? '停止' : '发送')"
-              @click="running && !draft.trim() ? stop() : send()"
-            >
-              <svg v-if="!running || draft.trim()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 19V5" />
-                <path d="M5 12l7-7 7 7" />
-              </svg>
-              <span v-else class="stop-square"></span>
-            </button>
+          <div class="composer-box" :class="{ focus: focused, 'append-mode': running && draft.trim(), 'has-attachments': attachments.length, multiline: inputExpanded }">
+            <div v-if="attachments.length" class="composer-pending-files">
+              <div v-for="(item, index) in attachments" :key="'pending-' + item.fileId" class="pending-file-item">
+                <div
+                  class="pending-file-card"
+                  :class="{ 'is-image': isImage(item.fileType) }"
+                  @click="previewAttachment(item)"
+                >
+                  <img v-if="isImage(item.fileType)" :src="item.visitUrl" class="pending-file-image" :alt="item.name" />
+                  <span v-else-if="item.previewText" class="pending-file-preview">{{ item.previewText }}</span>
+                  <span v-else class="pending-file-icon"><i class="el-icon-document"></i></span>
+                  <span class="pending-file-name" :title="item.name">{{ item.name }}</span>
+                  <button type="button" class="pending-file-remove" title="移除附件" @click.stop="removeAttachment(index)">×</button>
+                </div>
+              </div>
+            </div>
+            <div class="composer-input-row" :class="{ 'is-stacked': attachments.length || inputExpanded }">
+              <el-popover
+                class="composer-attach-popover"
+                v-model="attachmentMenuVisible"
+                placement="top-start"
+                trigger="click"
+                :width="248"
+                popper-class="attach-popover"
+                :disabled="!canChat || uploading || running"
+              >
+                <button type="button" class="attach-menu-item" @click="pickFromComputer">
+                  <span class="attach-menu-icon"><i class="el-icon-paperclip"></i></span>
+                  <span class="attach-menu-copy">
+                    <span class="attach-menu-title">添加照片和文件</span>
+                    <span class="attach-menu-desc">从计算机上传</span>
+                  </span>
+                </button>
+                <button
+                  slot="reference"
+                  type="button"
+                  class="attach-btn"
+                  :class="{ uploading }"
+                  :disabled="!canChat || uploading || running"
+                  :title="running ? '本轮对话进行中，暂不能添加附件' : '添加照片和文件'"
+                >
+                  <i v-if="uploading" class="el-icon-loading"></i>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              </el-popover>
+              <input
+                ref="fileInput"
+                type="file"
+                class="file-input-hidden"
+                multiple
+                accept="image/*,.txt,.md,.markdown,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.7z"
+                @change="onFileInputChange"
+              />
+              <textarea ref="composerInput" v-model="draft" rows="1" :disabled="!canChat" :placeholder="canChat ? (running ? '输入补充指令，将在下一轮处理…' : '发送消息...') : '请从有效的已发布 Agent 入口访问'" @focus="focused=true" @blur="focused=false" @input="autoGrow" @paste="onPaste" @compositionstart="composing=true" @compositionend="composing=false" @keydown.enter="onEnter"></textarea>
+              <button
+                class="send-btn"
+                :class="{ stop: running && !draft.trim() && !attachments.length, append: running && draft.trim() }"
+                :disabled="!canChat || uploading || (!running && !draft.trim() && !attachments.length)"
+                :title="running && draft.trim() ? '发送追加消息' : (running ? '停止' : '发送')"
+                @click="running && !draft.trim() && !attachments.length ? stop() : send()"
+              >
+                <svg v-if="!running || draft.trim() || attachments.length" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 19V5" />
+                  <path d="M5 12l7-7 7 7" />
+                </svg>
+                <span v-else class="stop-square"></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -178,6 +256,7 @@ import InterruptCard from '../../components/InterruptCard.vue'
 import AppUserPanel from '../../components/AppUserPanel.vue'
 import chatAutoScroll from '../../utils/chatAutoScroll'
 import { runChatStream, resumeChatStream, isDetachedChatTransport } from '../../utils/chatTransport'
+import { uploadFile } from '../../utils/fileUpload'
 import {
   fetchPublishedSessionList,
   fetchPublishedTopSessionList,
@@ -219,6 +298,7 @@ export default {
   data: () => ({
     aid: '', agentBasic: null, agentLoading: false, agentError: '',
     draft: '', focused: false, running: false, stopping: false, sessionId: '', currentMessageId: null, controller: null, requestVersion: 0, messages: [],
+    attachments: [], uploading: false, attachmentMenuVisible: false, inputExpanded: false,
     composing: false, pendingAppends: [], deferredAppends: [], remotePollTimer: null,
     topSessions: [], normalSessions: [], sessionLoading: false,
     activeSessionId: null, sessionTitle: '',
@@ -283,6 +363,9 @@ export default {
       this.messages = []
       this.sessionId = ''
       this.draft = ''
+      this.attachments = []
+      this.attachmentMenuVisible = false
+      this.inputExpanded = false
       this.sessionTitle = ''
       this.activeSessionId = null
       this.syncSessionToUrl('', { replace: false })
@@ -304,6 +387,9 @@ export default {
       if (!wanted) {
         this.messages = []
         this.sessionId = ''
+        this.attachments = []
+        this.attachmentMenuVisible = false
+        this.inputExpanded = false
         this.sessionTitle = ''
         this.activeSessionId = null
         return
@@ -357,6 +443,9 @@ export default {
       if (this.running) this.detachCurrentRun()
       this.activeSessionId = item.id
       this.sessionId = item.sessionId
+      this.attachments = []
+      this.attachmentMenuVisible = false
+      this.inputExpanded = false
       this.sessionTitle = item.title
       this.pendingSessionId = ''
       if (syncUrl) this.syncSessionToUrl(item.sessionId, { replace: false })
@@ -524,6 +613,8 @@ export default {
       el.style.height = Math.min(contentHeight, COMPOSER_MAX_HEIGHT) + 'px'
       // 只有内容真正超出上限（需要换行滚动）时才出现滚动条
       el.style.overflowY = contentHeight > COMPOSER_MAX_HEIGHT ? 'auto' : 'hidden'
+      // 多行时把 + 与发送移到底部独立工具栏，文本区独占一行从左侧开始
+      this.inputExpanded = !!this.draft.trim() && (this.draft.includes('\n') || contentHeight > 40)
     },
     onEnter(event) {
       // 输入法组合中（如中文选词回车确认）不触发发送，仅正常上屏
@@ -597,20 +688,117 @@ export default {
         }
       }
     },
+    isImage(fileType) {
+      if (!fileType) return false
+      const type = String(fileType).toLowerCase()
+      return type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(type)
+    },
+    pickFromComputer() {
+      this.triggerFilePick()
+      this.attachmentMenuVisible = false
+    },
+    triggerFilePick() {
+      if (!this.canChat || this.uploading || this.running) return
+      const input = this.$refs.fileInput
+      if (input) input.click()
+    },
+    onFileInputChange(event) {
+      const files = event && event.target && event.target.files ? event.target.files : []
+      this.handleFiles(files)
+      if (event && event.target) event.target.value = ''
+    },
+    isTextFile(file, fileType) {
+      const type = String(fileType || (file && file.type) || '').toLowerCase()
+      const name = String((file && file.name) || '').toLowerCase()
+      return type.startsWith('text/') || ['txt', 'md', 'markdown'].includes(type) || /\.(txt|md|markdown)$/.test(name)
+    },
+    async readTextPreview(file) {
+      if (!file) return ''
+      try {
+        const text = typeof file.text === 'function' ? await file.text() : ''
+        return String(text || '').replace(/\s+/g, ' ').trim().slice(0, 300)
+      } catch (_error) {
+        return ''
+      }
+    },
+    onPaste(event) {
+      if (!event || !event.clipboardData) return
+      const items = event.clipboardData.items || []
+      const files = []
+      for (let i = 0; i < items.length; i += 1) {
+        if (items[i].kind === 'file') {
+          const file = items[i].getAsFile()
+          if (file) files.push(file)
+        }
+      }
+      if (files.length) {
+        event.preventDefault()
+        this.handleFiles(files)
+      }
+    },
+    async handleFiles(fileList) {
+      const files = Array.from(fileList || [])
+      if (!files.length) return
+      const remaining = 5 - this.attachments.length
+      if (remaining <= 0) {
+        this.$message.warning('单条消息最多 5 个附件')
+        return
+      }
+      this.uploading = true
+      try {
+        for (const file of files.slice(0, remaining)) {
+          if (file.size > 10 * 1024 * 1024) {
+            this.$message.error(`${file.name} 超过 10MB`)
+            continue
+          }
+          try {
+            const result = await uploadFile(file)
+            const previewText = this.isTextFile(file, result.fileType) ? await this.readTextPreview(file) : ''
+            this.attachments.push({
+              fileId: result.fileId,
+              name: result.originFileName || result.fileName,
+              fileType: result.fileType,
+              fileSize: result.fileSize,
+              visitUrl: result.visitUrl,
+              previewText
+            })
+          } catch (error) {
+            this.$message.error(error.message || '上传失败')
+          }
+        }
+        if (files.length > remaining) this.$message.warning('单条消息最多 5 个附件')
+      } finally {
+        this.uploading = false
+      }
+    },
+    removeAttachment(index) {
+      this.attachments.splice(index, 1)
+    },
+    previewAttachment(item) {
+      if (item && item.visitUrl) window.open(item.visitUrl, '_blank', 'noopener')
+    },
     async send() {
       const text = this.draft.trim()
+      const pendingAttachments = this.attachments.slice()
+      this.attachmentMenuVisible = false
       if (!this.canChat) {
         this.$message.warning('当前 Agent 不存在或尚未发布')
         return
       }
-      if (!text) return
+      if (!text && !pendingAttachments.length) return
       if (this.running) {
-        await this.sendAppend(text)
+        if (pendingAttachments.length) {
+          this.$message.info('本轮对话进行中，附件将在下一轮发送')
+        }
+        if (text) await this.sendAppend(text)
         return
       }
       this.draft = ''
+      this.attachments = []
       this.$nextTick(this.autoGrow)
-      this.messages.push({ role: 'user', text })
+      const userMessage = { role: 'user', text }
+      if (pendingAttachments.length) userMessage.attachments = pendingAttachments
+      this.messages.push(userMessage)
       const answer = this.createAnswer()
       this.messages.push(answer)
       const requestVersion = ++this.requestVersion
@@ -620,7 +808,18 @@ export default {
       this.resetScrollFollow()
       this.scroll()
       try {
-        await runChatStream({ aid: this.aid, sessionId: this.sessionId, message: text, isDebug: false }, {
+        await runChatStream({
+          aid: this.aid,
+          sessionId: this.sessionId,
+          message: text,
+          isDebug: false,
+          files: pendingAttachments.map((item) => ({
+            fileId: item.fileId,
+            originFileName: item.name,
+            fileType: item.fileType,
+            visitUrl: item.visitUrl
+          }))
+        }, {
           signal: controller.signal,
           onSubmitted: (task) => {
             this.currentMessageId = task.messageId

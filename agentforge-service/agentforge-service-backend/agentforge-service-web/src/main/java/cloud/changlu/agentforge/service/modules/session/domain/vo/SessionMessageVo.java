@@ -24,6 +24,10 @@ public class SessionMessageVo {
     private String contentText;
     private String contentJson;
     private String events;
+
+    /** 用户消息发送时的请求快照 JSON；纯文本或 AI 消息为 null。 */
+    private String req;
+
     private Integer isDeleted;
     private Long createUserId;
 
@@ -127,6 +131,14 @@ public class SessionMessageVo {
 
     public void setEvents(String events) {
         this.events = events;
+    }
+
+    public String getReq() {
+        return req;
+    }
+
+    public void setReq(String req) {
+        this.req = req;
     }
 
     public Integer getIsDeleted() {
