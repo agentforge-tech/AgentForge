@@ -51,16 +51,9 @@ npm run preview
 
 ## 文档结构
 
-- `docs/`：当前开发版（Next）的中文文档；
-- `i18n/en/`：英文界面与文档；
-- `versioned_docs/version-1.0/`：v1.0 中文快照；
-- `versioned_sidebars/`：各版本侧边栏；
-- `versions.json`：已发布版本列表。
+- `docs/`：v1.0 中文文档，也是站点发布的唯一文档源；
+- `i18n/en/`：英文界面与文档。
 
-发布新版本时，在 `website/` 中运行：
-
-```bash
-npm run docs:version -- 1.1
-```
+站点已取消 Docusaurus 文档版本化，不再维护 `versioned_docs/`，修改 `docs/` 即直接更新线上文档。
 
 推送到 `main` 后，根目录 `.github/workflows/docs-pages.yml` 会构建双语站点并发布到 GitHub Pages。
