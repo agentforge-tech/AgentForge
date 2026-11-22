@@ -55,14 +55,14 @@
 
         <span class="agent-head-divider" aria-hidden="true"></span>
 
-        <el-button-group>
-          <el-button size="small" type="primary" :loading="saving" :disabled="saving || publishing || loading" @click="save(false)">
-            仅保存
-          </el-button>
-          <el-button size="small" :disabled="saving || publishing || loading" @click="openVersionConfirm">
-            保存并提交版本
-          </el-button>
-        </el-button-group>
+        <el-button
+          size="small"
+          type="primary"
+          icon="el-icon-check"
+          :loading="saving"
+          :disabled="saving || publishing || loading"
+          @click="openSaveConfirm"
+        >保存</el-button>
 
         <el-tooltip content="版本历史" placement="bottom-end">
           <el-button
@@ -286,9 +286,9 @@
         :closable="false"
         show-icon
         title="切换版本只回填表单，不会保存"
-        description="切换只会把该版本配置回填到编辑页，不会更新已保存的 Agent 配置。确认要使用该版本时，请点击右上角「仅保存」或「保存并提交版本」。"
+        description="切换只会把该版本配置回填到编辑页，不会更新已保存的 Agent 配置。确认要使用该版本时，请点击右上角「保存」，在弹窗中选择「仅保存」或「保存并记录版本」。"
       />
-      <el-table v-loading="versionLoading" :data="versions" row-key="id" class="agent-version-table" empty-text="暂无历史版本，请先使用「保存并提交版本」">
+      <el-table v-loading="versionLoading" :data="versions" row-key="id" class="agent-version-table" empty-text="暂无历史版本，请点击右上角「保存」并选择「保存并记录版本」">
         <el-table-column label="版本" width="76">
           <template slot-scope="{ row }"><b class="agent-version-no">V{{ row.versionNo }}</b></template>
         </el-table-column>
@@ -530,26 +530,64 @@
       </span>
     </el-dialog>
 
-    <!-- ------------------------------ 提交版本确认 ------------------------------ -->
-    <el-dialog :visible.sync="versionConfirmVisible" title="确认提交版本" width="520px" :close-on-click-modal="false">
-      <p class="agent-version-confirm-text">将保存当前配置，并生成一条新的历史版本记录。已生成的版本不会被覆盖。</p>
-      <p class="agent-version-confirm-text agent-version-confirm-hint">如果只需要保存编辑进度、不生成历史版本，请使用「仅保存」。</p>
-      <el-form label-width="96px">
+    <!-- ------------------------------ 保存方式确认 ------------------------------ -->
+    <el-dialog
+      :visible.sync="saveConfirmVisible"
+      title="保存 Agent 配置"
+      width="520px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="!saving"
+      :show-close="!saving"
+    >
+      <p class="agent-version-confirm-text">请选择本次保存方式：</p>
+      <ul class="agent-save-options">
+        <li>
+          <b>仅保存</b>
+          <span>只更新当前配置，不生成历史版本记录，适合保存编辑进度。</span>
+        </li>
+        <li>
+          <b>保存并记录版本</b>
+          <span>更新当前配置，并生成一条新的历史版本记录（版本号 +1），已生成的版本不会被覆盖。点击后会再弹出窗口填写版本备注。</span>
+        </li>
+      </ul>
+      <span slot="footer">
+        <el-button :disabled="saving" @click="saveConfirmVisible = false">取消</el-button>
+        <el-button :disabled="saving" :loading="savingAction === 'save'" @click="confirmSave(false)">仅保存</el-button>
+        <el-button
+          type="primary"
+          :disabled="saving"
+          @click="openVersionRemarkDialog"
+        >保存并记录版本</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- ------------------------------ 版本备注输入 ------------------------------ -->
+    <el-dialog
+      :visible.sync="versionRemarkDialogVisible"
+      title="填写版本备注"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+      :close-on-press-escape="!saving"
+      :show-close="!saving"
+    >
+      <p class="agent-version-confirm-text">将保存当前配置，并生成一条新的历史版本记录。</p>
+      <el-form label-width="88px" @submit.native.prevent>
         <el-form-item label="版本备注">
           <el-input
             v-model.trim="versionRemarkDraft"
             type="textarea"
-            :rows="3"
+            :rows="4"
             maxlength="1024"
             show-word-limit
             placeholder="补充本次提交的说明，例如：优化系统提示词、新增 MCP 工具"
           />
-          <div class="af-form-tip">备注会在版本历史中展示，提交后仍可随时编辑。最多 1024 个字符。</div>
+          <div class="af-form-tip">选填，备注会展示在版本历史中，提交后仍可随时编辑，最多 1024 个字符。</div>
         </el-form-item>
       </el-form>
       <span slot="footer">
-        <el-button :disabled="saving" @click="versionConfirmVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="confirmSubmitVersion">确认保存并提交版本</el-button>
+        <el-button :disabled="saving" @click="cancelVersionRemark">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="confirmSave(true)">保存并记录版本</el-button>
       </span>
     </el-dialog>
   </div>
@@ -577,7 +615,9 @@ export default {
       compareVisible: false,
       comparedVersionNo: null,
       comparisonRows: [],
-      versionConfirmVisible: false,
+      saveConfirmVisible: false,
+      versionRemarkDialogVisible: false,
+      savingAction: '',
       versionRemarkDraft: '',
       remarkModalVisible: false,
       remarkModalVersionNo: null,
@@ -855,11 +895,39 @@ export default {
         this.saving = false
       }
     },
-    openVersionConfirm() { this.versionRemarkDraft = ''; this.versionConfirmVisible = true },
-    async confirmSubmitVersion() {
-      this.versionConfirmVisible = false
-      const saved = await this.save(true)
-      if (saved) this.versionRemarkDraft = ''
+    openSaveConfirm() {
+      if (this.saving || this.publishing || this.loading) return
+      if (!this.form.name || !this.form.modelId || !this.form.systemPrompt) {
+        this.toast('请完整填写 Agent 配置', true)
+        return
+      }
+      this.versionRemarkDraft = ''
+      this.saveConfirmVisible = true
+    },
+    openVersionRemarkDialog() {
+      if (this.saving) return
+      this.versionRemarkDraft = ''
+      this.saveConfirmVisible = false
+      this.versionRemarkDialogVisible = true
+    },
+    cancelVersionRemark() {
+      if (this.saving) return
+      this.versionRemarkDialogVisible = false
+      this.versionRemarkDraft = ''
+    },
+    async confirmSave(submitVersion) {
+      if (this.saving) return
+      this.savingAction = submitVersion ? 'version' : 'save'
+      try {
+        const saved = await this.save(Boolean(submitVersion))
+        if (saved) {
+          this.saveConfirmVisible = false
+          this.versionRemarkDialogVisible = false
+          this.versionRemarkDraft = ''
+        }
+      } finally {
+        this.savingAction = ''
+      }
     },
     // ---------- 版本备注 ----------
     openRemarkModal(version) {
@@ -1171,6 +1239,7 @@ export default {
 .agent-version-table { margin-top: 12px; }
 .agent-version-no { color: $color-brand; font-size: 13px; }
 .agent-version-confirm-text { margin: 0 0 8px; color: $color-text-secondary; font-size: 13px; line-height: 1.7; }
+.agent-save-options { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; li { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid $color-border; border-radius: 8px; background: $color-sidebar; } b { color: $color-text; font-size: 13px; } span { color: $color-text-muted; font-size: 12px; line-height: 1.6; } }
 .agent-version-confirm-hint { color: $color-text-muted; font-size: 12px; }
 .agent-compare-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .agent-compare-legend { display: inline-flex; align-items: center; gap: 7px; color: $color-text-secondary; font-size: 12px; i { width: 14px; height: 14px; border: 2px solid #e45b52; border-radius: 4px; background: #fff8f7; } }
@@ -1202,6 +1271,7 @@ export default {
 .agent-debug-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0; border: 1px solid #cbd8e9; border-radius: 5px; background: #f6f9fd; color: #657791; cursor: pointer; box-shadow: 0 1px 2px rgba(59, 111, 182, .06); transition: all .15s; svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; } &:hover { border-color: #8eb3e5; background: #edf4fd; color: #3b6fb6; box-shadow: 0 2px 6px rgba(59, 111, 182, .14); transform: translateY(-1px); } &:active { transform: translateY(0); box-shadow: none; } }
 .agent-debug { position: relative; }
 .agent-debug-composer { position: relative; }
+.agent-debug-composer-input { margin: 0 28px 12px; }
 .agent-debug-interrupt { position: absolute !important; z-index: 25; left: 28px; right: 28px; bottom: calc(100% + 6px); width: auto !important; margin: 0 !important; }
 .agent-debug-feed { flex: 1; overflow-y: auto; padding: 16px 32px; }
 .agent-debug-feed.has-interrupt { padding-bottom: 72px; }
