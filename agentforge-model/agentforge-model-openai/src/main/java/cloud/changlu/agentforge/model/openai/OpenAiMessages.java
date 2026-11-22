@@ -4,6 +4,7 @@ import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessageType;
 import cloud.changlu.agentforge.model.chat.message.Content;
+import cloud.changlu.agentforge.model.chat.message.ImageContent;
 import cloud.changlu.agentforge.model.chat.message.TextContent;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionResultMessage;
@@ -98,6 +99,12 @@ final class OpenAiMessages {
                 block.put("type", "text");
                 block.put("text", ((TextContent) content).text());
                 blocks.add(block);
+            } else if (content instanceof ImageContent) {
+                blocks.add(imageBlock((ImageContent) content));
+            } else {
+                // 显式失败，避免图片被静默丢弃后模型「看不到图」
+                throw new IllegalArgumentException(
+                        "Unsupported chat content type: " + content.type());
             }
         }
         LinkedHashMap<String, Object> item = new LinkedHashMap<String, Object>();
@@ -107,6 +114,18 @@ final class OpenAiMessages {
         }
         item.put("content", blocks);
         return item;
+    }
+
+    private static Map<String, Object> imageBlock(ImageContent content) {
+        LinkedHashMap<String, Object> imageUrl = new LinkedHashMap<String, Object>();
+        imageUrl.put("url", content.isUrl() ? content.url() : content.toDataUri());
+        if (content.detailLevel() != ImageContent.DetailLevel.AUTO) {
+            imageUrl.put("detail", content.detailLevel().name().toLowerCase(java.util.Locale.ROOT));
+        }
+        LinkedHashMap<String, Object> block = new LinkedHashMap<String, Object>();
+        block.put("type", "image_url");
+        block.put("image_url", imageUrl);
+        return block;
     }
 
     static String role(ChatMessageType type) {

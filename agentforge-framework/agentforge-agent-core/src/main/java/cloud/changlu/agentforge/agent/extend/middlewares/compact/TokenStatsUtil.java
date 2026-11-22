@@ -3,7 +3,10 @@ package cloud.changlu.agentforge.agent.extend.middlewares.compact;
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessageType;
+import cloud.changlu.agentforge.model.chat.message.Content;
+import cloud.changlu.agentforge.model.chat.message.ImageContent;
 import cloud.changlu.agentforge.model.chat.message.SystemMessage;
+import cloud.changlu.agentforge.model.chat.message.TextContent;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionResultMessage;
 import cloud.changlu.agentforge.model.chat.message.UserMessage;
 
@@ -20,6 +23,9 @@ public final class TokenStatsUtil {
     private static final int AI_OVERHEAD = 15;
     private static final int TOOL_OVERHEAD = 20;
     private static final int TOOL_CALL_EXTRA = 20;
+
+    /** 单张图片的固定 token 估算，与主流厂商计费口径同量级。 */
+    private static final int IMAGE_TOKEN_ESTIMATE = 1000;
 
     private static final String[] SENTENCE_BOUNDARIES = {"。", "！", "？", "\n", ".", "!", "?"};
 
@@ -41,6 +47,9 @@ public final class TokenStatsUtil {
             return 0;
         }
         int tokens = estimateTextTokens(getMessageContent(message));
+        if (message.type() == ChatMessageType.USER) {
+            tokens += imageContentTokens((UserMessage) message);
+        }
         if (message.type() == ChatMessageType.SYSTEM) {
             tokens += SYSTEM_OVERHEAD;
         } else if (message.type() == ChatMessageType.USER) {
@@ -78,7 +87,16 @@ public final class TokenStatsUtil {
             if (userMessage.hasSingleText()) {
                 return userMessage.singleText();
             }
-            return String.valueOf(userMessage.contents());
+            StringBuilder builder = new StringBuilder();
+            for (Content content : userMessage.contents()) {
+                if (content instanceof TextContent) {
+                    builder.append(((TextContent) content).text()).append(' ');
+                } else if (content instanceof ImageContent) {
+                    // 图片不计入字符统计，由 estimateMessageTokens 单独加成
+                    builder.append("[image] ");
+                }
+            }
+            return builder.toString();
         }
         if (message.type() == ChatMessageType.AI) {
             AiMessage aiMessage = (AiMessage) message;
@@ -252,6 +270,16 @@ public final class TokenStatsUtil {
         }
         double percentage = (double) estimateTotalTokens(messages) / maxContextTokens * 100;
         return percentage >= thresholdPercent;
+    }
+
+    private static int imageContentTokens(UserMessage message) {
+        int count = 0;
+        for (Content content : message.contents()) {
+            if (content instanceof ImageContent) {
+                count++;
+            }
+        }
+        return count * IMAGE_TOKEN_ESTIMATE;
     }
 
     private static boolean isWideChar(char value) {

@@ -9,6 +9,7 @@ import cloud.changlu.agentforge.model.registry.models.OpenAiModel;
 
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -94,6 +95,37 @@ public class OpenAiModelTest {
         assertNull(parameters.temperature());
         assertNull(parameters.topP());
         assertNull(parameters.maxTokens());
+    }
+
+    @Test
+    public void shouldMapUserAgentPropToRequestHeader() {
+        ChatModel chatModel =
+                new OpenAiModel()
+                        .buildChatModel(
+                                LlmBasicConfig.builder()
+                                        .provider(LlmEnum.OPENAI.getCode())
+                                        .url("https://deepseek5f.xyz/v1")
+                                        .modelName("deepseek-flash")
+                                        .apiKey("sk-test")
+                                        .prop(LlmConstant.USER_AGENT, "AgentForge-Desktop/0.1.0")
+                                        .build());
+
+        Map<String, String> headers = ModelFields.headers(chatModel);
+        assertEquals("AgentForge-Desktop/0.1.0", headers.get("User-Agent"));
+    }
+
+    @Test
+    public void shouldNotSetUserAgentHeaderWhenPropMissing() {
+        ChatModel chatModel =
+                new OpenAiModel()
+                        .buildChatModel(
+                                LlmBasicConfig.builder()
+                                        .provider(LlmEnum.OPENAI.getCode())
+                                        .modelName("gpt-4o-mini")
+                                        .build());
+
+        // 未配置时不注入 header，由 transport 层统一兜底，避免覆盖调用方的自定义 UA
+        assertTrue(ModelFields.headers(chatModel).isEmpty());
     }
 
     @Test

@@ -83,6 +83,9 @@
                   <button class="af-btn af-btn--ghost af-btn--sm" :disabled="testing === m.id" @click="onTestConn(m)">
                     {{ testing === m.id ? '测试中' : '测试连接' }}
                   </button>
+                  <button class="af-btn af-btn--ghost af-btn--sm" :disabled="copyingId === m.id" @click="openCopy(m)">
+                    {{ copyingId === m.id ? '加载中' : '复制' }}
+                  </button>
                   <button class="af-btn af-btn--ghost af-btn--sm" :disabled="editingId === m.id" @click="openEdit(m)">
                     {{ editingId === m.id ? '加载中' : '编辑' }}
                   </button>
@@ -127,13 +130,17 @@
     <!-- ------------------------------ 新建 / 编辑弹窗 ------------------------------ -->
     <el-dialog
       :visible.sync="dialogVisible"
-      :title="form.id ? '编辑模型' : '新建模型'"
+      :title="dialogTitle"
       width="640px"
       :close-on-click-modal="false"
       :close-on-press-escape="!saving"
       :show-close="!saving"
     >
       <el-form :model="form" label-width="96px" @submit.native.prevent>
+        <div v-if="copyFromName" class="af-form-tip af-copy-tip">
+          已复制「{{ copyFromName }}」的配置，修改后保存将创建为新模型。
+        </div>
+
         <el-form-item label="名称" required>
           <el-input v-model="form.name" placeholder="例如：我的 GPT-4o" />
         </el-form-item>
@@ -226,6 +233,8 @@ export default {
       saving: false,
       testing: null,
       editingId: null,
+      copyingId: null,
+      copyFromName: '',
       testingForm: null,
       options: { providers: [], modelTypes: [] },
       models: [],
@@ -247,6 +256,11 @@ export default {
     },
     hasFilters() {
       return Boolean(this.keyword.trim()) || this.filter !== 'all'
+    },
+    dialogTitle() {
+      if (this.form.id) return '编辑模型'
+      if (this.copyFromName) return '复制模型 · ' + this.form.name
+      return '新建模型'
     }
   },
   watch: {
@@ -302,13 +316,52 @@ export default {
       }
     },
     openCreate() {
+      this.copyFromName = ''
       this.form = this.emptyForm()
       if (this.options.providers.length) this.form.provider = this.options.providers[0].value
       if (this.options.modelTypes.length) this.form.modelType = this.options.modelTypes[0].value
       this.dialogVisible = true
     },
+    async openCopy(model) {
+      if (this.copyingId !== null) return
+      this.copyingId = model.id
+      try {
+        // 列表接口出于安全不返回密钥，复制时取详情以完整复制配置。
+        const detail = await getModel(model.id)
+        this.form = {
+          id: null,
+          name: this.nextCopyName(detail.name || model.name),
+          provider: detail.provider != null ? detail.provider : model.provider,
+          modelType: detail.modelType != null ? detail.modelType : model.modelType,
+          modelname: detail.modelname || model.modelname,
+          url: detail.url || '',
+          apiKey: detail.apiKey || '',
+          hasApiKey: Boolean(detail.hasApiKey)
+        }
+        this.copyFromName = detail.name || model.name || '未命名模型'
+        this.dialogVisible = true
+      } catch (e) {
+        this.toast('加载模型详情失败：' + e.message, true)
+      } finally {
+        this.copyingId = null
+      }
+    },
+    nextCopyName(name) {
+      const sourceName = String(name || '未命名模型')
+        .replace(/\s*[（(]复制(?:\s*\d+)?[）)]$/, '')
+        .trim() || '未命名模型'
+      const usedNames = new Set(this.models.map((model) => model.name))
+      let candidate = sourceName + '（复制）'
+      let index = 2
+      while (usedNames.has(candidate)) {
+        candidate = sourceName + '（复制 ' + index + '）'
+        index += 1
+      }
+      return candidate
+    },
     async openEdit(model) {
       if (this.editingId !== null) return
+      this.copyFromName = ''
       this.editingId = model.id
       try {
         const detail = await getModel(model.id)
@@ -350,8 +403,10 @@ export default {
         }
         if (this.form.apiKey) payload.apiKey = this.form.apiKey
         await upsertModel(payload)
+        const wasCopy = Boolean(this.copyFromName)
         this.dialogVisible = false
-        this.toast(this.form.id ? '模型已更新' : '模型已创建')
+        this.copyFromName = ''
+        this.toast(this.form.id ? '模型已更新' : wasCopy ? '模型副本已创建' : '模型已创建')
         this.loadModels()
       } catch (e) {
         this.toast('保存失败：' + e.message, true)
@@ -506,6 +561,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.af-copy-tip {
+  margin: -4px 0 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f2f7ff;
+  border: 1px solid #e2ecfd;
+  color: #3b6fb6;
+}
+
 .af-dialog-footer {
   display: flex;
   align-items: center;

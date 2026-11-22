@@ -1,5 +1,10 @@
 package cloud.changlu.agentforge.service.modules.agent.domain.req;
 
+import cloud.changlu.agentforge.agent.domain.AgentAttachment;
+import cloud.changlu.agentforge.service.domain.req.ChatFileRef;
+
+import java.util.List;
+
 /** Agent 正式对话与调试对话的统一请求。 */
 public class AgentChatReq {
 
@@ -8,6 +13,12 @@ public class AgentChatReq {
     private String executionId;
     private String message;
     private Boolean isDebug;
+
+    /** 本次消息引用的文件列表，包含 fileId 与展示元信息。 */
+    private List<ChatFileRef> files;
+
+    /** 已解析的附件，由 Controller/Service 填充，不接收前端直接传入。 */
+    private transient List<AgentAttachment> attachments;
 
     /** 本次请求初始化得到的 AI 消息主键，用于会话生命周期中间件收口。 */
     private Long aiMessageId;
@@ -71,5 +82,26 @@ public class AgentChatReq {
 
     public void setSessionTitle(String sessionTitle) {
         this.sessionTitle = sessionTitle;
+    }
+
+    /** 本次消息实际引用的附件主键。 */
+    public List<Long> resolveFileIds() {
+        return ChatFileRef.extractFileIds(files);
+    }
+
+    public List<ChatFileRef> getFiles() {
+        return files;
+    }
+
+    public void setFiles(List<ChatFileRef> files) {
+        this.files = files;
+    }
+
+    public List<AgentAttachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<AgentAttachment> attachments) {
+        this.attachments = attachments;
     }
 }

@@ -27,6 +27,9 @@ import cloud.changlu.agentforge.agent.stream.TokenStream;
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.ChatMessageType;
+import cloud.changlu.agentforge.model.chat.message.Content;
+import cloud.changlu.agentforge.model.chat.message.TextContent;
+import cloud.changlu.agentforge.model.chat.message.UserMessage;
 import cloud.changlu.agentforge.model.tool.execution.ToolService;
 
 import java.util.List;
@@ -465,9 +468,20 @@ public abstract class Agent extends BaseAgent implements IResumableAgent {
 
     private static String lastUserText(List<ChatMessage> messages) {
         for (int i = messages.size() - 1; i >= 0; i--) {
-            if (messages.get(i).type() == ChatMessageType.USER) {
-                return messages.get(i).text();
+            if (messages.get(i).type() != ChatMessageType.USER) {
+                continue;
             }
+            UserMessage userMessage = (UserMessage) messages.get(i);
+            if (userMessage.hasSingleText()) {
+                return userMessage.text();
+            }
+            // 多内容：取第一个文本块，忽略图片
+            for (Content content : userMessage.contents()) {
+                if (content instanceof TextContent) {
+                    return ((TextContent) content).text();
+                }
+            }
+            return "[图片消息]";
         }
         return null;
     }

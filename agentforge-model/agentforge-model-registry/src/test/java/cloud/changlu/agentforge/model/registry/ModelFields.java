@@ -3,6 +3,7 @@ package cloud.changlu.agentforge.model.registry;
 import cloud.changlu.agentforge.model.chat.request.DefaultChatRequestParameters;
 
 import java.lang.reflect.Field;
+import java.util.Map;
 
 /**
  * @description 测试辅助：AgentForge 的 ChatModel adapter 不暴露 getter，这里反射读取构建结果， 用于断言 LlmBasicConfig
@@ -24,6 +25,11 @@ final class ModelFields {
 
     static DefaultChatRequestParameters defaultParameters(Object model) {
         return (DefaultChatRequestParameters) read(model, "defaultParameters");
+    }
+
+    @SuppressWarnings("unchecked")
+    static Map<String, String> headers(Object model) {
+        return (Map<String, String>) read(model, "customHeaders");
     }
 
     private static Object read(Object model, String fieldName) {

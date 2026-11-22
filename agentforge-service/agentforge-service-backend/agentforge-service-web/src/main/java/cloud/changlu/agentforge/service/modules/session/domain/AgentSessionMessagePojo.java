@@ -16,6 +16,10 @@ public class AgentSessionMessagePojo {
     private Long elapsedMs;
     private String content;
     private String events;
+
+    /** 用户消息发送时的请求快照 JSON（含附件元信息）；AI 消息为 null。 */
+    private String req;
+
     private Long createUserId;
     private Integer isDeleted;
     private Date createTime;
@@ -107,6 +111,14 @@ public class AgentSessionMessagePojo {
 
     public void setEvents(String events) {
         this.events = events;
+    }
+
+    public String getReq() {
+        return req;
+    }
+
+    public void setReq(String req) {
+        this.req = req;
     }
 
     public Long getCreateUserId() {

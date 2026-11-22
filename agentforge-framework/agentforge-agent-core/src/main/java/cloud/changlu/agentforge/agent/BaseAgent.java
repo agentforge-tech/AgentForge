@@ -8,12 +8,13 @@ import cloud.changlu.agentforge.agent.domain.AgentRequest;
 import cloud.changlu.agentforge.agent.exception.AgentException;
 import cloud.changlu.agentforge.agent.memory.ChatMemory;
 import cloud.changlu.agentforge.agent.memory.ChatMemoryProvider;
+import cloud.changlu.agentforge.agent.support.AttachmentContentAssembler;
 import cloud.changlu.agentforge.model.chat.ChatModel;
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.UserMessage;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * @description 抽象 计划 -> 思考 + 行动 执行Agent
@@ -21,6 +22,8 @@ import java.util.UUID;
  * @date 2026/9/16
  */
 public abstract class BaseAgent implements IAgent {
+
+    private static final Logger log = Logger.getLogger(BaseAgent.class.getName());
 
     protected final AgentRunRegistry runRegistry = new AgentRunRegistry();
 
@@ -53,8 +56,8 @@ public abstract class BaseAgent implements IAgent {
                 .chatMemory(chatMemory)
                 .extensions(
                         request.getExtensions() == null
-                                ? new java.util.HashMap<String, Object>()
-                                : new java.util.HashMap<String, Object>(request.getExtensions()))
+                                ? new HashMap<String, Object>()
+                                : new HashMap<String, Object>(request.getExtensions()))
                 .build();
     }
 
@@ -70,9 +73,8 @@ public abstract class BaseAgent implements IAgent {
      * @return UserMessage
      */
     protected UserMessage buildUserMessage(AgentChatContext chatContext) {
-        String question = chatContext.getQuestion();
-        return UserMessage.from(
-                question == null || question.trim().isEmpty() ? "请结合上下文回答。" : question.trim());
+        return AttachmentContentAssembler.buildUserMessage(
+                chatContext.getQuestion(), chatContext.getAttachments());
     }
 
     protected void addMessage(AgentChatContext chatContext, ChatMessage newMessages) {

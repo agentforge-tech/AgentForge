@@ -10,12 +10,17 @@ import java.util.List;
 public interface IAgentSessionService {
 
     /**
-     * 聊天请求初始化：解析/创建会话，写入 USER 消息与 AI 占位消息。
+     * 聊天请求初始化（带原始请求快照）：把本次请求 JSON 一并写入用户消息的 {@code req} 列，供历史回放附件。
      *
-     * @return 初始化结果，包含业务会话标识与消息主键
+     * @param reqJson 用户消息发送时的请求快照 JSON，可为 {@code null}
      */
     SessionInitResult initChat(
-            String aid, String sessionId, String message, Long createUserId, boolean debug);
+            String aid,
+            String sessionId,
+            String message,
+            String reqJson,
+            Long createUserId,
+            boolean debug);
 
     /** 普通历史会话列表（未置顶）。 */
     List<SessionVo> listNormal(String aid, Long createUserId, Boolean debug, Integer limit);

@@ -1,5 +1,8 @@
 package cloud.changlu.agentforge.agent.domain;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @description Agent运行请求参数
  * @author changlu
@@ -15,7 +18,10 @@ public class AgentRequest {
     private String question;
 
     /** 业务侧扩展参数，由上层放入，Agent 内部不解释，仅在 ChatContext 中透传。 */
-    private java.util.Map<String, Object> extensions;
+    private Map<String, Object> extensions;
+
+    /** 本次消息携带的附件；为空表示纯文本对话。 */
+    private List<AgentAttachment> attachments;
 
     public AgentRequest() {}
 
@@ -24,6 +30,7 @@ public class AgentRequest {
         this.executionId = builder.executionId;
         this.question = builder.question;
         this.extensions = builder.extensions;
+        this.attachments = builder.attachments;
     }
 
     public static AgentRequestBuilder builder() {
@@ -54,19 +61,28 @@ public class AgentRequest {
         this.question = question;
     }
 
-    public java.util.Map<String, Object> getExtensions() {
+    public Map<String, Object> getExtensions() {
         return extensions;
     }
 
-    public void setExtensions(java.util.Map<String, Object> extensions) {
+    public void setExtensions(Map<String, Object> extensions) {
         this.extensions = extensions;
+    }
+
+    public List<AgentAttachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<AgentAttachment> attachments) {
+        this.attachments = attachments;
     }
 
     public static class AgentRequestBuilder {
         private Object memoryId;
         private String executionId;
         private String question;
-        private java.util.Map<String, Object> extensions;
+        private Map<String, Object> extensions;
+        private List<AgentAttachment> attachments;
 
         public AgentRequestBuilder memoryId(Object memoryId) {
             this.memoryId = memoryId;
@@ -85,6 +101,11 @@ public class AgentRequest {
 
         public AgentRequestBuilder extensions(java.util.Map<String, Object> extensions) {
             this.extensions = extensions;
+            return this;
+        }
+
+        public AgentRequestBuilder attachments(java.util.List<AgentAttachment> attachments) {
+            this.attachments = attachments;
             return this;
         }
 

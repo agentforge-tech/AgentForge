@@ -14,4 +14,7 @@ public interface LlmConstant {
     String TOP_P = "topP";
     String MAX_TOKENS = "maxTokens";
     String RETURN_THINKING = "returnThinking";
+
+    // 客户端标识，未设置时由 framework transport 兜底。部分网关会拒绝 JDK 默认的 Java/1.x 签名
+    String USER_AGENT = "userAgent";
 }

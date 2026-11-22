@@ -16,6 +16,7 @@
         <result property="elapsedMs" column="elapsed_ms"/>
         <result property="content" column="content"/>
         <result property="events" column="events"/>
+        <result property="req" column="req"/>
         <result property="createUserId" column="create_user_id"/>
         <result property="isDeleted" column="is_deleted"/>
         <result property="createTime" column="create_time"/>
@@ -24,16 +25,16 @@
 
     <sql id="columns">
         id, session_id, seq_num, role_type, status, execution_id, started_at, finished_at,
-        elapsed_ms, content, events, create_user_id, is_deleted, create_time, modify_time
+        elapsed_ms, content, events, req, create_user_id, is_deleted, create_time, modify_time
     </sql>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         insert into ai_agent_session_message
             (session_id, seq_num, role_type, status, started_at, finished_at,
-             elapsed_ms, content, events, create_user_id, is_deleted)
+             elapsed_ms, content, events, req, create_user_id, is_deleted)
         values
             (#{sessionId}, #{seqNum}, #{roleType}, #{status}, #{startedAt}, #{finishedAt},
-             #{elapsedMs}, #{content}, #{events}, #{createUserId}, 0)
+             #{elapsedMs}, #{content}, #{events}, #{req}, #{createUserId}, 0)
     </insert>
 
     <select id="selectById" resultMap="AgentSessionMessageResult">
