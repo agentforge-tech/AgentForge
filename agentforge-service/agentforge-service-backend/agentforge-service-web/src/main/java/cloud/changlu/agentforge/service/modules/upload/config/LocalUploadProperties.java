@@ -66,6 +66,33 @@ public class LocalUploadProperties {
         return visitBaseUrl + visitPath + "/" + normalizedPath;
     }
 
+    /**
+     * 把 visitUrl 反解为存储根目录下的绝对路径；不属于本服务的地址返回 null。
+     *
+     * <p>只接受与 visitBaseUrl + visitPath 前缀完全匹配的地址，避免把外部 URL 当作本地文件读取。
+     */
+    public Path resolveLocalPath(String visitUrl) {
+        if (!StringUtils.hasText(visitUrl)) {
+            return null;
+        }
+        String prefix = visitBaseUrl + visitPath + "/";
+        String trimmed = visitUrl.trim();
+        if (!trimmed.startsWith(prefix)) {
+            return null;
+        }
+        String relative = trimmed.substring(prefix.length());
+        // 去掉可能存在的查询串
+        int queryIndex = relative.indexOf('?');
+        if (queryIndex >= 0) {
+            relative = relative.substring(0, queryIndex);
+        }
+        if (!StringUtils.hasText(relative)) {
+            return null;
+        }
+        Path resolved = storageRoot.resolve(relative).normalize();
+        return resolved.startsWith(storageRoot) ? resolved : null;
+    }
+
     private static String buildVisitBaseUrl(String protocol, String host, String port) {
         if (!StringUtils.hasText(protocol)
                 || !protocol.trim().matches("(?i)https?")

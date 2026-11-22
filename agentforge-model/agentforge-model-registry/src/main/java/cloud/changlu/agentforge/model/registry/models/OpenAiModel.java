@@ -80,6 +80,11 @@ public class OpenAiModel extends BaseModel {
         if (isNotEmpty(returnThinking)) {
             builder.returnThinking(Boolean.parseBoolean(returnThinking));
         }
+
+        String userAgent = props.getProperty(LlmConstant.USER_AGENT);
+        if (isNotEmpty(userAgent)) {
+            builder.customHeader("User-Agent", userAgent.trim());
+        }
     }
 
     // 重载方法用于 StreamingChatModel
@@ -113,6 +118,11 @@ public class OpenAiModel extends BaseModel {
         String returnThinking = props.getProperty(LlmConstant.RETURN_THINKING);
         if (isNotEmpty(returnThinking)) {
             builder.returnThinking(Boolean.parseBoolean(returnThinking));
+        }
+
+        String userAgent = props.getProperty(LlmConstant.USER_AGENT);
+        if (isNotEmpty(userAgent)) {
+            builder.customHeader("User-Agent", userAgent.trim());
         }
     }
 }

@@ -3,6 +3,9 @@ package cloud.changlu.agentforge.service.modules.upload.domain.vo;
 /** File metadata returned after an upload succeeds. */
 public class UploadFileVo {
 
+    /** 元数据主键，对话时用它引用附件。 */
+    private final Long fileId;
+
     private final String visitUrl;
     private final String fileName;
     private final String originFileName;
@@ -10,16 +13,22 @@ public class UploadFileVo {
     private final long fileSize;
 
     public UploadFileVo(
+            Long fileId,
             String visitUrl,
             String fileName,
             String originFileName,
             String fileType,
             long fileSize) {
+        this.fileId = fileId;
         this.visitUrl = visitUrl;
         this.fileName = fileName;
         this.originFileName = originFileName;
         this.fileType = fileType;
         this.fileSize = fileSize;
+    }
+
+    public Long getFileId() {
+        return fileId;
     }
 
     public String getVisitUrl() {

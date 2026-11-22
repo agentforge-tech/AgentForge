@@ -2,7 +2,9 @@ package cloud.changlu.agentforge.service.modules.upload.service.impl;
 
 import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
 import cloud.changlu.agentforge.service.modules.upload.config.LocalUploadProperties;
+import cloud.changlu.agentforge.service.modules.upload.domain.pojo.FileInfoPojo;
 import cloud.changlu.agentforge.service.modules.upload.domain.vo.UploadFileVo;
+import cloud.changlu.agentforge.service.modules.upload.service.FileInfoService;
 import cloud.changlu.agentforge.service.modules.upload.service.FileUploadService;
 
 import org.springframework.stereotype.Service;
@@ -25,12 +27,16 @@ public class LocalFileUploadServiceImpl implements FileUploadService {
     public static final String CODE_UPLOAD_FAILED = "FILE_UPLOAD_FAILED";
     public static final String CODE_INVALID_FILE = "INVALID_UPLOAD_FILE";
 
+    private static final String STORAGE_MODE_LOCAL = "local";
     private static final Pattern SAFE_EXTENSION = Pattern.compile("[A-Za-z0-9]{1,16}");
 
     private final LocalUploadProperties properties;
+    private final FileInfoService fileInfoService;
 
-    public LocalFileUploadServiceImpl(LocalUploadProperties properties) {
+    public LocalFileUploadServiceImpl(
+            LocalUploadProperties properties, FileInfoService fileInfoService) {
         this.properties = properties;
+        this.fileInfoService = fileInfoService;
     }
 
     @Override
@@ -56,12 +62,31 @@ public class LocalFileUploadServiceImpl implements FileUploadService {
         }
 
         String relativeName = relativeFile.toString().replace('\\', '/');
+        String visitUrl = properties.buildVisitUrl(relativeName);
+
+        // 先落盘再写库；若写库失败，删除已落盘文件，避免出现「有文件无记录」的孤儿文件。
+        Long fileId;
+        try {
+            FileInfoPojo pojo = new FileInfoPojo();
+            pojo.setFileName(relativeName);
+            pojo.setOriginFileName(originFileName);
+            pojo.setVisitUrl(visitUrl);
+            pojo.setFileType(fileType);
+            pojo.setFileSize(file.getSize());
+            pojo.setStorageMode(STORAGE_MODE_LOCAL);
+            pojo.setCreateUserId(userId);
+            fileId = fileInfoService.save(pojo);
+        } catch (RuntimeException e) {
+            try {
+                Files.deleteIfExists(targetFile);
+            } catch (IOException ignored) {
+                // 删除失败只记录，不掩盖原始异常
+            }
+            throw new AgentForgeException(CODE_UPLOAD_FAILED, "File metadata save failed", e);
+        }
+
         return new UploadFileVo(
-                properties.buildVisitUrl(relativeName),
-                relativeName,
-                originFileName,
-                fileType,
-                file.getSize());
+                fileId, visitUrl, relativeName, originFileName, fileType, file.getSize());
     }
 
     private void validateFile(MultipartFile file) {

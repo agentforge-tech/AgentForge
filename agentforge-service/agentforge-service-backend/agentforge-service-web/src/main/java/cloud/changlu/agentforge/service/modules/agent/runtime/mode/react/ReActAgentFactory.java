@@ -8,6 +8,8 @@ import cloud.changlu.agentforge.agent.config.LlmModelConfigRegistryApi;
 import cloud.changlu.agentforge.agent.domain.AgentSettings;
 import cloud.changlu.agentforge.agent.extend.middlewares.LoggingIAgentMiddleware;
 import cloud.changlu.agentforge.agent.extend.middlewares.compact.CompactSummarizationMiddleware;
+import cloud.changlu.agentforge.agent.extend.middlewares.read.middleware.ReadArtifactMiddleware;
+import cloud.changlu.agentforge.agent.extend.middlewares.read.tool.ReadResourceTool;
 import cloud.changlu.agentforge.agent.extend.middlewares.todoplan.tool.TodoPlanTool;
 import cloud.changlu.agentforge.agent.governance.PermissionInterruptModule;
 import cloud.changlu.agentforge.agent.governance.interrupt.spi.AgentInterruptStore;
@@ -31,6 +33,7 @@ import cloud.changlu.agentforge.service.modules.agent.runtime.mode.react.memory.
 import cloud.changlu.agentforge.service.modules.model.dao.ModelConfigMapper;
 import cloud.changlu.agentforge.service.modules.model.domain.ModelConfigPojo;
 import cloud.changlu.agentforge.service.modules.model.domain.transfer.ModelConfigTransfer;
+import cloud.changlu.agentforge.service.modules.model.enums.LlmProviderEnum;
 import cloud.changlu.agentforge.service.modules.plugins.http.component.agent.HttpAgentToolLoader;
 import cloud.changlu.agentforge.service.modules.plugins.mcp.component.agent.McpAgentToolLoader;
 import cloud.changlu.agentforge.service.modules.trace.middleware.AgentForgeTraceMiddleware;
@@ -129,8 +132,17 @@ public class ReActAgentFactory {
                         streamingMiddleware,
                         sessionLifecycleMiddleware,
                         isDebug);
+        boolean requiresInlineImage =
+                modelConfig.getProvider() != null
+                        && modelConfig.getProvider() == LlmProviderEnum.ANTHROPIC.getCode();
+        ReadArtifactMiddleware readArtifactMiddleware =
+                ReadArtifactMiddleware.builder()
+                        .supportsImage(modelAdvancedConfig.isSupportsImage())
+                        .requiresInlineImage(requiresInlineImage)
+                        .build();
         List<IAgentMiddleware> middlewares = new ArrayList<IAgentMiddleware>();
         middlewares.add(userMessageAppendMiddleware);
+        middlewares.add(readArtifactMiddleware);
         middlewares.add(compactSummarizationMiddleware);
         middlewares.add(new LoggingIAgentMiddleware());
         middlewares.add(streamingMiddleware);
@@ -180,6 +192,11 @@ public class ReActAgentFactory {
     private ToolService buildToolService(
             StandardAgentConfig standardAgentConfig, boolean todoEnabled) {
         ToolService toolService = new ToolService();
+        // 无状态读取资源工具：识图 / 网页链接引用，核心搭配readArtifactMiddleware 来完成使用
+        toolService.tools(
+                LocalToolFactory.buildLocalToolsWithThought(
+                        Collections.<Object>singletonList(ReadResourceTool.builder().build()),
+                        true));
         // 本地内置插件工具
         //        toolService.tools(
         //                LocalToolFactory.buildLocalToolsWithThought(

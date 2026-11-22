@@ -88,10 +88,17 @@ public class StandardReActAgentManager
         if (req.getAiMessageId() != null) {
             extensions.put(SessionLifecycleMiddleware.EXT_AI_MESSAGE_ID, req.getAiMessageId());
         }
+        String question = req.getMessage() == null ? "" : req.getMessage().trim();
+        boolean hasAttachments = req.getAttachments() != null && !req.getAttachments().isEmpty();
+        if (question.isEmpty() && hasAttachments) {
+            // 框架层 question 不允许为空；只发附件时注入占位指令。
+            question = "我上传了附件，请结合附件内容回答。";
+        }
         return AgentRequest.builder()
                 .memoryId(sessionId)
                 .executionId(req.getExecutionId())
-                .question(req.getMessage().trim())
+                .question(question)
+                .attachments(req.getAttachments())
                 .extensions(extensions)
                 .build();
     }

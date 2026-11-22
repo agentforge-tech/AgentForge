@@ -172,6 +172,91 @@ button, textarea { font: inherit; }
 .agent-message { flex: 1; min-width: 0; }
 
 /* 消息操作栏 */
+/* 用户气泡附件 */
+.user-attachments { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; max-width: 100%; }
+.bubble-image {
+  width: 132px; height: 132px; object-fit: cover; border-radius: 12px;
+  border: 1px solid rgba(122, 166, 225, 0.28); cursor: zoom-in; background: #f5f9ff;
+  box-shadow: 0 1px 2px rgba(44, 83, 130, 0.05), 0 5px 16px rgba(74, 126, 194, 0.08);
+}
+.bubble-file {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 240px;
+  padding: 8px 12px; border-radius: 10px; text-decoration: none; font-size: 13px;
+  color: #2f527b; background: #f5f9ff; border: 1px solid rgba(122, 166, 225, 0.28);
+}
+.bubble-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 输入框待发送附件 */
+.composer-pending-files {
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px;
+  padding: 2px 2px 8px;
+}
+.pending-file-item { flex: 0 0 auto; width: 76px; min-width: 0; }
+.pending-file-card {
+  position: relative; width: 76px; height: 76px;
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box; overflow: hidden;
+  border: 1px solid #e5e9f0; border-radius: 14px; background: #fbfcfe; cursor: pointer;
+}
+.pending-file-card.is-image { background: #eef3fa; cursor: zoom-in; }
+.pending-file-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pending-file-icon { margin-bottom: 12px; font-size: 24px; line-height: 1; color: #8b97a8; }
+.pending-file-preview {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 22px;
+  padding: 7px 7px 2px; box-sizing: border-box; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6;
+  color: #9aa4b2; font-size: 8px; line-height: 1.45; text-align: left;
+  word-break: break-all; background: #fff;
+}
+.pending-file-name {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  padding: 12px 6px 5px; font-size: 10.5px; line-height: 1.25; color: #6b7280;
+  text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: linear-gradient(to top, #fbfcfe 55%, rgba(251, 252, 254, 0));
+}
+.pending-file-card.is-image .pending-file-name {
+  color: #fff;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.62) 40%, rgba(15, 23, 42, 0));
+}
+.pending-file-remove {
+  position: absolute; top: 4px; right: 4px; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; line-height: 1;
+  border: none; border-radius: 50%; background: rgba(24, 39, 58, 0.55); color: #fff;
+  cursor: pointer; font-size: 14px; opacity: 0; transition: opacity 0.15s, background 0.15s;
+}
+.pending-file-item:hover .pending-file-remove { opacity: 1; }
+.pending-file-remove:hover { background: #d64545; }
+.attach-btn {
+  flex-shrink: 0; width: 32px; height: 32px; margin-bottom: 1px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: #5f6b7a;
+  border-radius: 50%; cursor: pointer; transition: color 0.15s, background 0.15s;
+}
+.attach-btn svg { width: 20px; height: 20px; }
+.attach-btn:hover:not(:disabled) { color: #24292f; background: #f0f3f8; }
+.attach-btn:disabled { color: #c3c9d2; cursor: not-allowed; }
+.file-input-hidden { display: none; }
+
+.el-popover.attach-popover {
+  padding: 6px !important; border-radius: 12px; border-color: #e6ebf2;
+  box-shadow: 0 10px 32px rgba(23, 43, 77, 0.14);
+}
+.attach-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; border: none; border-radius: 9px;
+  background: transparent; text-align: left; cursor: pointer;
+}
+.attach-menu-item:hover { background: #f4f7fb; }
+.attach-menu-icon {
+  flex-shrink: 0; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 9px; background: #eef4ff; color: #3b6fb6; font-size: 16px;
+}
+.attach-menu-copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.attach-menu-title { font-size: 13px; font-weight: 500; line-height: 1.4; color: #303133; }
+.attach-menu-desc { font-size: 11.5px; line-height: 1.4; color: #98a2b3; }
+
 .msg-actions { display: flex; align-items: center; gap: 6px; }
 .mini-btn {
   border: none; background: transparent; color: #98a2b3;
@@ -208,11 +293,20 @@ button, textarea { font: inherit; }
 .append-list-move { transition: transform 0.2s ease; }
 @keyframes append-status-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 .composer-box {
-  display: flex; align-items: flex-end; gap: 10px;
+  display: flex; flex-direction: column; align-items: stretch;
   border: 1px solid #e2e7ef; border-radius: 24px; background: #fff;
-  padding: 8px 8px 8px 16px; box-shadow: 0 2px 14px rgba(23, 43, 77, 0.05);
+  padding: 10px 10px 10px 12px; box-shadow: 0 2px 14px rgba(23, 43, 77, 0.05);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+.composer-box.has-attachments { border-radius: 20px; }
+.composer-input-row { display: flex; align-items: flex-end; gap: 10px; min-width: 0; }
+.composer-input-row .composer-attach-popover { display: flex; flex: 0 0 auto; }
+.composer-input-row .el-popover__reference-wrapper { display: flex; flex: 0 0 auto; }
+.composer-input-row.is-stacked { flex-wrap: wrap; row-gap: 4px; }
+.composer-input-row.is-stacked textarea { order: 1; flex: 1 0 100%; }
+.composer-input-row.is-stacked .composer-attach-popover { order: 2; }
+.composer-input-row.is-stacked .attach-btn { margin-bottom: 0; }
+.composer-input-row.is-stacked .send-btn { order: 3; margin-left: auto; }
 .composer-box.focus { border-color: #9cc0f5; box-shadow: 0 2px 16px rgba(75, 142, 247, 0.14); }
 .composer-box.append-mode { border-color: #b9cae4; background: linear-gradient(180deg, #fff 0%, #fbfcff 100%); box-shadow: 0 2px 16px rgba(74, 111, 164, 0.12); }
 .composer-box textarea {

@@ -1,7 +1,12 @@
 package cloud.changlu.agentforge.service.modules.agent.service.impl;
 
+import cloud.changlu.agentforge.agent.domain.AgentAttachment;
 import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
 import cloud.changlu.agentforge.service.domain.req.ChatStreamRequest;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentChatAttachmentService;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentModelCapability;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentModelCapabilityResolver;
+import cloud.changlu.agentforge.service.modules.agent.attachment.ResolvedChatAttachment;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
@@ -29,6 +34,8 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
     private final SessionLifecycleMiddleware lifecycleMiddleware;
     private final IAgentSessionService sessionService;
     private final ChatStopRegistry stopRegistry;
+    private final AgentChatAttachmentService attachmentService;
+    private final AgentModelCapabilityResolver modelCapabilityResolver;
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
     public LegacyChatStreamServiceImpl(
@@ -37,13 +44,17 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
             ServiceStreamingMiddleware streamingMiddleware,
             SessionLifecycleMiddleware lifecycleMiddleware,
             IAgentSessionService sessionService,
-            ChatStopRegistry stopRegistry) {
+            ChatStopRegistry stopRegistry,
+            AgentChatAttachmentService attachmentService,
+            AgentModelCapabilityResolver modelCapabilityResolver) {
         this.runtimeConfigResolver = runtimeConfigResolver;
         this.agentManagerFactory = agentManagerFactory;
         this.streamingMiddleware = streamingMiddleware;
         this.lifecycleMiddleware = lifecycleMiddleware;
         this.sessionService = sessionService;
         this.stopRegistry = stopRegistry;
+        this.attachmentService = attachmentService;
+        this.modelCapabilityResolver = modelCapabilityResolver;
     }
 
     @Override
@@ -56,11 +67,23 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         } catch (AgentForgeException e) {
             return notice(e.getMessage());
         }
+        // 附件校验先于会话初始化：避免「会话已建、AI 消息已插入」后因附件非法整轮失败。
+        AgentModelCapability capability = modelCapabilityResolver.resolve(config);
+        java.util.List<Long> fileIds = body.resolveFileIds();
+        java.util.List<ResolvedChatAttachment> resolved =
+                attachmentService.resolve(fileIds, userId);
+        java.util.List<AgentAttachment> attachments =
+                attachmentService.toAgentAttachments(
+                        resolved,
+                        capability == null ? null : capability.getModelConfig(),
+                        capability == null ? null : capability.getProviderCode());
+        String reqJson = attachmentService.buildUserReqJson(body, resolved);
         IAgentSessionService.SessionInitResult init =
                 sessionService.initChat(
                         config.getAid(),
                         body.getSessionId(),
-                        body.getMessage().trim(),
+                        safeMessage(body),
+                        reqJson,
                         userId,
                         debug);
         IAgentManager<Object, Object> manager =
@@ -78,6 +101,7 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         SseEmitter emitter = new SseEmitter(0L);
         streamingMiddleware.bind(sessionId, emitter);
         AgentChatReq request = buildRequest(config, body, init, debug);
+        request.setAttachments(attachments);
         request.setExecutionId(manager.createExecutionId(agent));
         stopRegistry.register(
                 sessionId, () -> manager.cancel(agent, sessionId, request.getExecutionId()));
@@ -115,7 +139,7 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         AgentChatReq request = new AgentChatReq();
         request.setAid(config.getAid());
         request.setSessionId(init.getSessionId());
-        request.setMessage(body.getMessage().trim());
+        request.setMessage(safeMessage(body));
         request.setIsDebug(debug);
         request.setAiMessageId(init.getAiMessageId());
         request.setSessionTitle(init.getTitle());
@@ -134,12 +158,19 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         return emitter;
     }
 
+    private static String safeMessage(ChatStreamRequest body) {
+        return body == null || body.getMessage() == null ? "" : body.getMessage().trim();
+    }
+
     private static void validate(ChatStreamRequest body) {
         if (body == null || body.getAid() == null || body.getAid().trim().isEmpty()) {
             throw new IllegalArgumentException("aid 不能为空");
         }
-        if (body.getMessage() == null || body.getMessage().trim().isEmpty()) {
-            throw new IllegalArgumentException("对话内容不能为空");
+        java.util.List<Long> fileIds = body.resolveFileIds();
+        boolean hasMessage = body.getMessage() != null && !body.getMessage().trim().isEmpty();
+        boolean hasAttachments = fileIds != null && !fileIds.isEmpty();
+        if (!hasMessage && !hasAttachments) {
+            throw new IllegalArgumentException("对话内容或附件不能同时为空");
         }
     }
 }

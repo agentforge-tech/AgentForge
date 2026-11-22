@@ -1,8 +1,13 @@
 package cloud.changlu.agentforge.service.modules.agent.controller;
 
+import cloud.changlu.agentforge.agent.domain.AgentAttachment;
 import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.service.common.exception.AgentForgeException;
 import cloud.changlu.agentforge.service.domain.req.ChatStreamRequest;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentChatAttachmentService;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentModelCapability;
+import cloud.changlu.agentforge.service.modules.agent.attachment.AgentModelCapabilityResolver;
+import cloud.changlu.agentforge.service.modules.agent.attachment.ResolvedChatAttachment;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.AgentRuntimeConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
 import cloud.changlu.agentforge.service.modules.agent.domain.vo.AgentChatTaskStopVo;
@@ -32,18 +37,24 @@ public class AgentChatController {
     private final LegacyChatStreamService chatStreamService;
     private final AgentChatTaskService chatTaskService;
     private final ChatStopRegistry stopRegistry;
+    private final AgentChatAttachmentService attachmentService;
+    private final AgentModelCapabilityResolver modelCapabilityResolver;
 
     public AgentChatController(
             AgentRuntimeConfigResolver runtimeConfigResolver,
             AgentManagerFactory agentManagerFactory,
             LegacyChatStreamService chatStreamService,
             AgentChatTaskService chatTaskService,
-            ChatStopRegistry stopRegistry) {
+            ChatStopRegistry stopRegistry,
+            AgentChatAttachmentService attachmentService,
+            AgentModelCapabilityResolver modelCapabilityResolver) {
         this.runtimeConfigResolver = runtimeConfigResolver;
         this.agentManagerFactory = agentManagerFactory;
         this.chatStreamService = chatStreamService;
         this.chatTaskService = chatTaskService;
         this.stopRegistry = stopRegistry;
+        this.attachmentService = attachmentService;
+        this.modelCapabilityResolver = modelCapabilityResolver;
     }
 
     /** 一次性非流式调用，等待 Agent 完成后返回完整结果。 */
@@ -52,8 +63,11 @@ public class AgentChatController {
         if (req == null || req.getAid() == null || req.getAid().trim().isEmpty()) {
             throw new IllegalArgumentException("aid 不能为空");
         }
-        if (req.getMessage() == null || req.getMessage().trim().isEmpty()) {
-            throw new IllegalArgumentException("对话内容不能为空");
+        java.util.List<Long> fileIds = req.resolveFileIds();
+        boolean hasMessage = req.getMessage() != null && !req.getMessage().trim().isEmpty();
+        boolean hasAttachments = fileIds != null && !fileIds.isEmpty();
+        if (!hasMessage && !hasAttachments) {
+            throw new IllegalArgumentException("对话内容或附件不能同时为空");
         }
         boolean isDebug = Boolean.TRUE.equals(req.getIsDebug());
         AgentRuntimeConfig config;
@@ -61,8 +75,19 @@ public class AgentChatController {
             config = runtimeConfigResolver.resolve(req.getAid(), isDebug);
         } catch (AgentForgeException e) {
             // Agent 未发布、已停止发布或已删除：作为一条正常回答返回，避免 500 与异常堆栈
-            return ChatResult.toFinished(req.getMessage().trim(), e.getMessage());
+            return ChatResult.toFinished(
+                    req.getMessage() == null ? "" : req.getMessage().trim(), e.getMessage());
         }
+        // 解析附件（含归属校验与载荷路由），需要当前 Agent 的模型能力。
+        AgentModelCapability capability = modelCapabilityResolver.resolve(config);
+        java.util.List<ResolvedChatAttachment> resolved =
+                attachmentService.resolve(fileIds, currentUserId());
+        java.util.List<AgentAttachment> attachments =
+                attachmentService.toAgentAttachments(
+                        resolved,
+                        capability == null ? null : capability.getModelConfig(),
+                        capability == null ? null : capability.getProviderCode());
+        req.setAttachments(attachments);
         IAgentManager<Object, Object> agentManager =
                 agentManagerFactory.getAgentManagerByType(config.getType());
         Object agent =

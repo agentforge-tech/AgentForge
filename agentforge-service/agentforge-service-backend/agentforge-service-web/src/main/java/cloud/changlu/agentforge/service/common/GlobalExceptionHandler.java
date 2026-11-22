@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * 全局异常处理，将异常转换为带可读 message 的统一结构，便于前端展示与排障。
@@ -31,6 +32,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorVo> handleBadRequest(IllegalArgumentException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiErrorVo(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
+    }
+
+    /** 路径变量/请求参数类型不匹配属于客户端入参错误，返回 400，避免误记为服务端 500。 */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorVo> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        log.warn("Request parameter type mismatch: {}={}", e.getName(), e.getValue());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiErrorVo(HttpStatus.BAD_REQUEST.value(), "请求参数格式不正确: " + e.getName()));
     }
 
     @ExceptionHandler(Exception.class)
