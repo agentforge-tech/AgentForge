@@ -236,7 +236,136 @@ public class MyAgent extends Agent {
 
 Most scenarios do not need a custom Agent. Prefer tools, middleware, and `AgentSettings`.
 
-## 10. Troubleshooting
+## 10. Attachments (images / text / file references)
+
+`AgentRequest` supports attachments through `attachments`. The framework assembles them into a `UserMessage(List<Content>)`, writes it to conversation memory together with the user question, and uses the same request shape for synchronous and streaming execution.
+
+### 10.1 Minimal example
+
+```java
+import cloud.changlu.agentforge.agent.domain.AgentAttachment;
+import cloud.changlu.agentforge.agent.domain.AgentAttachmentType;
+import cloud.changlu.agentforge.agent.domain.AttachmentPayloadType;
+import cloud.changlu.agentforge.agent.domain.AgentRequest;
+
+AgentRequest request = AgentRequest.builder()
+        .memoryId("session-001")
+        .question("Describe the content of this image")
+        .attachments(Arrays.asList(
+                AgentAttachment.builder()
+                        .fileId(1024L)
+                        .name("error-screenshot.png")
+                        .type(AgentAttachmentType.IMAGE)
+                        .fileType("png")
+                        .size(183462L)
+                        .url("https://example.com/upload/8f3c.png")
+                        .payloadType(AttachmentPayloadType.URL)
+                        .build()))
+        .build();
+
+ChatResult result = agent.run(request);
+```
+
+Streaming uses the same request:
+
+```java
+agent.runStream(request)
+        .onPartialResponse(token -> System.out.print(token))
+        .start();
+```
+
+### 10.2 Three attachment categories
+
+| Category | `type` | Recommended payload | Framework behavior |
+| --- | --- | --- | --- |
+| Plain text | `TEXT` | `TEXT` | Uses `text` when present; otherwise generates a URL reference |
+| Image | `IMAGE` | `URL` / `INLINE` / `TEXT` | External URL, Base64, or text reference |
+| Archive / office document / unknown | `UNKNOWN` | `TEXT` | Generates a reference with name, type, size, and URL |
+
+### 10.3 Text attachments
+
+The framework does not read local files. Prepare the text in business code and pass it through `text`:
+
+```java
+AgentAttachment doc = AgentAttachment.builder()
+        .fileId(2048L)
+        .name("requirements.md")
+        .type(AgentAttachmentType.TEXT)
+        .fileType("md")
+        .size(8421L)
+        .url("https://example.com/upload/requirements.md")
+        .payloadType(AttachmentPayloadType.TEXT)
+        .text("Attachment content:\n......")
+        .build();
+```
+
+If `text` is empty, the model only receives the file name, type, size, and URL. Limit attachment count and text length in business code to protect the context window.
+
+### 10.4 Image attachments
+
+There are three ways to pass an image:
+
+```java
+// 1. External URL: pass the URL to models that accept remote images
+AgentAttachment urlImage = AgentAttachment.builder()
+        .name("chart.png")
+        .type(AgentAttachmentType.IMAGE)
+        .fileType("png")
+        .url("https://example.com/chart.png")
+        .payloadType(AttachmentPayloadType.URL)
+        .build();
+
+// 2. Inline: the framework downloads the image and encodes it as Base64
+AgentAttachment inlineImage = AgentAttachment.builder()
+        .name("chart.png")
+        .type(AgentAttachmentType.IMAGE)
+        .fileType("png")
+        .url("https://example.com/chart.png")
+        .payloadType(AttachmentPayloadType.INLINE)
+        .build();
+
+// 3. Text reference: for non-vision models or oversized images
+AgentAttachment textImage = AgentAttachment.builder()
+        .name("chart.png")
+        .type(AgentAttachmentType.IMAGE)
+        .fileType("png")
+        .url("https://example.com/chart.png")
+        .payloadType(AttachmentPayloadType.TEXT)
+        .build();
+```
+
+`INLINE` uses the built-in `UrlImageLoader` to download `http/https` images. If loading or Base64 conversion fails, the framework degrades to a text reference instead of failing the whole turn.
+
+> When using the SDK directly, the framework trusts your `payloadType`; it does not check whether the model supports images. Set images to `TEXT` for non-vision models. AgentForge Service performs this routing automatically based on model capability.
+
+### 10.5 Custom image loading
+
+If images live on local disk, OSS, S3, or require signed access, implement `ImageLoader` and register it globally:
+
+```java
+public class OssImageLoader implements ImageLoader {
+
+    @Override
+    public ImageBinary load(String url) {
+        byte[] bytes = ossClient.read(url);
+        return new ImageBinary(bytes, "image/png");
+    }
+}
+
+AttachmentContentAssembler.setDefaultImageLoader(new OssImageLoader());
+```
+
+Set it once at startup; all subsequent `INLINE` images use it.
+
+### 10.6 Constraints
+
+- `AgentRequest.Builder.build()` requires a non-blank `question`. When sending attachments only, inject a placeholder such as "I uploaded attachments; answer based on them.";
+- `payloadType` defaults to `TEXT`, and `type` defaults to `UNKNOWN`;
+- `URL` / `INLINE` only apply to `IMAGE`;
+- Ownership checks, count limits, and text truncation belong to business code;
+- If resources come from user-provided URLs instead of local uploads, pair this with [Resource Reading Middleware](./middleware/read).
+
+## 11. Troubleshooting
 
 | Symptom | Cause and fix |
 | --- | --- |

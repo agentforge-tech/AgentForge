@@ -60,6 +60,8 @@ const sidebars = {
         {type: 'doc', id: 'sdk/middleware/trace', label: 'Trace Middleware'},
         {type: 'doc', id: 'sdk/middleware/append', label: '对话追加 Middleware'},
         {type: 'doc', id: 'sdk/middleware/compact', label: '上下文阈值压缩 Middleware'},
+        {type: 'doc', id: 'sdk/middleware/todo', label: '任务计划 Todo Middleware'},
+        {type: 'doc', id: 'sdk/middleware/read', label: '阅读资源 Middleware'},
       ],
     },
     {
