@@ -30,6 +30,8 @@ Middleware 契约、管理器与内置实现都在 `agentforge-agent-core` 中�
 | [Trace Middleware](./middleware/trace) | 输出可持久化、可绘制执行链路的快照 |
 | [对话追加 Middleware](./middleware/append) | Agent Loop 运行中接收并注入新的用户消息 |
 | [上下文阈值压缩 Middleware](./middleware/compact) | 长会话阈值压缩、历史摘要与超大工具结果截断 |
+| [任务计划 Todo Middleware](./middleware/todo) | 多步骤任务的任务清单、状态推进与业务监控 |
+| [阅读资源 Middleware](./middleware/read) | 让模型按需读取用户提供的图片链接和网页链接 |
 
 ## 1. 两个接口
 

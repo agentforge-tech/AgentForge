@@ -266,6 +266,30 @@ Collects per-step latency, tool calls, and token usage for tracing canvases:
 
 Tracing is best-effort: failures never interrupt Agent execution.
 
+### TodoPlanMiddleware
+
+Observes the `todoplan` tool after a successful call and forwards the latest task plan to a `TodoPlanListener` for logging, auditing, metrics, or custom UI. It does not rewrite results or emit events:
+
+```java
+.middleware(new TodoPlanMiddleware((todos, context) ->
+        System.out.println("plan size = " + todos.size())))
+```
+
+See [Todo Plan Middleware](./middleware/todo) for tool registration, validation rules, and event integration.
+
+### ReadArtifactMiddleware
+
+Collects metadata from the `read_resource` tool and assembles images or references into the next model request:
+
+```java
+ReadArtifactMiddleware readMiddleware = ReadArtifactMiddleware.builder()
+        .supportsImage(true)
+        .requiresInlineImage(false) // true for Anthropic
+        .build();
+```
+
+See [Resource Reading Middleware](./middleware/read) for tool registration, image routing, and custom fetchers.
+
 ## 7. Failure isolation
 
 `AgentMiddlewareManager` isolates exceptions for every callback:

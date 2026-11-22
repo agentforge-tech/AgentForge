@@ -238,7 +238,136 @@ public class MyAgent extends Agent {
 
 大多数场景不需要自定义 Agent，优先通过工具、中间件和 `AgentSettings` 扩展。
 
-## 10. 常见问题
+## 10. 携带附件（图片 / 文本 / 文件引用）
+
+`AgentRequest` 支持通过 `attachments` 携带附件。框架会把附件装配成 `UserMessage(List<Content>)`，与用户问题一起写入会话记忆；同步执行和流式执行使用同一个请求结构。
+
+### 10.1 最小示例
+
+```java
+import cloud.changlu.agentforge.agent.domain.AgentAttachment;
+import cloud.changlu.agentforge.agent.domain.AgentAttachmentType;
+import cloud.changlu.agentforge.agent.domain.AttachmentPayloadType;
+import cloud.changlu.agentforge.agent.domain.AgentRequest;
+
+AgentRequest request = AgentRequest.builder()
+        .memoryId("session-001")
+        .question("请描述这张图片的内容")
+        .attachments(Arrays.asList(
+                AgentAttachment.builder()
+                        .fileId(1024L)
+                        .name("报错截图.png")
+                        .type(AgentAttachmentType.IMAGE)
+                        .fileType("png")
+                        .size(183462L)
+                        .url("https://example.com/upload/8f3c.png")
+                        .payloadType(AttachmentPayloadType.URL)
+                        .build()))
+        .build();
+
+ChatResult result = agent.run(request);
+```
+
+流式执行只需要把同一个 `request` 交给 `runStream()`：
+
+```java
+agent.runStream(request)
+        .onPartialResponse(token -> System.out.print(token))
+        .start();
+```
+
+### 10.2 三类附件
+
+| 附件类型 | `type` | 推荐载荷 | 框架行为 |
+| --- | --- | --- | --- |
+| 纯文本 | `TEXT` | `TEXT` | 优先使用 `text` 正文；为空时生成带 URL 的引用 |
+| 图片 | `IMAGE` | `URL` / `INLINE` / `TEXT` | 外链、Base64 或文字引用 |
+| 压缩包 / 办公文档 / 未知类型 | `UNKNOWN` | `TEXT` | 只生成名称、类型、大小和访问地址引用 |
+
+### 10.3 文本附件
+
+框架不会读取本地文件。文本正文由业务层准备好后放入 `text`：
+
+```java
+AgentAttachment doc = AgentAttachment.builder()
+        .fileId(2048L)
+        .name("需求说明.md")
+        .type(AgentAttachmentType.TEXT)
+        .fileType("md")
+        .size(8421L)
+        .url("https://example.com/upload/需求说明.md")
+        .payloadType(AttachmentPayloadType.TEXT)
+        .text("以下是附件正文内容：\n......")
+        .build();
+```
+
+如果 `text` 为空，模型只会收到文件名、类型、大小和访问地址。单条消息的附件数量、单附件正文长度应由业务层限制，避免上下文被撑爆。
+
+### 10.4 图片附件
+
+图片有三种交给模型的方式：
+
+```java
+// 1. 外链：直接把 URL 交给支持外链图片的模型
+AgentAttachment urlImage = AgentAttachment.builder()
+        .name("chart.png")
+        .type(AgentAttachmentType.IMAGE)
+        .fileType("png")
+        .url("https://example.com/chart.png")
+        .payloadType(AttachmentPayloadType.URL)
+        .build();
+
+// 2. 内联：框架下载图片并转 Base64，适合私网地址或 Anthropic
+AgentAttachment inlineImage = AgentAttachment.builder()
+        .name("chart.png")
+        .type(AgentAttachmentType.IMAGE)
+        .fileType("png")
+        .url("https://example.com/chart.png")
+        .payloadType(AttachmentPayloadType.INLINE)
+        .build();
+
+// 3. 文字引用：模型不支持图片，或图片过大时降级
+AgentAttachment textImage = AgentAttachment.builder()
+        .name("chart.png")
+        .type(AgentAttachmentType.IMAGE)
+        .fileType("png")
+        .url("https://example.com/chart.png")
+        .payloadType(AttachmentPayloadType.TEXT)
+        .build();
+```
+
+`INLINE` 默认使用内置的 `UrlImageLoader` 下载 `http/https` 图片。图片读取或 Base64 转换失败时，框架会自动降级为文字引用，不会中断整轮对话。
+
+> 直连 SDK 时，框架按你声明的 `payloadType` 装配，不会自动判断模型是否支持图片。如果模型不支持视觉输入，请把图片设为 `TEXT`。AgentForge Service 会依据模型能力自动完成这层路由。
+
+### 10.5 自定义图片加载
+
+如果图片在本地磁盘、OSS、S3 或需要签名访问，可以实现 `ImageLoader` 并注册为全局默认实现：
+
+```java
+public class OssImageLoader implements ImageLoader {
+
+    @Override
+    public ImageBinary load(String url) {
+        byte[] bytes = ossClient.read(url);
+        return new ImageBinary(bytes, "image/png");
+    }
+}
+
+AttachmentContentAssembler.setDefaultImageLoader(new OssImageLoader());
+```
+
+只需要在启动阶段设置一次；后续所有 `INLINE` 图片都会使用该实现。
+
+### 10.6 常见约束
+
+- `AgentRequest.Builder.build()` 要求 `question` 非空。只发附件时，请注入占位问题，例如「我上传了附件，请结合附件内容回答。」；
+- `payloadType` 为空时默认 `TEXT`，`type` 为空时默认 `UNKNOWN`；
+- `URL` / `INLINE` 只对 `IMAGE` 生效；
+- 附件归属校验、数量限制、正文截断属于业务层职责，框架不重复校验；
+- 如果附件来自用户提供的 URL，而不是本地上传，可以搭配 [阅读资源 Middleware](./middleware/read) 让模型按需读取。
+
+## 11. 常见问题
 
 | 现象 | 原因与处理 |
 | --- | --- |
