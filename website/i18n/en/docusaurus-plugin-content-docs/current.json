@@ -106,6 +106,14 @@
     "message": "Context Compaction Middleware",
     "description": "The label for the doc item '上下文阈值压缩 Middleware' in sidebar 'sdkSidebar', linking to the doc sdk/middleware/compact"
   },
+  "sidebar.sdkSidebar.doc.任务计划 Todo Middleware": {
+    "message": "Todo Plan Middleware",
+    "description": "The label for the doc item '任务计划 Todo Middleware' in sidebar 'sdkSidebar', linking to the doc sdk/middleware/todo"
+  },
+  "sidebar.sdkSidebar.doc.阅读资源 Middleware": {
+    "message": "Resource Reading Middleware",
+    "description": "The label for the doc item '阅读资源 Middleware' in sidebar 'sdkSidebar', linking to the doc sdk/middleware/read"
+  },
   "sidebar.sdkSidebar.doc.内存级会话审批确认": {
     "message": "In-Memory Conversation Approval",
     "description": "The label for the doc item '内存级会话审批确认' in sidebar 'sdkSidebar', linking to the doc sdk/permission-approval/in-memory-session"
