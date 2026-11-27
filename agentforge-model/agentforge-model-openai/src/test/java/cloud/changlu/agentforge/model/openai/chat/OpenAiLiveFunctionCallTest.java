@@ -1,8 +1,9 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.chat;
 
 import cloud.changlu.agentforge.model.chat.message.ChatMessage;
 import cloud.changlu.agentforge.model.chat.message.UserMessage;
 import cloud.changlu.agentforge.model.chat.request.DefaultChatRequestParameters;
+import cloud.changlu.agentforge.model.openai.OpenAiChatModel;
 import cloud.changlu.agentforge.model.tool.P;
 import cloud.changlu.agentforge.model.tool.Tool;
 import cloud.changlu.agentforge.model.tool.execution.ToolService;
@@ -25,8 +26,8 @@ import static org.junit.Assert.assertTrue;
  *
  * <p>It is skipped by default unless a {@code live-endpoint.properties} file (Git-ignored, see the
  * {@code .gitignore} entry and {@code live-endpoint.example.properties} template) is present with a
- * non-blank {@code baseUrl}/{@code modelName}/{@code apiKey}. Credentials are therefore never
- * hard-coded in the test source.
+ * non-blank {@code baseUrl}/{@code modelName}. The test is intended for a local or otherwise
+ * keyless OpenAI-compatible endpoint.
  *
  * <p>The test registers a {@code getWeather} tool, sends a user message, and lets the model decide
  * to call the tool. {@link ToolService} then executes it and, on a second round, returns the final
@@ -50,8 +51,7 @@ public class OpenAiLiveFunctionCallTest {
         Properties config = loadConfig();
         String baseUrl = config.getProperty("baseUrl", "").trim();
         String modelName = config.getProperty("modelName", "").trim();
-        String apiKey = config.getProperty("apiKey", "").trim();
-        if (baseUrl.isEmpty() || modelName.isEmpty() || apiKey.isEmpty()) {
+        if (baseUrl.isEmpty() || modelName.isEmpty()) {
             System.out.println(
                     "Skip live function-call test: no live-endpoint.properties config (see "
                             + "live-endpoint.example.properties template).");
@@ -61,7 +61,6 @@ public class OpenAiLiveFunctionCallTest {
         OpenAiChatModel model =
                 OpenAiChatModel.builder()
                         .baseUrl(baseUrl)
-                        .apiKey(apiKey)
                         .modelName(modelName)
                         .temperature(0.0)
                         .build();

@@ -51,6 +51,13 @@ AgentForge
 
 
 
+**fim model**：代码补全模型
+
+- [x] FimModel 协议层与 OpenAI Completions 对接：[DeepSeek FIM 快速对接与落地实现：OpenAI Completions 协议复用 + FimModel 契约设计](../dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/fimmodel/统一FimModel协议层01、DeepSeek%20FIM%20快速对接与落地实现：OpenAI%20Completions%20协议复用%20+%20FimModel%20契约设计.md)
+- [x] OpenAI-compatible FIM 部署接入：[AgentForge 接入 OpenAI-compatible FIM：Xinference 与 vLLM 一套装配打通](../dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/fimmodel/openai/OpenAI协议01、AgentForge%20接入%20OpenAI-compatible%20FIM：Xinference%20与%20vLLM%20一套装配打通.md)
+- [x] DashScope Partial Mode FIM：[AgentForge 适配百炼 Partial Mode 接入核心实践](../dev/backend/AgentForge核心模块设计原理文章系列/01、model模型协议层/fimmodel/dashscope/百炼协议02、AgentForge%20适配百炼%20Partial%20Mode%20接入核心实践.md)
+
+
 **Embedding Model**：向量模型层
 
 - [ ] OpenAI协议

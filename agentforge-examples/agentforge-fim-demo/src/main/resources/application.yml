@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8080}
+  # SSE 流式补全需要较长的空闲超时，否则流到一半会被容器掐断
+  tomcat:
+    connection-timeout: 60000
+
+fim:
+  enabled: true
+  # 渠道参数：1 = OPENAI，走 POST {base-url}/completions。
+  # 单独成组是为了后续切换 DeepSeek / DashScope 时不与模型生成参数混在一起。
+  channel:
+    provider-code: ${FIM_PROVIDER_CODE:1}
+    base-url: ${FIM_BASE_URL:http://127.0.0.1:9997/v1}
+    api-key: ${FIM_API_KEY:EMPTY}
+
+  # 模型与生成参数，默认值与 README 中的 curl 完全对应。
+  model-name: ${FIM_MODEL_NAME:CodeQwen1.5-7B}
+  # 关键：本部署实测只注册了无竖线特殊 Token。接其他部署前请先访问 /api/fim/probe 确认。
+  template: ${FIM_TEMPLATE:qwen-no-pipe}
+  temperature: 0.0
+  max-tokens: 64
+  timeout-seconds: 30
+  streaming: true
+  # 多个 stop 用 | 分隔，stop 内部的竖线写成 \|。
+  # <file_sep> 防止模型续写下一个训练文件；Java 方法收尾防止连续生成 mul/div。
+  stop: |
+    <\|endoftext\|>|<fim_prefix>|<fim_suffix>|<fim_middle>|<fim_pad>|<file_sep>|
+        }
+
+logging:
+  level:
+    cloud.changlu.demo.fim: INFO

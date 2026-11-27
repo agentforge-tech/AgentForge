@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentForge FIM 补全演示</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">AF</span>
+    <div>
+      <h1>代码补全演示</h1>
+      <p class="sub">AgentForge · OpenAI-compatible FIM</p>
+    </div>
+  </div>
+  <div class="meta" id="meta"></div>
+</header>
+
+<main class="workspace">
+
+  <!-- 左侧：案例 + 编辑器 -->
+  <section class="editor-pane">
+
+    <!-- 案例选择 -->
+    <div class="case-bar">
+      <span class="case-label">案例</span>
+      <div class="cases" id="caseList"></div>
+    </div>
+
+    <div class="pane-head">
+      <div class="lang-badge" id="langBadge">python</div>
+      <div class="actions">
+        <label class="toggle">
+          <input type="checkbox" id="autoTrigger" checked>
+          <span>停顿自动补全</span>
+        </label>
+        <button id="triggerBtn" class="btn primary">补全 <kbd>Tab</kbd></button>
+        <button id="resetBtn" class="btn">重置</button>
+      </div>
+    </div>
+
+    <div class="editor-wrap">
+      <div class="gutter" id="gutter">1</div>
+      <div class="editor-body">
+        <!-- 幽灵补全层：统一排版前文 + 流式补全 + 后文，使后文随补全下移 -->
+        <div class="ghost-layer" id="ghostLayer" aria-hidden="true"></div>
+        <textarea id="editor" spellcheck="false" autocomplete="off"
+                  autocorrect="off" autocapitalize="off"></textarea>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span id="statusText">就绪</span>
+      <span class="sep">|</span>
+      <span id="cursorInfo">行 1，列 1</span>
+      <span class="spacer"></span>
+      <span id="latencyInfo"></span>
+    </div>
+  </section>
+
+  <!-- 右侧：诊断与结果 -->
+  <aside class="side-pane">
+    <div class="card">
+      <h2>本次配置</h2>
+      <dl id="configList" class="kv"><dd class="muted">加载中…</dd></dl>
+      <button id="probeBtn" class="btn wide">探测 Token 形态</button>
+      <div id="probeResult" class="probe-result"></div>
+    </div>
+
+    <div class="card grow">
+      <h2>补全结果</h2>
+      <div id="completionBox" class="completion empty">选好案例后，把光标放到缺口位置，按 Tab 触发</div>
+    </div>
+
+    <div class="card">
+      <h2>事件日志</h2>
+      <ul id="logList" class="logs"></ul>
+    </div>
+  </aside>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

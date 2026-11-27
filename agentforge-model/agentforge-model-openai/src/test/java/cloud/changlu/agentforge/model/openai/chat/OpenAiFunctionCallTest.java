@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.chat;
 
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.SystemMessage;
@@ -15,6 +15,7 @@ import cloud.changlu.agentforge.model.http.HttpRequest;
 import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
 import cloud.changlu.agentforge.model.internal.json.Json;
+import cloud.changlu.agentforge.model.openai.OpenAiChatModel;
 import cloud.changlu.agentforge.model.tool.spec.ToolParameters;
 import cloud.changlu.agentforge.model.tool.spec.ToolSpecification;
 
@@ -279,11 +280,7 @@ public class OpenAiFunctionCallTest {
     }
 
     private static OpenAiChatModel model(HttpTransport transport) {
-        return OpenAiChatModel.builder()
-                .apiKey("test-key")
-                .modelName("gpt-test")
-                .httpTransport(transport)
-                .build();
+        return OpenAiChatModel.builder().modelName("gpt-test").httpTransport(transport).build();
     }
 
     private static final class CapturingTransport implements HttpTransport {
