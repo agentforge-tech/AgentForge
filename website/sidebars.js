@@ -72,6 +72,14 @@ const sidebars = {
         {type: 'doc', id: 'sdk/permission-approval/in-memory-session', label: '内存级会话审批确认'},
       ],
     },
+    {
+      type: 'category',
+      label: '模型扩展',
+      collapsed: false,
+      items: [
+        {type: 'doc', id: 'sdk/fim-model', label: 'FIM 代码补全模型协议'},
+      ],
+    },
   ],
   serviceSidebar: [
     {

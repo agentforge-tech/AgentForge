@@ -2,6 +2,8 @@ package cloud.changlu.agentforge.model.registry;
 
 import cloud.changlu.agentforge.model.chat.ChatModel;
 import cloud.changlu.agentforge.model.chat.StreamingChatModel;
+import cloud.changlu.agentforge.model.fim.FimModel;
+import cloud.changlu.agentforge.model.fim.StreamingFimModel;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
 import cloud.changlu.agentforge.model.registry.enums.LlmEnum;
 import cloud.changlu.agentforge.model.registry.models.IModel;
@@ -25,6 +27,16 @@ public class LlmFactory {
     /** 构造流式 StreamingChatModel */
     public static StreamingChatModel buildStreamChatModel(LlmBasicConfig llmBasicConfig) {
         return loadModel(llmBasicConfig).buildStreamChatModel(llmBasicConfig);
+    }
+
+    /** 构造同步 FimModel（中间补全） */
+    public static FimModel buildFimModel(LlmBasicConfig llmBasicConfig) {
+        return loadModel(llmBasicConfig).buildFimModel(llmBasicConfig);
+    }
+
+    /** 构造流式 StreamingFimModel */
+    public static StreamingFimModel buildStreamingFimModel(LlmBasicConfig llmBasicConfig) {
+        return loadModel(llmBasicConfig).buildStreamingFimModel(llmBasicConfig);
     }
 
     /** 根据 providerCode 加载 IModel 实例（内部复用） */

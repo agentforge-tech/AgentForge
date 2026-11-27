@@ -1,0 +1,8 @@
+SERVER_IP="172.16.114.23"
+SERVER_USER="root"
+SERVER_PASSWORD=""
+SERVER_DEPLOY_DIR="/opt/tools/fimtest"
+APP_PORT="17863"
+JAR_NAME="agentforge-fim-demo.jar"
+JAVA_BIN="java"
+

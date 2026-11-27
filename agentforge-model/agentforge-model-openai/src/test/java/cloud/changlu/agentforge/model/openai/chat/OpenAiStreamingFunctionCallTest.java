@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.chat;
 
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
@@ -11,6 +11,7 @@ import cloud.changlu.agentforge.model.http.HttpRequest;
 import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
 import cloud.changlu.agentforge.model.http.StreamingHttpResponseHandler;
+import cloud.changlu.agentforge.model.openai.OpenAiStreamingChatModel;
 
 import org.junit.Test;
 
@@ -135,7 +136,6 @@ public class OpenAiStreamingFunctionCallTest {
 
     private static OpenAiStreamingChatModel model(HttpTransport transport) {
         return OpenAiStreamingChatModel.builder()
-                .apiKey("test-key")
                 .modelName("gpt-test")
                 .httpTransport(transport)
                 .build();

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        独立模拟工程：不继承 AgentForge 聚合 POM，
+        仅通过本地仓库引入 agentforge-model-registry 使用框架的 FIM 能力。
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.18</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>cloud.changlu.demo</groupId>
+    <artifactId>agentforge-fim-demo</artifactId>
+    <version>1.0.0</version>
+    <name>agentforge-fim-demo</name>
+    <description>用 AgentForge 对接本地 OpenAI-compatible FIM 模型的模拟工程</description>
+
+    <properties>
+        <java.version>8</java.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <agentforge.version>1.0.1-SNAPSHOT</agentforge.version>
+        <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
+        <google-java-format.version>1.35.0</google-java-format.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--
+            只引 registry 一个模块即可：它已传递依赖 model-api / core / openai / anthropic / dashscope。
+            业务代码不需要感知任何 Provider 实现类，统一走 LlmFactory + FimModel 契约。
+        -->
+        <dependency>
+            <groupId>cloud.changlu.agentforge</groupId>
+            <artifactId>agentforge-model-registry</artifactId>
+            <version>${agentforge.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+                <configuration>
+                    <java>
+                        <googleJavaFormat>
+                            <version>${google-java-format.version}</version>
+                            <style>AOSP</style>
+                        </googleJavaFormat>
+                        <removeUnusedImports/>
+                        <importOrder>
+                            <order>cloud.changlu,,javax,java,scala,\#</order>
+                        </importOrder>
+                    </java>
+                    <pom>
+                        <includes>
+                            <include>pom.xml</include>
+                        </includes>
+                        <sortPom>
+                            <nrOfIndentSpace>4</nrOfIndentSpace>
+                        </sortPom>
+                    </pom>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

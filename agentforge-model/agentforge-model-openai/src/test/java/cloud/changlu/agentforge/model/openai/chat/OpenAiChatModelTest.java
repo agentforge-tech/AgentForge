@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.chat;
 
 import cloud.changlu.agentforge.model.chat.message.AiMessage;
 import cloud.changlu.agentforge.model.chat.message.SystemMessage;
@@ -12,6 +12,7 @@ import cloud.changlu.agentforge.model.http.HttpRequest;
 import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
 import cloud.changlu.agentforge.model.internal.json.Json;
+import cloud.changlu.agentforge.model.openai.OpenAiChatModel;
 
 import org.junit.Test;
 
@@ -29,67 +30,6 @@ import static org.junit.Assert.assertTrue;
 
 public class OpenAiChatModelTest {
 
-    // Modify these constants when you want to run the real-endpoint test.
-    private static final String REAL_ENDPOINT_BASE_URL = "https://api.openai.com/v1";
-    private static final String REAL_ENDPOINT_API_KEY = "";
-    private static final String REAL_ENDPOINT_MODEL_NAME = "gpt-4o-mini";
-
-    /**
-     * Optional real-endpoint verification.
-     *
-     * <p>Modify the three {@code REAL_ENDPOINT_*} constants above before running this test.
-     *
-     * <ul>
-     *   <li>Use {@code REAL_ENDPOINT_BASE_URL} for the OpenAI-compatible endpoint.
-     *   <li>Use {@code REAL_ENDPOINT_API_KEY} for the API key.
-     *   <li>Use {@code REAL_ENDPOINT_MODEL_NAME} for the model name.
-     * </ul>
-     *
-     * <p>When the API key is blank, the test is skipped so normal unit-test runs do not make a
-     * network request. Once configured, the real request is executed and any
-     * HTTP/transport/response exception fails the test.
-     */
-    @Test
-    public void shouldCallRealEndpointWithUserConfiguration() {
-        /*
-         * 直接修改当前测试类顶部的 REAL_ENDPOINT_* 常量即可。
-         * baseUrl 可以替换为其他 OpenAI 兼容服务的接口地址。
-         */
-        String baseUrl = REAL_ENDPOINT_BASE_URL;
-        String apiKey = REAL_ENDPOINT_API_KEY;
-        String modelName = REAL_ENDPOINT_MODEL_NAME;
-
-        if (isBlank(baseUrl) || isBlank(apiKey) || isBlank(modelName)) {
-            System.out.println(
-                    "Skip real OpenAI endpoint test: modify the REAL_ENDPOINT_* constants first.");
-            return;
-        }
-
-        ChatResponse response =
-                OpenAiChatModel.builder()
-                        .baseUrl(baseUrl)
-                        .apiKey(apiKey)
-                        .modelName(modelName)
-                        .temperature(0.0)
-                        .maxTokens(64)
-                        .build()
-                        .chat(
-                                ChatRequest.builder()
-                                        .message(
-                                                UserMessage.from(
-                                                        "Reply with one short sentence confirming the connection works."))
-                                        .build());
-
-        System.out.println("Real OpenAI endpoint test succeeded.");
-        System.out.println("model=" + response.metadata().get("model"));
-        System.out.println("finishReason=" + response.finishReason());
-        System.out.println("answer=" + response.aiMessage().text());
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
     @Test
     public void shouldMapRequestAndNormalizeResponse() {
         CapturingTransport transport =
@@ -103,7 +43,6 @@ public class OpenAiChatModelTest {
         OpenAiChatModel model =
                 OpenAiChatModel.builder()
                         .baseUrl("https://gateway.example/v1/")
-                        .apiKey("secret")
                         .modelName("gpt-default")
                         .temperature(0.2)
                         .maxTokens(256)
@@ -135,7 +74,7 @@ public class OpenAiChatModelTest {
         assertNotNull(request);
         assertEquals("https://gateway.example/v1/chat/completions", request.url());
         assertEquals("POST", request.method());
-        assertEquals("Bearer secret", request.headers().get("Authorization"));
+        assertFalse(request.headers().containsKey("Authorization"));
         assertEquals("agentforge", request.headers().get("X-Project"));
         assertEquals("application/json", request.headers().get("Content-Type"));
         assertEquals(1234, request.connectTimeoutMillis());
@@ -166,7 +105,7 @@ public class OpenAiChatModelTest {
     }
 
     @Test
-    public void shouldWorkWithoutApiKeyForOpenAiCompatibleEndpoint() {
+    public void shouldWorkWithLocalOpenAiCompatibleEndpoint() {
         CapturingTransport transport =
                 new CapturingTransport(
                         new HttpResponse(
