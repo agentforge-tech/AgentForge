@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.fim;
 
 import cloud.changlu.agentforge.model.exception.ModelException;
 import cloud.changlu.agentforge.model.fim.request.DefaultFimRequestParameters;
@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * OpenAI Completions（FIM）wire 协议辅助类。
  *
- * <p>与 {@link OpenAiMessages} 同一约定：包私有，仅服务于 {@link OpenAiFimModel} 与 {@link
+ * <p>与 {@code OpenAiMessages} 同一约定：包私有，仅服务于 {@link OpenAiFimModel} 与 {@link
  * OpenAiStreamingFimModel}，不属于公开 API。抽出来后两个 Provider 共享同一份 请求体构造与响应解析逻辑，避免同步/流式实现漂移。
  *
  * @author changlu

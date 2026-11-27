@@ -13,7 +13,6 @@ import cloud.changlu.agentforge.model.http.HttpRequest;
 import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
 import cloud.changlu.agentforge.model.http.StreamingHttpResponseHandler;
-import cloud.changlu.agentforge.model.openai.OpenAiStreamingFimModel;
 
 import org.junit.Test;
 

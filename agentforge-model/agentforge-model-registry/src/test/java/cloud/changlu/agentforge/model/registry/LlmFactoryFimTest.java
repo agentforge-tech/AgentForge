@@ -2,8 +2,8 @@ package cloud.changlu.agentforge.model.registry;
 
 import cloud.changlu.agentforge.model.fim.FimModel;
 import cloud.changlu.agentforge.model.fim.StreamingFimModel;
-import cloud.changlu.agentforge.model.openai.OpenAiFimModel;
-import cloud.changlu.agentforge.model.openai.OpenAiStreamingFimModel;
+import cloud.changlu.agentforge.model.openai.fim.OpenAiFimModel;
+import cloud.changlu.agentforge.model.openai.fim.OpenAiStreamingFimModel;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
 import cloud.changlu.agentforge.model.registry.constant.LlmConstant;
 import cloud.changlu.agentforge.model.registry.enums.LlmEnum;

@@ -313,4 +313,6 @@ AgentSettings settings = AgentSettings.builder()
 4. **流式回调保持轻量**：Provider 可能从 I/O 线程回调，耗时逻辑应转交业务线程池；
 5. **统一记录 Token**：`ChatResponse.tokenUsage()` 已归一化，可直接用于计费与监控。
 
+代码补全场景不使用 ChatModel 的 messages 语义，可继续阅读独立的 [FIM 代码补全模型协议](./fim-model)。
+
 下一步：把模型接入 [Agent 智能体（流式、非流式）](./agent)。

@@ -1667,7 +1667,7 @@ public interface FimTemplate {
 这是本次"快速对接"的核心：**一个类同时服务 DeepSeek 与任何实现 OpenAI Completions 形状的服务**。
 
 ```java
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.fim;
 
 import cloud.changlu.agentforge.model.exception.ModelException;
 import cloud.changlu.agentforge.model.fim.FimCall;
@@ -2049,7 +2049,7 @@ System.out.println(response.completion());   // 期望类似 "    return a + b;"
 流式解析与 `OpenAiStreamingChatModel` 同构，但**只在 `choices[0].text` 上做增量**，并且要在最后一个块上收 usage。
 
 ```java
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.fim;
 
 import cloud.changlu.agentforge.model.cancel.CancellationHandle;
 import cloud.changlu.agentforge.model.fim.StreamingFimModel;
@@ -2660,9 +2660,9 @@ import cloud.changlu.agentforge.model.chat.StreamingChatModel;
 import cloud.changlu.agentforge.model.fim.FimModel;
 import cloud.changlu.agentforge.model.fim.StreamingFimModel;
 import cloud.changlu.agentforge.model.openai.OpenAiChatModel;
-import cloud.changlu.agentforge.model.openai.OpenAiFimModel;
+import cloud.changlu.agentforge.model.openai.fim.OpenAiFimModel;
 import cloud.changlu.agentforge.model.openai.OpenAiStreamingChatModel;
-import cloud.changlu.agentforge.model.openai.OpenAiStreamingFimModel;
+import cloud.changlu.agentforge.model.openai.fim.OpenAiStreamingFimModel;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
 
 /**

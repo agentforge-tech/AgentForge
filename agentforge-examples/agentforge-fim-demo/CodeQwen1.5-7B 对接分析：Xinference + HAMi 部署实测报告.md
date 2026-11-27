@@ -314,7 +314,7 @@ import cloud.changlu.agentforge.model.fim.FimModel;
 import cloud.changlu.agentforge.model.fim.request.FimRequest;
 import cloud.changlu.agentforge.model.fim.response.FimResponse;
 import cloud.changlu.agentforge.model.fim.template.TemplateFimModel;
-import cloud.changlu.agentforge.model.openai.OpenAiFimModel;
+import cloud.changlu.agentforge.model.openai.fim.OpenAiFimModel;
 
 // 1) 底层：只负责把 prompt 发到 /completions
 FimModel raw = OpenAiFimModel.builder()

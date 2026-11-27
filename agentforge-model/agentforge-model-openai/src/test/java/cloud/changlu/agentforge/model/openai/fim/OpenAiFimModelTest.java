@@ -10,8 +10,6 @@ import cloud.changlu.agentforge.model.fim.response.FimResponse;
 import cloud.changlu.agentforge.model.http.HttpRequest;
 import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
-import cloud.changlu.agentforge.model.openai.OpenAiFimModel;
-import cloud.changlu.agentforge.model.openai.OpenAiFimWire;
 
 import org.junit.Test;
 

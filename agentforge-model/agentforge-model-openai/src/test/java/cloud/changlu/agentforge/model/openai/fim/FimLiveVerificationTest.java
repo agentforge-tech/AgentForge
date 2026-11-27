@@ -9,8 +9,6 @@ import cloud.changlu.agentforge.model.fim.response.FimFinishReason;
 import cloud.changlu.agentforge.model.fim.response.FimResponse;
 import cloud.changlu.agentforge.model.fim.response.FimUsage;
 import cloud.changlu.agentforge.model.fim.response.StreamingFimResponseHandler;
-import cloud.changlu.agentforge.model.openai.OpenAiFimModel;
-import cloud.changlu.agentforge.model.openai.OpenAiStreamingFimModel;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.fim;
 
 import cloud.changlu.agentforge.model.exception.ModelException;
 import cloud.changlu.agentforge.model.fim.FimCall;
@@ -14,6 +14,7 @@ import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
 import cloud.changlu.agentforge.model.http.JdkHttpTransport;
 import cloud.changlu.agentforge.model.internal.json.Json;
+import cloud.changlu.agentforge.model.openai.OpenAiChatModel;
 
 import java.io.IOException;
 import java.util.Collections;

@@ -14,7 +14,7 @@
 
 ## 模型配置
 
-默认使用公司内网的 OpenAI-compatible FIM 服务。可用环境变量覆盖：
+默认使用本地的 OpenAI-compatible FIM 服务。可用环境变量覆盖：
 
 ```bash
 FIM_BASE_URL=http://127.0.0.1:9997/v1 \

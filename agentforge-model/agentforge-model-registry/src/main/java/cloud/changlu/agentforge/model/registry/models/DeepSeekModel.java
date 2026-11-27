@@ -5,9 +5,9 @@ import cloud.changlu.agentforge.model.chat.StreamingChatModel;
 import cloud.changlu.agentforge.model.fim.FimModel;
 import cloud.changlu.agentforge.model.fim.StreamingFimModel;
 import cloud.changlu.agentforge.model.openai.OpenAiChatModel;
-import cloud.changlu.agentforge.model.openai.OpenAiFimModel;
 import cloud.changlu.agentforge.model.openai.OpenAiStreamingChatModel;
-import cloud.changlu.agentforge.model.openai.OpenAiStreamingFimModel;
+import cloud.changlu.agentforge.model.openai.fim.OpenAiFimModel;
+import cloud.changlu.agentforge.model.openai.fim.OpenAiStreamingFimModel;
 import cloud.changlu.agentforge.model.registry.config.LlmBasicConfig;
 import cloud.changlu.agentforge.model.registry.constant.LlmConstant;
 

@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.fim;
 
 import cloud.changlu.agentforge.model.cancel.CancellationHandle;
 import cloud.changlu.agentforge.model.exception.ModelException;
