@@ -1,4 +1,4 @@
-package cloud.changlu.agentforge.model.openai;
+package cloud.changlu.agentforge.model.openai.chat;
 
 import cloud.changlu.agentforge.model.chat.message.SystemMessage;
 import cloud.changlu.agentforge.model.chat.message.UserMessage;
@@ -13,6 +13,7 @@ import cloud.changlu.agentforge.model.http.HttpResponse;
 import cloud.changlu.agentforge.model.http.HttpTransport;
 import cloud.changlu.agentforge.model.http.StreamingHttpResponseHandler;
 import cloud.changlu.agentforge.model.internal.json.Json;
+import cloud.changlu.agentforge.model.openai.OpenAiStreamingChatModel;
 
 import org.junit.Test;
 
@@ -41,75 +42,6 @@ import static org.junit.Assert.assertTrue;
  */
 public class OpenAiStreamingChatModelTest {
 
-    // Modify these constants when you want to run the real-endpoint test.
-    private static final String REAL_ENDPOINT_BASE_URL = "https://api.openai.com/v1";
-    private static final String REAL_ENDPOINT_API_KEY = "";
-    private static final String REAL_ENDPOINT_MODEL_NAME = "gpt-4o-mini";
-
-    /**
-     * Optional real-endpoint verification.
-     *
-     * <p>Modify the three {@code REAL_ENDPOINT_*} constants above before running this test.
-     *
-     * <ul>
-     *   <li>Use {@code REAL_ENDPOINT_BASE_URL} for the OpenAI-compatible endpoint.
-     *   <li>Use {@code REAL_ENDPOINT_API_KEY} for the API key.
-     *   <li>Use {@code REAL_ENDPOINT_MODEL_NAME} for the model name.
-     * </ul>
-     *
-     * <p>When the API key is blank, the test is skipped so normal unit-test runs do not make a
-     * network request. The endpoint may be any OpenAI-compatible service.
-     */
-    @Test
-    public void shouldStreamFromRealEndpointWithUserConfiguration() throws InterruptedException {
-        String baseUrl = REAL_ENDPOINT_BASE_URL;
-        String apiKey = REAL_ENDPOINT_API_KEY;
-        String modelName = REAL_ENDPOINT_MODEL_NAME;
-
-        if (isBlank(baseUrl) || isBlank(apiKey) || isBlank(modelName)) {
-            System.out.println(
-                    "Skip real OpenAI streaming endpoint test: modify the REAL_ENDPOINT_* constants first.");
-            return;
-        }
-
-        OpenAiStreamingChatModel model =
-                OpenAiStreamingChatModel.builder()
-                        .baseUrl(baseUrl)
-                        .apiKey(apiKey)
-                        .modelName(modelName)
-                        .temperature(0.0)
-                        .maxTokens(64)
-                        .build();
-        RecordingHandler handler = new RecordingHandler();
-
-        model.chat(
-                ChatRequest.builder()
-                        .message(
-                                UserMessage.from(
-                                        "Reply with one short sentence confirming the connection works."))
-                        .build(),
-                handler);
-
-        assertTrue(
-                "Timed out waiting for the streaming response",
-                handler.await(60, TimeUnit.SECONDS));
-        assertNull(handler.error);
-        assertNotNull(handler.completeResponse);
-        assertNotNull(handler.completeResponse.aiMessage());
-        assertTrue(
-                "The streaming response should contain text",
-                !isBlank(handler.completeResponse.aiMessage().text()));
-
-        System.out.println("Real OpenAI streaming endpoint test succeeded.");
-        System.out.println("model=" + handler.completeResponse.metadata().get("model"));
-        System.out.println("finishReason=" + handler.completeResponse.finishReason());
-        System.out.println("answer=" + handler.completeResponse.aiMessage().text());
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
     @Test
     public void shouldStreamPartialResponsesAndBuildCompleteResponse() {
         StreamingTransport transport =
@@ -123,7 +55,6 @@ public class OpenAiStreamingChatModelTest {
 
         OpenAiStreamingChatModel model =
                 OpenAiStreamingChatModel.builder()
-                        .apiKey("test-key")
                         .modelName("gpt-test")
                         .temperature(0.2)
                         .customHeader("X-Test", "yes")
@@ -153,7 +84,7 @@ public class OpenAiStreamingChatModelTest {
                 123L, ((Number) handler.completeResponse.metadata().get("created")).longValue());
 
         assertEquals("https://api.openai.com/v1/chat/completions", transport.lastRequest.url());
-        assertEquals("Bearer test-key", transport.lastRequest.headers().get("Authorization"));
+        assertFalse(transport.lastRequest.headers().containsKey("Authorization"));
         assertEquals("text/event-stream", transport.lastRequest.headers().get("Accept"));
         assertEquals("yes", transport.lastRequest.headers().get("X-Test"));
 
@@ -226,7 +157,6 @@ public class OpenAiStreamingChatModelTest {
 
         OpenAiStreamingChatModel model =
                 OpenAiStreamingChatModel.builder()
-                        .apiKey("test-key")
                         .modelName("deepseek-test")
                         .httpTransport(transport)
                         .build();
@@ -242,7 +172,7 @@ public class OpenAiStreamingChatModelTest {
     }
 
     @Test
-    public void shouldWorkWithOpenAiCompatibleEndpointWithoutApiKey() {
+    public void shouldWorkWithLocalOpenAiCompatibleEndpoint() {
         StreamingTransport transport =
                 StreamingTransport.success(
                         "data: {\"choices\":[{\"delta\":{\"content\":\"local\"},\"finish_reason\":\"stop\"}]}"

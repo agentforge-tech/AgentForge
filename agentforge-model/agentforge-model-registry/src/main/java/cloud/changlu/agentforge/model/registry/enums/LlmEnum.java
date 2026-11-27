@@ -1,6 +1,8 @@
 package cloud.changlu.agentforge.model.registry.enums;
 
 import cloud.changlu.agentforge.model.registry.models.AnthropicModel;
+import cloud.changlu.agentforge.model.registry.models.DashScopeModel;
+import cloud.changlu.agentforge.model.registry.models.DeepSeekModel;
 import cloud.changlu.agentforge.model.registry.models.IModel;
 import cloud.changlu.agentforge.model.registry.models.OpenAiModel;
 
@@ -15,7 +17,11 @@ public enum LlmEnum {
     // OpenAI Chat Completions 协议，同时兼容 OpenAI-compatible 服务（DashScope / Ollama / Xinference 等，配置对应
     // url 即可）
     OPENAI(1, "OpenAI", OpenAiModel.class),
-    ANTHROPIC(2, "Anthropic", AnthropicModel.class);
+    ANTHROPIC(2, "Anthropic", AnthropicModel.class),
+    // DeepSeek：Chat 走 OpenAI 兼容协议，FIM 走 Beta 的 /completions（自动补齐 /beta）
+    DEEPSEEK(3, "DeepSeek", DeepSeekModel.class),
+    // 阿里云百炼：Chat 走 OpenAI 兼容协议，FIM 走 Partial Mode（仅前缀续写）
+    DASHSCOPE(4, "DashScope", DashScopeModel.class);
 
     private final int code;
     private final String desc;
