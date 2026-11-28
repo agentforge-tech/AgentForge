@@ -178,6 +178,11 @@ AgentForge
 
 - [x] HITL 支持询问用户问题，用户回答作为工具结果；支持权限审核确认任务 Tool 执行：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E9%A1%B5%E9%9D%A2%E4%BC%9A%E8%AF%9D%E5%AF%B9%E8%AF%9D%E4%BA%A4%E4%BA%92/%E6%94%AF%E6%8C%81HITL/Agent%E9%A1%B5%E9%9D%A2HITL%E4%B8%AD%E6%96%AD%E4%BA%8B%E4%BB%B6%E4%B8%8E%E6%81%A2%E5%A4%8D%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">Agent 页面 HITL 中断事件与恢复设计方案</a>
 
+#### Agent 恢复
+
+- [x] Agent 任务重启自恢复设计：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/agent%E6%81%A2%E5%A4%8D/1%E3%80%81Agent%E4%BB%BB%E5%8A%A1%E6%9C%8D%E5%8A%A1%E9%87%8D%E5%90%AF%E8%87%AA%E5%8A%A8%E6%81%A2%E5%A4%8D%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">Agent 任务服务重启自动恢复设计方案</a>
+  - 实现：`AgentRecoveryRunner` 启动延迟异步执行，`AgentRecoveryService` 按「会话运行中 + 尾部 AI 消息 CREATED/RUNNING + execution_id 非空」捞候选并逐条初始化 Agent，`AgentRecoveryExecutor` 通过 `IResumableAgent.resumeStream` 续跑并继续向同一 `messageId` 写事件；`CacheExecuteManager`（sessionId + messageId + executionId）作为运行注册表去重，前端沿用 `messageId + afterSeq` 重连续流
+
 #### Agent 版本控制与发布
 
 - [x] 核心 Agent 版本设计与发布设计实现：<a href="https://github.com/agentforge-tech/AgentForge/blob/master/docs/dev/backend/AgentForge%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86%E6%96%87%E7%AB%A0%E7%B3%BB%E5%88%97/agentforge-service%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E6%A8%A1%E5%9D%97/%E5%90%8E%E7%AB%AF/agent%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E5%AE%9E%E7%8E%B0/Agent%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6%E4%B8%8E%E5%8F%91%E5%B8%83/Agent%E7%89%88%E6%9C%AC%E8%AE%BE%E8%AE%A1%E4%B8%8EAgent%E5%8F%91%E5%B8%83%E6%96%B9%E6%A1%88.md" target="_blank" rel="noopener noreferrer">Agent版本设计与Agent发布方案</a>

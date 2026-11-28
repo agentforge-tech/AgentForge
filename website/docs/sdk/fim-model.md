@@ -20,7 +20,7 @@ FIM（Fill-in-the-Middle）面向 IDE 行内代码补全。调用方提供光标
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-openai</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 

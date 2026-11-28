@@ -166,7 +166,7 @@ AgentForge 有两种使用方式：作为框架嵌入自己的 Java 应用，或
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -225,7 +225,7 @@ cd AgentForge
 mvn clean install -DskipTests
 ```
 
-构建会将 `1.0.1-SNAPSHOT` 产物安装到本地 Maven 仓库。
+构建会将 `1.0.2-SNAPSHOT` 产物安装到本地 Maven 仓库。
 
 ### 第二部分：AgentForge Service 快捷本地一键启动
 
@@ -259,7 +259,7 @@ export AGENTFORGE_MODEL_API_KEY=your-api-key
 mvn package -pl agentforge-service/agentforge-service-backend/agentforge-service-web -am -DskipTests
 cd agentforge-service
 ./bin/local/upgrate-sqlite.sh
-java -jar agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-1.0.1-SNAPSHOT.jar
+java -jar agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-1.0.2-SNAPSHOT.jar
 
 # 前端（Vue 2 + Vite，默认 5173，代理 /api 到 8080）
 cd agentforge-service/agentforge-service-ui

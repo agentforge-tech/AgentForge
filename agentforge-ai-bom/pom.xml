@@ -38,6 +38,11 @@
             </dependency>
             <dependency>
                 <groupId>cloud.changlu.agentforge</groupId>
+                <artifactId>agentforge-model-dashscope</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>cloud.changlu.agentforge</groupId>
                 <artifactId>agentforge-model-registry</artifactId>
                 <version>${revision}</version>
             </dependency>

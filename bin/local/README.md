@@ -6,17 +6,17 @@
 
 1. GPG 私钥已生成，公钥已上传到公钥服务器。
 2. Maven `settings.xml` 已配置 `<server id="central">` 的 Portal User Token。
-3. `settings.xml` 统一放在 `bin/local/settings.xml`（已在 `.gitignore` 中忽略，不会提交到仓库）。
+3. `settings.xml` 统一放在 `bin/local/settings.xml`（已在 `.gitignore` 中忽略，不会提交到仓库）。脚本会同时以 `-s`/`-gs` 传入该文件，从根源上屏蔽 `$MAVEN_HOME/conf/settings.xml` 里的企业镜像（如不可达的 dtstack Nexus `mirrorOf=*`）。
 4. 正式版本号尚未在 Maven Central 发布。已发布的 GA 版本不可覆盖，重发会报 `Component with package url ... already exists`，必须递增版本号。
 
 ## 标准发布流程（三步）
 
-以下命令均在仓库根目录执行，`settings.xml` 固定使用 `bin/local/settings.xml`。以当前下一版本 `1.0.1` 为例，后续发布替换为新版本号即可。
+以下命令均在仓库根目录执行，`settings.xml` 固定使用 `bin/local/settings.xml`。当前 `pom.xml` 的开发版本为 `1.0.2-SNAPSHOT`，正式发布时去掉 `-SNAPSHOT` 得到 `1.0.2`（脚本会拒绝带 `-SNAPSHOT` 的版本号），后续发布替换为新版本号即可。
 
 ### 1. 签名 + 构建预检
 
 ```bash
-bin/local/release.sh 1.0.1 --settings bin/local/settings.xml --dry-run
+bin/local/release.sh 1.0.2 --settings bin/local/settings.xml --dry-run
 ```
 
 真实执行构建与 GPG 签名，但不上传。预检失败时先修复签名、测试或构建问题，不要直接进入正式上传。
@@ -24,7 +24,7 @@ bin/local/release.sh 1.0.1 --settings bin/local/settings.xml --dry-run
 ### 2. 正式上传
 
 ```bash
-bin/local/release.sh 1.0.1 --settings bin/local/settings.xml
+bin/local/release.sh 1.0.2 --settings bin/local/settings.xml
 ```
 
 脚本上传后，deployment 会停在 Central Portal 的待审核状态。
@@ -42,7 +42,7 @@ open https://central.sonatype.com/publishing/deployments
 确认三步流程稳定后，可让 Central 上传后自动发布：
 
 ```bash
-bin/local/release.sh 1.0.1 \
+bin/local/release.sh 1.0.2 \
   --settings bin/local/settings.xml \
   --auto-publish
 ```

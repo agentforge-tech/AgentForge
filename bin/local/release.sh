@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly RELEASE_MODULES='agentforge-ai-parent,agentforge-ai-bom,agentforge-model,agentforge-model/agentforge-model-api,agentforge-model/agentforge-model-core,agentforge-model/agentforge-model-openai,agentforge-model/agentforge-model-anthropic,agentforge-model/agentforge-model-registry,agentforge-framework,agentforge-framework/agentforge-agent-core,agentforge-framework/agentforge-harness-agent'
+readonly RELEASE_MODULES='agentforge-ai-parent,agentforge-ai-bom,agentforge-model,agentforge-model/agentforge-model-api,agentforge-model/agentforge-model-core,agentforge-model/agentforge-model-openai,agentforge-model/agentforge-model-anthropic,agentforge-model/agentforge-model-dashscope,agentforge-model/agentforge-model-registry,agentforge-framework,agentforge-framework/agentforge-agent-core,agentforge-framework/agentforge-harness-agent'
 
 usage() {
     cat <<'EOF'
@@ -93,6 +93,8 @@ trap - EXIT
 
 MVN_ARGS=(
     -s "$SETTINGS_FILE"
+    # Replace the global settings too, otherwise corporate mirrors in $MAVEN_HOME/conf/settings.xml (e.g. an unreachable internal Nexus with mirrorOf=*) hijack Central.
+    -gs "$SETTINGS_FILE"
     -P release
     "-Drevision=${VERSION}"
     "-Dgpg.executable=${GPG_EXECUTABLE}"

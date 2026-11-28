@@ -22,7 +22,7 @@ displayed_sidebar: sdkSidebar
 
 ```xml
 <properties>
-    <agentforge.version>1.0.1-SNAPSHOT</agentforge.version>
+    <agentforge.version>1.0.2-SNAPSHOT</agentforge.version>
 </properties>
 
 <dependencyManagement>
@@ -64,7 +64,7 @@ displayed_sidebar: sdkSidebar
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-openai</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
