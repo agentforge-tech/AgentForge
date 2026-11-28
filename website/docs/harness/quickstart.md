@@ -18,7 +18,7 @@ displayed_sidebar: sdkSidebar
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-harness-agent</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -28,7 +28,7 @@ displayed_sidebar: sdkSidebar
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-openai</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -40,7 +40,7 @@ displayed_sidebar: sdkSidebar
         <dependency>
             <groupId>cloud.changlu.agentforge</groupId>
             <artifactId>agentforge-ai-bom</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
+            <version>1.0.2-SNAPSHOT</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>

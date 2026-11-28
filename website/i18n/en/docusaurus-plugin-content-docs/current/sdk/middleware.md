@@ -16,7 +16,7 @@ Middleware extracts cross-cutting concerns such as logging, tracing, auditing, m
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 

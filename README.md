@@ -166,7 +166,7 @@ Add the current AgentForge development dependency:
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -223,7 +223,7 @@ cd AgentForge
 mvn clean install -DskipTests
 ```
 
-This installs the `1.0.1-SNAPSHOT` artifacts into your local Maven repository.
+This installs the `1.0.2-SNAPSHOT` artifacts into your local Maven repository.
 
 ### Part 2: One-Click Local Startup of AgentForge Service
 
@@ -251,7 +251,7 @@ export AGENTFORGE_MODEL_API_KEY=your-api-key
 mvn package -pl agentforge-service/agentforge-service-backend/agentforge-service-web -am -DskipTests
 cd agentforge-service
 ./bin/local/upgrate-sqlite.sh
-java -jar agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-1.0.1-SNAPSHOT.jar
+java -jar agentforge-service-backend/agentforge-service-web/target/agentforge-service-web-1.0.2-SNAPSHOT.jar
 
 # Frontend (Vue 2 + Vite, default 5173, proxies /api to 8080)
 cd agentforge-service/agentforge-service-ui

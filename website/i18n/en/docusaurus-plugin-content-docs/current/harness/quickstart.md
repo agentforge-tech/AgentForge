@@ -18,7 +18,7 @@ The quick build has three steps: add the dependency → create a Workspace and L
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-harness-agent</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -28,7 +28,7 @@ The quick build has three steps: add the dependency → create a Workspace and L
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-openai</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -40,7 +40,7 @@ With the BOM, versions can be omitted:
         <dependency>
             <groupId>cloud.changlu.agentforge</groupId>
             <artifactId>agentforge-ai-bom</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
+            <version>1.0.2-SNAPSHOT</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>

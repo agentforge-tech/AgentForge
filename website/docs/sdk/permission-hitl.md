@@ -479,7 +479,7 @@ Core 会重新校验答案，并按问题顺序生成稳定的工具结果：
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 

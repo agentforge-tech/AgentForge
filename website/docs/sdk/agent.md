@@ -18,7 +18,7 @@ AgentForge 的 Agent 运行时围绕 ReAct 循环组织：模型先思考是否�
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-agent-core</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -28,7 +28,7 @@ AgentForge 的 Agent 运行时围绕 ReAct 循环组织：模型先思考是否�
 <dependency>
     <groupId>cloud.changlu.agentforge</groupId>
     <artifactId>agentforge-model-openai</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 </dependency>
 ```
 
