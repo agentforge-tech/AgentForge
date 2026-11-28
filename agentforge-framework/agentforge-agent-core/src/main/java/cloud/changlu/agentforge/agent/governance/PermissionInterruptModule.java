@@ -163,7 +163,7 @@ public final class PermissionInterruptModule {
                         requests,
                         interrupts,
                         denials);
-        store.save(snapshot);
+        store.save(snapshot, context);
         return PermissionPreflightResult.suspended(
                 new AgentSuspendInfo(batchId, interrupts), denials);
     }

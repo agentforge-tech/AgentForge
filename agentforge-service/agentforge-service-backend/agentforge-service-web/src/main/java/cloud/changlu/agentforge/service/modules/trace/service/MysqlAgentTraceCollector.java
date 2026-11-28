@@ -2,9 +2,9 @@ package cloud.changlu.agentforge.service.modules.trace.service;
 
 import cloud.changlu.agentforge.agent.extend.middlewares.trace.AgentTraceCollector;
 import cloud.changlu.agentforge.agent.extend.middlewares.trace.domain.AgentTraceSnapshot;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentContextAccessor;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMapper;
 import cloud.changlu.agentforge.service.modules.session.domain.AgentSessionPojo;
-import cloud.changlu.agentforge.service.modules.trace.AgentTraceAttributes;
 import cloud.changlu.agentforge.service.modules.trace.dao.AgentTraceSnapshotMapper;
 import cloud.changlu.agentforge.service.modules.trace.domain.AgentForgeTraceSnapshot;
 import cloud.changlu.agentforge.service.modules.trace.domain.AgentTraceSnapshotPojo;
@@ -96,7 +96,7 @@ public class MysqlAgentTraceCollector implements AgentTraceCollector {
         String aid =
                 snapshot instanceof AgentForgeTraceSnapshot
                         ? ((AgentForgeTraceSnapshot) snapshot).getAid()
-                        : attribute(snapshot, AgentTraceAttributes.AID);
+                        : attribute(snapshot, ServiceAgentContextAccessor.AID);
         if (aid != null && !aid.trim().isEmpty()) return aid;
         AgentSessionPojo session = sessionMapper.selectBySessionId(snapshot.getMemoryId());
         return session == null ? null : session.getAid();
@@ -107,7 +107,7 @@ public class MysqlAgentTraceCollector implements AgentTraceCollector {
         if (snapshot instanceof AgentForgeTraceSnapshot) {
             debug = ((AgentForgeTraceSnapshot) snapshot).getDebug();
         } else {
-            Object value = snapshot.getAttributes().get(AgentTraceAttributes.DEBUG);
+            Object value = snapshot.getAttributes().get(ServiceAgentContextAccessor.DEBUG);
             if (value != null) debug = Boolean.parseBoolean(String.valueOf(value));
         }
         if (debug == null) {

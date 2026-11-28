@@ -100,7 +100,7 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         String sessionId = init.getSessionId();
         SseEmitter emitter = new SseEmitter(0L);
         streamingMiddleware.bind(sessionId, emitter);
-        AgentChatReq request = buildRequest(config, body, init, debug);
+        AgentChatReq request = buildRequest(config, body, init, debug, userId);
         request.setAttachments(attachments);
         request.setExecutionId(manager.createExecutionId(agent));
         stopRegistry.register(
@@ -135,12 +135,14 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
             AgentRuntimeConfig config,
             ChatStreamRequest body,
             IAgentSessionService.SessionInitResult init,
-            boolean debug) {
+            boolean debug,
+            Long userId) {
         AgentChatReq request = new AgentChatReq();
         request.setAid(config.getAid());
         request.setSessionId(init.getSessionId());
         request.setMessage(safeMessage(body));
         request.setIsDebug(debug);
+        request.setUserId(userId);
         request.setAiMessageId(init.getAiMessageId());
         request.setSessionTitle(init.getTitle());
         return request;

@@ -4,6 +4,7 @@ import cloud.changlu.agentforge.agent.governance.interrupt.spi.AgentInterruptSto
 import cloud.changlu.agentforge.service.modules.agent.interrupt.store.mysql.AgentInterruptSnapshotCodec;
 import cloud.changlu.agentforge.service.modules.agent.interrupt.store.mysql.AgentInterruptSnapshotMapper;
 import cloud.changlu.agentforge.service.modules.agent.interrupt.store.mysql.MysqlAgentInterruptStore;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentContextAccessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +15,10 @@ public class InterruptStoreConfiguration {
 
     @Bean
     public AgentInterruptStore agentInterruptStore(
-            AgentInterruptSnapshotMapper mapper, ObjectMapper objectMapper) {
-        return new MysqlAgentInterruptStore(mapper, new AgentInterruptSnapshotCodec(objectMapper));
+            AgentInterruptSnapshotMapper mapper,
+            ObjectMapper objectMapper,
+            ServiceAgentContextAccessor contextAccessor) {
+        return new MysqlAgentInterruptStore(
+                mapper, new AgentInterruptSnapshotCodec(objectMapper), contextAccessor);
     }
 }

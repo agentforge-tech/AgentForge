@@ -1,8 +1,11 @@
 package cloud.changlu.agentforge.service.modules.agent.interrupt.store.mysql;
 
+import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentInterruptSnapshot;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchStatus;
 import cloud.changlu.agentforge.agent.governance.interrupt.spi.AgentInterruptStore;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentContextAccessor;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentExecutionContext;
 
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -11,15 +14,26 @@ import java.util.Date;
 public final class MysqlAgentInterruptStore implements AgentInterruptStore {
     private final AgentInterruptSnapshotMapper mapper;
     private final AgentInterruptSnapshotCodec codec;
+    private final ServiceAgentContextAccessor contextAccessor;
 
     public MysqlAgentInterruptStore(
-            AgentInterruptSnapshotMapper mapper, AgentInterruptSnapshotCodec codec) {
+            AgentInterruptSnapshotMapper mapper,
+            AgentInterruptSnapshotCodec codec,
+            ServiceAgentContextAccessor contextAccessor) {
         this.mapper = mapper;
         this.codec = codec;
+        this.contextAccessor = contextAccessor;
     }
 
     @Override
-    public void save(AgentInterruptSnapshot snapshot) {
+    public void save(AgentInterruptSnapshot snapshot, AgentChatContext context) {
+        ServiceAgentExecutionContext executionContext = contextAccessor.requireForHitl(context);
+        persist(
+                snapshot.withContextAttributes(
+                        contextAccessor.toSnapshotAttributes(executionContext)));
+    }
+
+    private void persist(AgentInterruptSnapshot snapshot) {
         if (snapshot == null) {
             throw new IllegalArgumentException("interrupt snapshot must not be null");
         }
@@ -75,5 +89,16 @@ public final class MysqlAgentInterruptStore implements AgentInterruptStore {
     @Override
     public void complete(String batchId) {
         mapper.complete(batchId, new Date());
+    }
+
+    @Override
+    public AgentInterruptSnapshot cancelPendingByMemoryId(Object memoryId) {
+        AgentInterruptSnapshotPojo current =
+                mapper.selectPendingByMemoryId(codec.memoryId(memoryId));
+        if (current == null || mapper.cancel(current.getBatchId(), new Date()) != 1) {
+            return null;
+        }
+        current.setStatus(InterruptBatchStatus.CANCELLED.name());
+        return codec.decode(current);
     }
 }
