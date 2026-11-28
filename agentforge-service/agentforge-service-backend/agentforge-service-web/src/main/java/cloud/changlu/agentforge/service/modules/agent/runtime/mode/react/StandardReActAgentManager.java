@@ -7,10 +7,10 @@ import cloud.changlu.agentforge.agent.step.ChatResult;
 import cloud.changlu.agentforge.agent.stream.TokenStream;
 import cloud.changlu.agentforge.service.modules.agent.domain.config.StandardAgentConfig;
 import cloud.changlu.agentforge.service.modules.agent.domain.req.AgentChatReq;
-import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.runtime.base.AbstractAgentManager;
 import cloud.changlu.agentforge.service.modules.agent.runtime.context.AgentInitContext;
-import cloud.changlu.agentforge.service.modules.trace.AgentTraceAttributes;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentContextAccessor;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentExecutionContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -23,11 +23,15 @@ public class StandardReActAgentManager
     private static final int STANDARD_AGENT_TYPE = 1;
     private final ReActAgentFactory reActAgentFactory;
     private final ObjectMapper objectMapper;
+    private final ServiceAgentContextAccessor contextAccessor;
 
     public StandardReActAgentManager(
-            ReActAgentFactory reActAgentFactory, ObjectMapper objectMapper) {
+            ReActAgentFactory reActAgentFactory,
+            ObjectMapper objectMapper,
+            ServiceAgentContextAccessor contextAccessor) {
         this.reActAgentFactory = reActAgentFactory;
         this.objectMapper = objectMapper;
+        this.contextAccessor = contextAccessor;
     }
 
     @Override
@@ -82,12 +86,14 @@ public class StandardReActAgentManager
             sessionId = (isDebug ? "debug-" : "chat-") + req.getAid();
         }
         java.util.Map<String, Object> extensions = new java.util.HashMap<>();
-        extensions.put(SessionLifecycleMiddleware.EXT_SESSION_ID, sessionId);
-        extensions.put(AgentTraceAttributes.AID, req.getAid());
-        extensions.put(AgentTraceAttributes.DEBUG, isDebug);
-        if (req.getAiMessageId() != null) {
-            extensions.put(SessionLifecycleMiddleware.EXT_AI_MESSAGE_ID, req.getAiMessageId());
-        }
+        contextAccessor.write(
+                extensions,
+                new ServiceAgentExecutionContext(
+                        req.getUserId(),
+                        req.getAiMessageId(),
+                        sessionId,
+                        req.getAid(),
+                        Boolean.valueOf(isDebug)));
         String question = req.getMessage() == null ? "" : req.getMessage().trim();
         boolean hasAttachments = req.getAttachments() != null && !req.getAttachments().isEmpty();
         if (question.isEmpty() && hasAttachments) {

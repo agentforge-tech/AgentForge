@@ -1,6 +1,7 @@
 package cloud.changlu.agentforge.service.modules.session.dao;
 
 import cloud.changlu.agentforge.service.modules.session.domain.AgentSessionPojo;
+import cloud.changlu.agentforge.service.modules.session.domain.RecoverableSessionPojo;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -60,4 +61,7 @@ public interface AgentSessionMapper {
     int touch(@Param("sessionId") String sessionId, @Param("modifyTime") Date modifyTime);
 
     int logicDelete(@Param("id") Long id, @Param("modifyTime") Date modifyTime);
+
+    /** 启动恢复候选：会话运行中 + 尾部 AI 消息非终态 + 有来源执行。 */
+    List<RecoverableSessionPojo> selectRecoverableSessions(@Param("since") Date since);
 }

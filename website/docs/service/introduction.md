@@ -60,6 +60,7 @@ Service 不是 SDK 的替代品，而是 SDK 的产品化外壳：同一套 Agen
 | 页面 | 作用 |
 | --- | --- |
 | [Agent Trace 监控](./agent-infrastructure/trace) | 用流程图与火焰图观察 ReAct Loop、模型/工具耗时与 Token |
+| [Agent 恢复能力设计](./agent-infrastructure/recovery) | 服务重启后自动拉起未跑完的 Agent 任务并续写事件（页面无感） |
 
 ## 4. 一个完整示例
 

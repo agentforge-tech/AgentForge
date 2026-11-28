@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `ai_agent_interrupt_snapshot` (
     `memory_id`           VARCHAR(128) NOT NULL COMMENT '会话ID，对应 AgentRequest.memoryId',
     `source_execution_id` VARCHAR(64)  NOT NULL COMMENT '产生中断的 Agent 执行ID',
     `step`                INT         NOT NULL COMMENT '产生中断时的 ReAct 步数',
-    `status`              VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT '批次状态：PENDING/RESUMING/COMPLETED',
+    `status`              VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT '批次状态：PENDING/RESUMING/COMPLETED/CANCELLED',
     `schema_version`      INT         NOT NULL DEFAULT 1 COMMENT '快照JSON结构版本',
     `snapshot_json`       LONGTEXT    NOT NULL COMMENT '冻结的工具调用、中断项与拒绝项JSON',
     `version`             BIGINT      NOT NULL DEFAULT 0 COMMENT '状态推进次数，用于审计与后续乐观锁',

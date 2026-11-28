@@ -1,9 +1,10 @@
 package cloud.changlu.agentforge.service.config;
 
 import cloud.changlu.agentforge.service.env.EnvironmentContext;
-import cloud.changlu.agentforge.service.modules.agent.interrupt.AgentInterruptRuntimeRegistry;
+import cloud.changlu.agentforge.service.modules.agent.interrupt.AgentInterruptEventContentFactory;
 import cloud.changlu.agentforge.service.modules.agent.middleware.ServiceStreamingMiddleware;
 import cloud.changlu.agentforge.service.modules.agent.middleware.SessionLifecycleMiddleware;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentContextAccessor;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMapper;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMessageMapper;
 import cloud.changlu.agentforge.service.plugins.openreach.OpenReachClient;
@@ -17,24 +18,20 @@ import org.springframework.context.annotation.Configuration;
 public class AgentConfiguration {
 
     @Bean
-    public AgentInterruptRuntimeRegistry agentInterruptRuntimeRegistry() {
-        return new AgentInterruptRuntimeRegistry();
-    }
-
-    @Bean
     public ServiceStreamingMiddleware serviceStreamingMiddleware(
-            AgentInterruptRuntimeRegistry interruptRegistry,
-            SessionLifecycleMiddleware lifecycleMiddleware) {
-        return new ServiceStreamingMiddleware(interruptRegistry, lifecycleMiddleware);
+            SessionLifecycleMiddleware lifecycleMiddleware,
+            AgentInterruptEventContentFactory interruptContentFactory) {
+        return new ServiceStreamingMiddleware(lifecycleMiddleware, interruptContentFactory);
     }
 
     @Bean
     public SessionLifecycleMiddleware sessionLifecycleMiddleware(
             AgentSessionMapper agentSessionMapper,
             AgentSessionMessageMapper agentSessionMessageMapper,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ServiceAgentContextAccessor contextAccessor) {
         return new SessionLifecycleMiddleware(
-                agentSessionMapper, agentSessionMessageMapper, objectMapper);
+                agentSessionMapper, agentSessionMessageMapper, objectMapper, contextAccessor);
     }
 
     @Bean

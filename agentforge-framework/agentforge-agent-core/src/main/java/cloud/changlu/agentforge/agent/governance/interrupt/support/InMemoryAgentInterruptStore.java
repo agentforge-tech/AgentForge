@@ -1,5 +1,6 @@
 package cloud.changlu.agentforge.agent.governance.interrupt.support;
 
+import cloud.changlu.agentforge.agent.domain.AgentChatContext;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.AgentInterruptSnapshot;
 import cloud.changlu.agentforge.agent.governance.interrupt.domain.InterruptBatchStatus;
 import cloud.changlu.agentforge.agent.governance.interrupt.spi.AgentInterruptStore;
@@ -11,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class InMemoryAgentInterruptStore implements AgentInterruptStore {
     private final Map<String, Entry> entries = new ConcurrentHashMap<String, Entry>();
 
-    public void save(AgentInterruptSnapshot snapshot) {
+    public void save(AgentInterruptSnapshot snapshot, AgentChatContext context) {
         if (entries.putIfAbsent(snapshot.getBatchId(), new Entry(snapshot)) != null) {
             throw new IllegalStateException(
                     "interrupt batch already exists: " + snapshot.getBatchId());
@@ -42,6 +43,19 @@ public final class InMemoryAgentInterruptStore implements AgentInterruptStore {
         synchronized (entry) {
             entry.snapshot = entry.snapshot.withStatus(InterruptBatchStatus.COMPLETED);
         }
+    }
+
+    public AgentInterruptSnapshot cancelPendingByMemoryId(Object memoryId) {
+        for (Entry entry : entries.values()) {
+            synchronized (entry) {
+                if (entry.snapshot.getMemoryId().equals(memoryId)
+                        && entry.snapshot.getStatus() == InterruptBatchStatus.PENDING) {
+                    entry.snapshot = entry.snapshot.withStatus(InterruptBatchStatus.CANCELLED);
+                    return entry.snapshot;
+                }
+            }
+        }
+        return null;
     }
 
     private Entry entry(String batchId) {

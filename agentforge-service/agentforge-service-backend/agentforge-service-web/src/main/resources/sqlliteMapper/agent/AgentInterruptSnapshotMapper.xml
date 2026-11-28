@@ -39,6 +39,15 @@
         where batch_id = #{batchId}
     </select>
 
+    <select id="selectPendingByMemoryId" resultMap="SnapshotResult">
+        select <include refid="columns"/>
+        from ai_agent_interrupt_snapshot
+        where memory_id = #{memoryId}
+          and status = 'PENDING'
+        order by id desc
+        limit 1
+    </select>
+
     <update id="claim">
         update ai_agent_interrupt_snapshot
         set status = 'RESUMING',
@@ -57,5 +66,15 @@
             modify_time = #{now}
         where batch_id = #{batchId}
           and status &lt;&gt; 'COMPLETED'
+    </update>
+
+    <update id="cancel">
+        update ai_agent_interrupt_snapshot
+        set status = 'CANCELLED',
+            version = version + 1,
+            resolved_at = #{now},
+            modify_time = #{now}
+        where batch_id = #{batchId}
+          and status = 'PENDING'
     </update>
 </mapper>

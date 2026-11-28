@@ -116,4 +116,30 @@
         set is_deleted = 1, modify_time = #{modifyTime}
         where id = #{id} and is_deleted = 0
     </update>
+    <!-- 启动恢复候选：会话运行中 + 尾部 AI 消息非终态 + 有来源执行。 -->
+    <select id="selectRecoverableSessions"
+            resultType="cloud.changlu.agentforge.service.modules.session.domain.RecoverableSessionPojo">
+        SELECT s.session_id     AS session_id,
+               s.aid            AS aid,
+               s.is_debug       AS is_debug,
+               s.create_user_id AS userId,
+               m.id             AS aiMessageId,
+               m.status         AS messageStatus,
+               m.execution_id   AS executionId
+        FROM ai_agent_session s
+        JOIN ai_agent_session_message m
+          ON m.session_id = s.id
+         AND m.is_deleted = 0
+         AND m.role_type = 2
+         AND m.id = (SELECT MAX(m2.id) FROM ai_agent_session_message m2
+                     WHERE m2.session_id = s.id AND m2.is_deleted = 0 AND m2.role_type = 2)
+        WHERE s.is_deleted = 0
+          AND s.status = 1
+          AND s.modify_time &gt;= #{since}
+          AND m.status IN (1, 2)
+          AND m.execution_id IS NOT NULL
+          AND m.execution_id &lt;&gt; ''
+        ORDER BY s.modify_time DESC, s.id DESC
+    </select>
 </mapper>
+

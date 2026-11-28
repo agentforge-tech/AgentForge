@@ -29,7 +29,7 @@
     </modules>
 
     <properties>
-        <revision>1.0.1-SNAPSHOT</revision>
+        <revision>1.0.2-SNAPSHOT</revision>
         <!-- This root project only aggregates modules; it is not published. -->
         <maven.deploy.skip>true</maven.deploy.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

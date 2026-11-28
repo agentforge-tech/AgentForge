@@ -4,5 +4,6 @@ package cloud.changlu.agentforge.agent.governance.interrupt.domain;
 public enum InterruptBatchStatus {
     PENDING,
     RESUMING,
-    COMPLETED
+    COMPLETED,
+    CANCELLED
 }

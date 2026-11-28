@@ -19,12 +19,12 @@ import cloud.changlu.agentforge.service.modules.agent.support.ChatStopRegistry;
 import cloud.changlu.agentforge.service.modules.session.service.IAgentSessionService;
 import cloud.changlu.agentforge.service.protocol.processor.AiResponseProcessor;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
@@ -36,7 +36,7 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
     private final ChatStopRegistry stopRegistry;
     private final AgentChatAttachmentService attachmentService;
     private final AgentModelCapabilityResolver modelCapabilityResolver;
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final ExecutorService executor;
 
     public LegacyChatStreamServiceImpl(
             AgentRuntimeConfigResolver runtimeConfigResolver,
@@ -46,7 +46,8 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
             IAgentSessionService sessionService,
             ChatStopRegistry stopRegistry,
             AgentChatAttachmentService attachmentService,
-            AgentModelCapabilityResolver modelCapabilityResolver) {
+            AgentModelCapabilityResolver modelCapabilityResolver,
+            @Qualifier("chatTaskExecutor") ExecutorService executor) {
         this.runtimeConfigResolver = runtimeConfigResolver;
         this.agentManagerFactory = agentManagerFactory;
         this.streamingMiddleware = streamingMiddleware;
@@ -55,6 +56,7 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         this.stopRegistry = stopRegistry;
         this.attachmentService = attachmentService;
         this.modelCapabilityResolver = modelCapabilityResolver;
+        this.executor = executor;
     }
 
     @Override
@@ -100,7 +102,7 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
         String sessionId = init.getSessionId();
         SseEmitter emitter = new SseEmitter(0L);
         streamingMiddleware.bind(sessionId, emitter);
-        AgentChatReq request = buildRequest(config, body, init, debug);
+        AgentChatReq request = buildRequest(config, body, init, debug, userId);
         request.setAttachments(attachments);
         request.setExecutionId(manager.createExecutionId(agent));
         stopRegistry.register(
@@ -135,12 +137,14 @@ public class LegacyChatStreamServiceImpl implements LegacyChatStreamService {
             AgentRuntimeConfig config,
             ChatStreamRequest body,
             IAgentSessionService.SessionInitResult init,
-            boolean debug) {
+            boolean debug,
+            Long userId) {
         AgentChatReq request = new AgentChatReq();
         request.setAid(config.getAid());
         request.setSessionId(init.getSessionId());
         request.setMessage(safeMessage(body));
         request.setIsDebug(debug);
+        request.setUserId(userId);
         request.setAiMessageId(init.getAiMessageId());
         request.setSessionTitle(init.getTitle());
         return request;

@@ -15,6 +15,8 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -51,14 +53,18 @@ public class AgentInterruptSnapshotCodecTest {
                         "继续发布");
         InterruptRequest interrupt =
                 new InterruptRequest("int_1", InterruptType.ASK_USER, request, askUser);
+        Map<String, String> contextAttributes = new LinkedHashMap<>();
+        contextAttributes.put("agentforge.execution.userId", "10001");
+        contextAttributes.put("agentforge.execution.aiMessageId", "9012");
         AgentInterruptSnapshot snapshot =
                 AgentInterruptSnapshot.initial(
-                        "batch_1",
-                        "session-1",
-                        "exec_1",
-                        3,
-                        Collections.singletonList(request),
-                        Collections.singletonList(interrupt));
+                                "batch_1",
+                                "session-1",
+                                "exec_1",
+                                3,
+                                Collections.singletonList(request),
+                                Collections.singletonList(interrupt))
+                        .withContextAttributes(contextAttributes);
 
         AgentInterruptSnapshot decoded = codec.decode(pojo(codec.encode(snapshot)));
 
@@ -78,6 +84,9 @@ public class AgentInterruptSnapshotCodecTest {
         assertEquals("test", decodedQuestion.getOptions().get(0).getId());
         assertEquals("测试", decodedQuestion.getOptions().get(0).getLabel());
         assertTrue(decoded.getDenials().isEmpty());
+        assertEquals("10001", decoded.getContextAttributes().get("agentforge.execution.userId"));
+        assertEquals(
+                "9012", decoded.getContextAttributes().get("agentforge.execution.aiMessageId"));
     }
 
     @Test
@@ -126,7 +135,7 @@ public class AgentInterruptSnapshotCodecTest {
                         Collections.singletonList(request),
                         Collections.singletonList(interrupt));
         AgentInterruptSnapshotPojo pojo = pojo(codec.encode(snapshot));
-        pojo.setSchemaVersion(2);
+        pojo.setSchemaVersion(AgentInterruptSnapshotCodec.CURRENT_SCHEMA_VERSION + 1);
 
         codec.decode(pojo);
     }
@@ -143,7 +152,7 @@ public class AgentInterruptSnapshotCodecTest {
         pojo.setSourceExecutionId("exec_1");
         pojo.setStep(3);
         pojo.setStatus("PENDING");
-        pojo.setSchemaVersion(1);
+        pojo.setSchemaVersion(AgentInterruptSnapshotCodec.CURRENT_SCHEMA_VERSION);
         pojo.setSnapshotJson(json);
         return pojo;
     }

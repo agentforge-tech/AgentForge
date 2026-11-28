@@ -26,6 +26,7 @@ const sidebars = {
       items: [
         'sdk/model',
         'sdk/agent',
+        {type: 'doc', id: 'sdk/agent-recovery', label: 'Agent 运行恢复'},
         'sdk/permission-hitl',
         'sdk/message-event',
         'sdk/middleware',
@@ -117,6 +118,7 @@ const sidebars = {
       collapsed: false,
       items: [
         {type: 'doc', id: 'service/agent-infrastructure/trace', label: 'Agent Trace 监控'},
+        {type: 'doc', id: 'service/agent-infrastructure/recovery', label: 'Agent 恢复能力设计'},
       ],
     },
   ],
