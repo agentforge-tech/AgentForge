@@ -247,7 +247,7 @@ export default {
     agentName: { type: String, default: '' },
     agentAvatar: { type: String, default: '/logo.png' }
   },
-  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, transportMode: chatTransportMode(), draft: '', composing: false, running: false, stopping: false, currentMessageId: null, controller: null, requestVersion: 0, sessionId: this.createSessionId(), messages: [], pendingAppends: [], deferredAppends: [], remotePollTimer: null, historyOpen: false, historyLoading: false, historySessions: [], attachments: [], uploading: false, attachmentMenuVisible: false, inputExpanded: false, focused: false } },
+  data() { const saved = localStorage.getItem(MODE_KEY); return { mode: RENDER_MODES.some((m) => m.key === saved) ? saved : DEFAULT_RENDER_MODE, transportMode: chatTransportMode(), draft: '', composing: false, running: false, stopping: false, currentMessageId: null, controller: null, requestVersion: 0, sessionLoadVersion: 0, sessionId: this.createSessionId(), messages: [], pendingAppends: [], deferredAppends: [], remotePollTimer: null, historyOpen: false, historyLoading: false, historySessions: [], attachments: [], uploading: false, attachmentMenuVisible: false, inputExpanded: false, focused: false } },
   computed: {
     renderModes() { return RENDER_MODES },
     displayAgentName() { return this.agentName || 'AgentForge' },
@@ -266,7 +266,12 @@ export default {
   },
   created() { localStorage.setItem(MODE_KEY, this.mode) },
   beforeDestroy() {
+    // 关闭调试面板只脱离本地订阅，后台 Run 继续执行；再次打开从会话查询续流。
+    ++this.requestVersion
+    ++this.sessionLoadVersion
     if (this.controller) this.controller.abort()
+    this.controller = null
+    this.stopRemotePoll()
     document.removeEventListener('click', this.onDocumentClick)
   },
   methods: {
@@ -573,15 +578,12 @@ export default {
     },
     createSessionId() { return 'agent-debug-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) },
     newSession() {
-      const oldSessionId = this.sessionId
-      ++this.requestVersion
-      if (this.controller) this.controller.abort()
-      if (this.running && this.transportMode === 'detached' && this.currentMessageId) {
-        fetch(`/api/chat/tasks/stop?messageId=${encodeURIComponent(this.currentMessageId)}`, { method: 'POST' }).catch(() => {})
-      } else if (this.running && oldSessionId) {
-        fetch(`/api/chat/stop?sessionId=${encodeURIComponent(oldSessionId)}`, { method: 'POST' }).catch(() => {})
-      }
-      this.controller = null; this.currentMessageId = null; this.running = false; this.messages = []; this.pendingAppends = []; this.deferredAppends = []; this.stopRemotePoll(); this.draft = ''; this.attachments = []; this.attachmentMenuVisible = false; this.inputExpanded = false; this.sessionId = this.createSessionId(); this.resetScrollFollow()
+      // 仅脱离当前 SSE，不调用后端 stop：新建/切换调试会话不应取消正在执行的任务。
+      // 真正停止由输入框的“停止”按钮触发。
+      if (this.running) this.detachCurrentRun()
+      else this.stopRemotePoll()
+      ++this.sessionLoadVersion
+      this.controller = null; this.currentMessageId = null; this.running = false; this.messages = []; this.pendingAppends = []; this.deferredAppends = []; this.draft = ''; this.attachments = []; this.attachmentMenuVisible = false; this.inputExpanded = false; this.sessionId = this.createSessionId(); this.resetScrollFollow()
       this.$nextTick(this.autoGrow)
       this.$message.success('已新建会话')
     },
@@ -613,15 +615,19 @@ export default {
     },
     async openSession(item) {
       if (!item) return
+      // 已在当前会话且在流式输出，重复点击无需重连，避免无谓地 abort 再重连。
+      if (this.running && item.sessionId === this.sessionId) { this.closeHistory(); return }
       if (this.running) this.detachCurrentRun()
       else ++this.requestVersion
       this.closeHistory()
+      const version = ++this.sessionLoadVersion
       this.sessionId = item.sessionId
       this.attachments = []
       this.attachmentMenuVisible = false
       this.inputExpanded = false
       try {
         const records = await fetchSessionMessages(item.id)
+        if (version !== this.sessionLoadVersion) return
         const replay = replaySession(records, this.mode === 'debug')
         this.messages = replay.messages
         this.pendingAppends = replay.pendingAppends
@@ -631,6 +637,7 @@ export default {
         this.resetScrollFollow()
         this.scroll()
       } catch (e) {
+        if (version !== this.sessionLoadVersion) return
         this.$message.error(e.message || '会话加载失败')
       }
     },
@@ -654,9 +661,16 @@ export default {
       }
       const requestVersion = ++this.requestVersion
       this.controller = new AbortController(); this.currentMessageId = answer.messageId
-      answer.parts = []; answer.content = ''; answer.error = ''; answer.lastEventSeq = 0
+      this.running = true
+      // 历史事件已在会话查询的回放阶段还原为 parts；从上次事件序号继续订阅，
+      // 避免整段重放，也避免清空已渲染内容后闪烁。
+      const cursor = Number(answer.lastEventSeq || 0)
+      if (!cursor) {
+        // 没有可回放的事件（如仅靠 contentText 兜底）时，清空后从 0 重建，避免正文重复。
+        answer.parts = []; answer.content = ''; answer.error = ''
+      }
       try {
-        await resumeChatStream(answer.messageId, 0, {
+        await resumeChatStream(answer.messageId, cursor, {
           signal: this.controller.signal,
           onEvent: (event) => {
             if (requestVersion !== this.requestVersion) return

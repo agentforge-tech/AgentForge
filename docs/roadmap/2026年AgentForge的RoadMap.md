@@ -271,6 +271,13 @@ AgentForge
 
 
 
+### Agent恢复
+
+- [x] Agent任务重启自恢复设计：[Agent任务服务重启自动恢复设计方案](../dev/backend/AgentForge核心模块设计原理文章系列/agentforge-service核心业务模块/后端/agent核心设计实现/agent恢复/1、Agent任务服务重启自动恢复设计方案.md)
+  - 实现：`AgentRecoveryRunner` 启动延迟异步执行，`AgentRecoveryService` 按「会话运行中 + 尾部 AI 消息 CREATED/RUNNING + execution_id 非空」捞候选并逐条初始化 Agent，`AgentRecoveryExecutor` 通过 `IResumableAgent.resumeStream` 续跑并继续向同一 `messageId` 写事件；`CacheExecuteManager`（sessionId + messageId + executionId）作为运行态注册表去重，前端沿用 `messageId + afterSeq` 重连续流，无需额外改造 → `...modules/agent/recovery`、`...agent/runtime/execute`
+
+
+
 
 
 ### Agent版本控制与发布

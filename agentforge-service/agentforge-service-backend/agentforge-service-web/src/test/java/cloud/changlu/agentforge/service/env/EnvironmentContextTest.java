@@ -4,6 +4,8 @@ import org.junit.Test;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class EnvironmentContextTest {
 
@@ -39,5 +41,40 @@ public class EnvironmentContextTest {
         assertEquals("files.example.com", context.getFileLocalVisitHost());
         assertEquals("8443", context.getServerPort());
         assertEquals(20L * 1024 * 1024, context.getFileUploadMaxSize());
+    }
+
+    @Test
+    public void shouldProvideAgentRecoveryDefaults() {
+        EnvironmentContext context = new EnvironmentContext(new MockEnvironment());
+
+        assertTrue(context.isAgentRecoveryEnabled());
+        assertEquals(5, context.getAgentRecoveryLookbackDays());
+        assertEquals(3000L, context.getAgentRecoveryStartupDelayMs());
+    }
+
+    @Test
+    public void shouldAllowAgentRecoveryOverrides() {
+        MockEnvironment environment =
+                new MockEnvironment()
+                        .withProperty("agentforge.agent.recovery.enabled", "false")
+                        .withProperty("agentforge.agent.recovery.lookback-days", "2")
+                        .withProperty("agentforge.agent.recovery.startup-delay-ms", "500");
+        EnvironmentContext context = new EnvironmentContext(environment);
+
+        assertFalse(context.isAgentRecoveryEnabled());
+        assertEquals(2, context.getAgentRecoveryLookbackDays());
+        assertEquals(500L, context.getAgentRecoveryStartupDelayMs());
+    }
+
+    @Test
+    public void shouldFallbackWhenAgentRecoveryValuesAreInvalid() {
+        MockEnvironment environment =
+                new MockEnvironment()
+                        .withProperty("agentforge.agent.recovery.lookback-days", "0")
+                        .withProperty("agentforge.agent.recovery.startup-delay-ms", "-1");
+        EnvironmentContext context = new EnvironmentContext(environment);
+
+        assertEquals(5, context.getAgentRecoveryLookbackDays());
+        assertEquals(3000L, context.getAgentRecoveryStartupDelayMs());
     }
 }
