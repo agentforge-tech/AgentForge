@@ -11,7 +11,7 @@ import cloud.changlu.agentforge.model.chat.request.ChatRequest;
 import cloud.changlu.agentforge.model.chat.response.ChatResponse;
 import cloud.changlu.agentforge.service.modules.agent.event.sink.SseEmitterEventSink;
 import cloud.changlu.agentforge.service.modules.agent.event.sink.StreamEventSink;
-import cloud.changlu.agentforge.service.modules.agent.interrupt.AgentInterruptRuntimeRegistry;
+import cloud.changlu.agentforge.service.modules.agent.interrupt.AgentInterruptEventContentFactory;
 import cloud.changlu.agentforge.service.protocol.StreamEventResponse;
 import cloud.changlu.agentforge.service.protocol.ToolCallResult;
 import cloud.changlu.agentforge.service.protocol.processor.AiErrorProcessor;
@@ -35,14 +35,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
 
-    private final AgentInterruptRuntimeRegistry interruptRegistry;
     private final SessionLifecycleMiddleware lifecycleMiddleware;
+    private final AgentInterruptEventContentFactory interruptContentFactory;
 
     public ServiceStreamingMiddleware(
-            AgentInterruptRuntimeRegistry interruptRegistry,
-            SessionLifecycleMiddleware lifecycleMiddleware) {
-        this.interruptRegistry = interruptRegistry;
+            SessionLifecycleMiddleware lifecycleMiddleware,
+            AgentInterruptEventContentFactory interruptContentFactory) {
         this.lifecycleMiddleware = lifecycleMiddleware;
+        this.interruptContentFactory = interruptContentFactory;
     }
 
     /** memoryId -> 本次运行的会话输出上下文 */
@@ -78,21 +78,6 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         }
     }
 
-    /** 等待 HITL 时无 Agent 线程可取消，由 Service 直接取消批次并收口。 */
-    public boolean cancelWaitingInterrupt(Object memoryId) {
-        AgentInterruptRuntimeRegistry.BatchContext batch =
-                interruptRegistry.cancelByMemoryId(memoryId);
-        if (batch == null) {
-            return false;
-        }
-        StreamEventResponse event = InterruptEventProcessor.cancelled(batch.eventContent());
-        publish(memoryId, event);
-        lifecycleMiddleware.cancelWaitingForHitl(memoryId, event);
-        unbind(memoryId);
-        interruptRegistry.release(memoryId);
-        return true;
-    }
-
     /** 模型调用重试：把“第几轮、第几次、等待秒数”推给前端。 */
     @Override
     public void onAiCallRetry(
@@ -116,9 +101,9 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         if (suspendInfo == null || chatContext == null) {
             return;
         }
-        AgentInterruptRuntimeRegistry.BatchContext batch =
-                interruptRegistry.suspend(chatContext.getMemoryId(), suspendInfo);
-        StreamEventResponse event = InterruptEventProcessor.requested(batch.eventContent());
+        StreamEventResponse event =
+                InterruptEventProcessor.requested(
+                        interruptContentFactory.requested(suspendInfo, chatContext));
         publish(chatContext.getMemoryId(), event);
         lifecycleMiddleware.markWaitingForHitl(chatContext.getMemoryId(), event);
     }
@@ -130,9 +115,9 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         if (resumeContext == null || chatContext == null) {
             return;
         }
-        AgentInterruptRuntimeRegistry.BatchContext batch =
-                interruptRegistry.requireBatch(resumeContext.getBatchId());
-        StreamEventResponse event = InterruptEventProcessor.resuming(batch.eventContent());
+        StreamEventResponse event =
+                InterruptEventProcessor.resuming(
+                        interruptContentFactory.snapshot(resumeContext.getSnapshot(), "RESUMING"));
         publish(chatContext.getMemoryId(), event);
         lifecycleMiddleware.markResuming(chatContext.getMemoryId(), event);
     }
@@ -144,10 +129,9 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         if (resumeContext == null || chatContext == null) {
             return;
         }
-        interruptRegistry.completed(resumeContext.getBatchId());
-        AgentInterruptRuntimeRegistry.BatchContext batch =
-                interruptRegistry.requireBatch(resumeContext.getBatchId());
-        StreamEventResponse event = InterruptEventProcessor.resumed(batch.eventContent());
+        StreamEventResponse event =
+                InterruptEventProcessor.resumed(
+                        interruptContentFactory.snapshot(resumeContext.getSnapshot(), "COMPLETED"));
         publish(chatContext.getMemoryId(), event);
         lifecycleMiddleware.collectEvent(chatContext.getMemoryId(), event);
     }
@@ -159,10 +143,9 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         if (resumeContext == null || chatContext == null) {
             return;
         }
-        interruptRegistry.failed(resumeContext.getBatchId());
-        AgentInterruptRuntimeRegistry.BatchContext batch =
-                interruptRegistry.requireBatch(resumeContext.getBatchId());
-        Map<String, Object> content = new java.util.LinkedHashMap<>(batch.eventContent());
+        Map<String, Object> content =
+                new java.util.LinkedHashMap<>(
+                        interruptContentFactory.snapshot(resumeContext.getSnapshot(), "FAILED"));
         content.put("error", safeMessage(error));
         StreamEventResponse event = InterruptEventProcessor.failed(content);
         publish(chatContext.getMemoryId(), event);
@@ -291,7 +274,6 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         }
         Object memoryId = chatContext == null ? null : chatContext.getMemoryId();
         unbind(memoryId);
-        interruptRegistry.release(memoryId);
     }
 
     @Override
@@ -302,7 +284,6 @@ public class ServiceStreamingMiddleware implements IStreamingIAgentMiddleware {
         }
         Object memoryId = chatContext == null ? null : chatContext.getMemoryId();
         unbind(memoryId);
-        interruptRegistry.release(memoryId);
     }
 
     private SessionContext state(AgentChatContext chatContext) {

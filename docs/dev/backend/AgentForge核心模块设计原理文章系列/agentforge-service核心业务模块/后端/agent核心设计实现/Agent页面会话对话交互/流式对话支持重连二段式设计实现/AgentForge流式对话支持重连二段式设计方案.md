@@ -593,6 +593,37 @@ MySQL 第一阶段不建议 CAS 成功后立即删除事件行。原因是慢连
 7. `heartbeat` 是 SSE 注释帧，前端无需进入业务 reducer。
 8. 一个连接收到重复事件是允许的，丢事件不允许；因此 reducer 必须幂等。
 
+### 10.1 会话切换与返回续流（发布页 / 调试页已落地）
+
+页面内存在两类“离开当前会话”的动作，语义必须区分：
+
+| 动作 | 后端影响 | 前端行为 |
+| --- | --- | --- |
+| 点击“停止” | 调用 `/api/chat/tasks/stop` 取消本轮 Run | 停止按钮是唯一取消任务的入口 |
+| 切换会话 / 历史会话 | 绝不调用 stop，后台 Run 继续写事件 | 仅 `abort` 当前 SSE 订阅，清空本页运行态 |
+| 新建对话 / 清空会话 | 绝不调用 stop，后台 Run 继续写事件 | 同“切换会话”，只脱离本地订阅 |
+
+“切换后返回”遵循固定的续流状态机：
+
+```text
+切走：detach（++requestVersion，abort SSE，running=false），不触碰后端任务
+返回：先 POST session-messages/detail 查询会话
+        ├─ 尾部 AI 消息 RUNNING/CREATED/CANCELLING → 建立 SSE，从 afterSeq=lastEventSeq 续流
+        ├─ 尾部 AI 消息 WAITING_HITL → 不建 SSE，仅用 events 重建确认卡片
+        └─ 尾部 AI 消息终态 → 无需建 SSE，仅渲染历史快照
+```
+
+落地时需要规避的关键点：
+
+1. **切换/新建不能 stop**：早期 `newChat()` / `newSession()` 直接调用 `tasks/stop`，导致切走再回来的任务被真正取消。现统一改为 `detachCurrentRun()`，只有输入框“停止”按钮会取消后端 Run。
+2. **回填会话主键**：`submit` 只返回业务 `sessionId` 与 `messageId`，不返回会话表主键。新会话在左栏是“无 id 的本地占位项”，若直接拿它查询消息会失败、也无法续流。现提交后静默刷新会话列表，用 `sessionId` 回填真实 `id`，切回时按 `id` 拉取消息。
+3. **从 `lastEventSeq` 续流而非 0**：`replaySession` 已把历史事件还原为 parts，切回时以回放得到的最大 `eventSeq` 作为 `afterSeq`，避免整段重放与正文闪烁；仅当没有任何可回放事件（如只靠 `contentText` 兜底）时才清空并从 0 重建，防止正文重复。
+4. **异步加载版本号**：新增 `sessionLoadVersion`，`openSession`/`loadMessages` 在 `await` 后校验版本，快速连续切换时旧请求结果直接丢弃，避免覆盖当前会话消息。
+5. **重复点击当前会话不重连**：已在当前会话且在流式输出时，点击同一会话直接返回，避免无意义的 abort 再重连。
+6. **离开页面清理本地订阅**：`beforeDestroy` 中递增版本号、abort SSE、停止远程轮询，但同样不调用 stop。
+
+上述规则在发布页 `PublishedAgentChatPage.vue` 与调试页 `AgentDebugPanel.vue` 保持一致，调试页“历史调试会话”切换复用同一套续流逻辑。
+
 ## 十一、对现有代码的具体改造清单
 
 | 现有位置 | 改造 |
@@ -614,7 +645,7 @@ MySQL 第一阶段不建议 CAS 成功后立即删除事件行。原因是慢连
 | 新增 `modules/agent/event` | 定义 EventStore、MySQL Mapper/POJO、Publisher |
 | `service/impl/ReconnectableChatStreamService.java` | 管理每个 SSE 连接的私有 cursor、等待、心跳和尾读 |
 | SQL increment / SQLite | 新增事件表、索引与对应 Mapper XML |
-| UI `PublishedAgentChatPage` / `AgentDebugPanel` | 改成 submit 后订阅，以 `messageId + eventSeq` 去重并支持恢复 |
+| UI `PublishedAgentChatPage` / `AgentDebugPanel` | 改成 submit 后订阅，以 `messageId + eventSeq` 去重并支持恢复；切换/新建会话只 detach 不 stop，返回时按 `lastEventSeq` 续流 |
 
 建议保留旧 `/api/chat/stream` 一段灰度期，但它应在内部调用 submit 后再桥接订阅，不能维持另一套直接推送实现。待前端全部切换后删除 legacy 路径。
 

@@ -15,11 +15,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public final class AgentInterruptSnapshotCodec {
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = 2;
 
     private final ObjectMapper objectMapper;
 
@@ -46,6 +48,7 @@ public final class AgentInterruptSnapshotCodec {
     public String encode(AgentInterruptSnapshot snapshot) {
         StoredSnapshot stored = new StoredSnapshot();
         stored.setSchemaVersion(CURRENT_SCHEMA_VERSION);
+        stored.setContextAttributes(snapshot.getContextAttributes());
         stored.setToolRequests(toStoredToolRequests(snapshot.getToolRequests()));
         stored.setInterrupts(toStoredInterrupts(snapshot.getInterrupts()));
         stored.setDenials(toStoredDenials(snapshot.getDenials()));
@@ -90,7 +93,8 @@ public final class AgentInterruptSnapshotCodec {
                     status(pojo.getStatus(), batchId),
                     toolRequests,
                     interrupts,
-                    denials);
+                    denials,
+                    stored.getContextAttributes());
         } catch (IllegalStateException e) {
             throw e;
         } catch (JsonProcessingException e) {
@@ -380,6 +384,7 @@ public final class AgentInterruptSnapshotCodec {
 
     public static final class StoredSnapshot {
         private Integer schemaVersion;
+        private Map<String, String> contextAttributes;
         private List<StoredToolRequest> toolRequests;
         private List<StoredInterrupt> interrupts;
         private List<StoredDenial> denials;
@@ -390,6 +395,19 @@ public final class AgentInterruptSnapshotCodec {
 
         public void setSchemaVersion(Integer schemaVersion) {
             this.schemaVersion = schemaVersion;
+        }
+
+        public Map<String, String> getContextAttributes() {
+            return contextAttributes == null
+                    ? new LinkedHashMap<String, String>()
+                    : contextAttributes;
+        }
+
+        public void setContextAttributes(Map<String, String> contextAttributes) {
+            this.contextAttributes =
+                    contextAttributes == null
+                            ? new LinkedHashMap<String, String>()
+                            : new LinkedHashMap<String, String>(contextAttributes);
         }
 
         public List<StoredToolRequest> getToolRequests() {

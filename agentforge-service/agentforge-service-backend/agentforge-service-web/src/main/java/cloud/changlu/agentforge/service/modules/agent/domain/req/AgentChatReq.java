@@ -14,6 +14,9 @@ public class AgentChatReq {
     private String message;
     private Boolean isDebug;
 
+    /** 服务端鉴权得到的执行所属用户，不接收前端传入。 */
+    private transient Long userId;
+
     /** 本次消息引用的文件列表，包含 fileId 与展示元信息。 */
     private List<ChatFileRef> files;
 
@@ -66,6 +69,14 @@ public class AgentChatReq {
 
     public void setIsDebug(Boolean isDebug) {
         this.isDebug = isDebug;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Long getAiMessageId() {

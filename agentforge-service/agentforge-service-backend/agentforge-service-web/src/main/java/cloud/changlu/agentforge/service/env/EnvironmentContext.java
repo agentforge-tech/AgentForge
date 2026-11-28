@@ -23,9 +23,12 @@ public class EnvironmentContext {
     private static final String DEFAULT_UPLOAD_VISIT_HOST = "127.0.0.1";
     private static final String DEFAULT_UPLOAD_MAX_SIZE = "10MB";
     private static final String DEFAULT_SERVER_PORT = "8080";
-    private static final String DEFAULT_CHAT_EVENT_STORE_TYPE = "inmemory";
+    private static final String DEFAULT_CHAT_EVENT_STORE_TYPE = "mysql";
     private static final long DEFAULT_CHAT_CANCEL_WAIT_TIMEOUT_MS = 15_000L;
     private static final long DEFAULT_CHAT_CANCEL_POLL_INTERVAL_MS = 200L;
+    private static final boolean DEFAULT_AGENT_RECOVERY_ENABLED = true;
+    private static final int DEFAULT_AGENT_RECOVERY_LOOKBACK_DAYS = 5;
+    private static final long DEFAULT_AGENT_RECOVERY_STARTUP_DELAY_MS = 3_000L;
 
     private final Environment environment;
 
@@ -114,6 +117,32 @@ public class EnvironmentContext {
         }
         long timeout = getChatCancelWaitTimeoutMs();
         return value < timeout ? value : Math.max(1L, timeout / 2);
+    }
+
+    /** 服务重启后是否自动拉起上次未跑完的 Agent 任务。 */
+    public boolean isAgentRecoveryEnabled() {
+        return environment.getProperty(
+                "agentforge.agent.recovery.enabled", Boolean.class, DEFAULT_AGENT_RECOVERY_ENABLED);
+    }
+
+    /** 恢复扫描回溯窗口，单位天；配置成 0 或负数时回退默认值。 */
+    public int getAgentRecoveryLookbackDays() {
+        int value =
+                environment.getProperty(
+                        "agentforge.agent.recovery.lookback-days",
+                        Integer.class,
+                        DEFAULT_AGENT_RECOVERY_LOOKBACK_DAYS);
+        return value > 0 ? value : DEFAULT_AGENT_RECOVERY_LOOKBACK_DAYS;
+    }
+
+    /** 启动后延迟多久开始恢复，等端口、连接池与 Mapper 就绪。 */
+    public long getAgentRecoveryStartupDelayMs() {
+        long value =
+                environment.getProperty(
+                        "agentforge.agent.recovery.startup-delay-ms",
+                        Long.class,
+                        DEFAULT_AGENT_RECOVERY_STARTUP_DELAY_MS);
+        return value >= 0L ? value : DEFAULT_AGENT_RECOVERY_STARTUP_DELAY_MS;
     }
 
     /**

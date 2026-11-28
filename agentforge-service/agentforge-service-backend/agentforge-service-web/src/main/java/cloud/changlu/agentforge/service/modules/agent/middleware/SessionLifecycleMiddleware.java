@@ -6,6 +6,8 @@ import cloud.changlu.agentforge.agent.domain.StopResult;
 import cloud.changlu.agentforge.agent.stream.PartialThinking;
 import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 import cloud.changlu.agentforge.model.chat.request.ChatRequest;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentContextAccessor;
+import cloud.changlu.agentforge.service.modules.agent.runtime.context.ServiceAgentExecutionContext;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMapper;
 import cloud.changlu.agentforge.service.modules.session.dao.AgentSessionMessageMapper;
 import cloud.changlu.agentforge.service.modules.session.enums.SessionMessageStatusEnum;
@@ -46,27 +48,24 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
     /** 运行中事件快照的最小落库间隔，避免逐 token 写库；append 等关键事件会强制立即落库。 */
     private static final long EVENT_PERSIST_INTERVAL_MS = 800L;
 
-    /** 会话会话标识（等于 memoryId），由请求初始化写入运行期上下文。 */
-    public static final String EXT_SESSION_ID = "session.sessionId";
-
-    /** AI 消息主键。 */
-    public static final String EXT_AI_MESSAGE_ID = "session.aiMessageId";
-
     /** 本轮 AI 消息顺序号。 */
     public static final String EXT_SEQ_NUM = "session.seqNum";
 
     private final AgentSessionMapper agentSessionMapper;
     private final AgentSessionMessageMapper agentSessionMessageMapper;
     private final ObjectMapper objectMapper;
+    private final ServiceAgentContextAccessor contextAccessor;
     private final Map<Object, RunState> states = new ConcurrentHashMap<>();
 
     public SessionLifecycleMiddleware(
             AgentSessionMapper agentSessionMapper,
             AgentSessionMessageMapper agentSessionMessageMapper,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ServiceAgentContextAccessor contextAccessor) {
         this.agentSessionMapper = agentSessionMapper;
         this.agentSessionMessageMapper = agentSessionMessageMapper;
         this.objectMapper = objectMapper;
+        this.contextAccessor = contextAccessor;
     }
 
     /** 二段式任务入队前预注册运行状态，使线程池拒绝或初始化异常也能可靠收口占位消息。 */
@@ -376,12 +375,15 @@ public class SessionLifecycleMiddleware implements IStreamingIAgentMiddleware {
         if (existing != null) {
             return existing;
         }
-        Object sessionId = chatContext.getExtension(EXT_SESSION_ID);
-        Object aiMessageId = chatContext.getExtension(EXT_AI_MESSAGE_ID);
-        if (sessionId == null || aiMessageId == null) {
+        ServiceAgentExecutionContext executionContext = contextAccessor.read(chatContext);
+        if (executionContext.getSessionId() == null || executionContext.getAiMessageId() == null) {
             return null;
         }
-        RunState created = new RunState(memoryId, String.valueOf(sessionId), toLong(aiMessageId));
+        RunState created =
+                new RunState(
+                        memoryId,
+                        executionContext.getSessionId(),
+                        executionContext.getAiMessageId());
         RunState previous = states.putIfAbsent(memoryId, created);
         return previous == null ? created : previous;
     }

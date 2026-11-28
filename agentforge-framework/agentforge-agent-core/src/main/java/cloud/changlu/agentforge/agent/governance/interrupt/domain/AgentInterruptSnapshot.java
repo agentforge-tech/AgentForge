@@ -5,7 +5,9 @@ import cloud.changlu.agentforge.model.chat.message.ToolExecutionRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 一次 AI Call 中需要外部响应的冻结工具批次。
@@ -31,6 +33,7 @@ public final class AgentInterruptSnapshot {
     private final List<ToolExecutionRequest> toolRequests;
     private final List<InterruptRequest> interrupts;
     private final List<PermissionDenial> denials;
+    private final Map<String, String> contextAttributes;
 
     public AgentInterruptSnapshot(
             String batchId,
@@ -66,7 +69,8 @@ public final class AgentInterruptSnapshot {
                 status,
                 toolRequests,
                 interrupts,
-                Collections.<PermissionDenial>emptyList());
+                Collections.<PermissionDenial>emptyList(),
+                Collections.<String, String>emptyMap());
     }
 
     public AgentInterruptSnapshot(
@@ -78,6 +82,28 @@ public final class AgentInterruptSnapshot {
             List<ToolExecutionRequest> toolRequests,
             List<InterruptRequest> interrupts,
             List<PermissionDenial> denials) {
+        this(
+                batchId,
+                memoryId,
+                sourceExecutionId,
+                step,
+                status,
+                toolRequests,
+                interrupts,
+                denials,
+                Collections.<String, String>emptyMap());
+    }
+
+    public AgentInterruptSnapshot(
+            String batchId,
+            Object memoryId,
+            String sourceExecutionId,
+            int step,
+            InterruptBatchStatus status,
+            List<ToolExecutionRequest> toolRequests,
+            List<InterruptRequest> interrupts,
+            List<PermissionDenial> denials,
+            Map<String, String> contextAttributes) {
         this.batchId = batchId;
         this.memoryId = memoryId;
         this.sourceExecutionId = sourceExecutionId;
@@ -90,6 +116,11 @@ public final class AgentInterruptSnapshot {
                 denials == null
                         ? Collections.<PermissionDenial>emptyList()
                         : Collections.unmodifiableList(new ArrayList<PermissionDenial>(denials));
+        this.contextAttributes =
+                contextAttributes == null
+                        ? Collections.<String, String>emptyMap()
+                        : Collections.unmodifiableMap(
+                                new LinkedHashMap<String, String>(contextAttributes));
     }
 
     public static AgentInterruptSnapshot initial(
@@ -138,7 +169,21 @@ public final class AgentInterruptSnapshot {
                 newStatus,
                 toolRequests,
                 interrupts,
-                denials);
+                denials,
+                contextAttributes);
+    }
+
+    public AgentInterruptSnapshot withContextAttributes(Map<String, String> attributes) {
+        return new AgentInterruptSnapshot(
+                batchId,
+                memoryId,
+                sourceExecutionId,
+                step,
+                status,
+                toolRequests,
+                interrupts,
+                denials,
+                attributes);
     }
 
     public String getBatchId() {
@@ -171,5 +216,9 @@ public final class AgentInterruptSnapshot {
 
     public List<PermissionDenial> getDenials() {
         return denials;
+    }
+
+    public Map<String, String> getContextAttributes() {
+        return contextAttributes;
     }
 }

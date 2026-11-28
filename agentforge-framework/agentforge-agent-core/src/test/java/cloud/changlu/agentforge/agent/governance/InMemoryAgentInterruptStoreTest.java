@@ -16,7 +16,7 @@ public class InMemoryAgentInterruptStoreTest {
     @Test
     public void shouldMoveBatchThroughStatusMachine() {
         InMemoryAgentInterruptStore store = new InMemoryAgentInterruptStore();
-        store.save(snapshot("batch-1"));
+        store.save(snapshot("batch-1"), null);
 
         assertEquals(InterruptBatchStatus.PENDING, store.get("batch-1").getStatus());
         store.claim("batch-1");
@@ -29,7 +29,7 @@ public class InMemoryAgentInterruptStoreTest {
     @Test(expected = IllegalStateException.class)
     public void shouldRejectSecondClaimWhileResuming() {
         InMemoryAgentInterruptStore store = new InMemoryAgentInterruptStore();
-        store.save(snapshot("batch-1"));
+        store.save(snapshot("batch-1"), null);
         store.claim("batch-1");
         store.claim("batch-1");
     }
@@ -37,7 +37,7 @@ public class InMemoryAgentInterruptStoreTest {
     @Test(expected = IllegalStateException.class)
     public void shouldRejectClaimAfterCompletion() {
         InMemoryAgentInterruptStore store = new InMemoryAgentInterruptStore();
-        store.save(snapshot("batch-1"));
+        store.save(snapshot("batch-1"), null);
         store.claim("batch-1");
         store.complete("batch-1");
         store.claim("batch-1");

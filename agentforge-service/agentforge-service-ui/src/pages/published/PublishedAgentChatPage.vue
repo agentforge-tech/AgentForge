@@ -297,7 +297,7 @@ export default {
   mixins: [chatAutoScroll],
   data: () => ({
     aid: '', agentBasic: null, agentLoading: false, agentError: '',
-    draft: '', focused: false, running: false, stopping: false, sessionId: '', currentMessageId: null, controller: null, requestVersion: 0, messages: [],
+    draft: '', focused: false, running: false, stopping: false, sessionId: '', currentMessageId: null, controller: null, requestVersion: 0, sessionLoadVersion: 0, messages: [],
     attachments: [], uploading: false, attachmentMenuVisible: false, inputExpanded: false,
     composing: false, pendingAppends: [], deferredAppends: [], remotePollTimer: null,
     topSessions: [], normalSessions: [], sessionLoading: false,
@@ -328,6 +328,9 @@ export default {
   beforeRouteUpdate(to, from, next) {
     const aid = resolveAid(to)
     if (aid !== this.aid) {
+      // 切换到另一个 Agent 时只脱离本地流，旧 Agent 的任务在后台继续。
+      if (this.running) this.detachCurrentRun()
+      ++this.sessionLoadVersion
       this.aid = aid
       this.agentBasic = null
       this.agentError = ''
@@ -344,6 +347,14 @@ export default {
     this.pendingSessionId = resolveSessionId(this.$route)
     this.loadAgentBasic().then(() => this.loadSessions())
   },
+  beforeDestroy() {
+    // 离开页面只需脱离本地订阅，后台 Agent Run 继续执行；再次进入从会话查询续流。
+    ++this.requestVersion
+    ++this.sessionLoadVersion
+    if (this.controller) this.controller.abort()
+    this.controller = null
+    this.stopRemotePoll()
+  },
   methods: {
     async loadAgentBasic() {
       if (!this.aid) return
@@ -358,8 +369,11 @@ export default {
       } finally { this.agentLoading = false }
     },
     newChat() {
-      this.stop()
-      this.stopRemotePoll()
+      // 仅脱离当前 SSE，不调用后端 stop：新建/切换会话不应取消正在执行的任务。
+      // 真正停止由输入框的“停止”按钮触发。
+      if (this.running) this.detachCurrentRun()
+      else this.stopRemotePoll()
+      ++this.sessionLoadVersion
       this.messages = []
       this.sessionId = ''
       this.draft = ''
@@ -368,6 +382,8 @@ export default {
       this.inputExpanded = false
       this.sessionTitle = ''
       this.activeSessionId = null
+      this.pendingAppends = []
+      this.deferredAppends = []
       this.syncSessionToUrl('', { replace: false })
     },
     /** 把当前会话 ID 同步到路由：?sessionId=xxx，便于刷新、分享和前进后退 */
@@ -385,6 +401,7 @@ export default {
       if (wanted === this.sessionId) return
       if (this.running) this.detachCurrentRun()
       if (!wanted) {
+        ++this.sessionLoadVersion
         this.messages = []
         this.sessionId = ''
         this.attachments = []
@@ -398,7 +415,7 @@ export default {
       const item = [...this.topSessions, ...this.normalSessions].find(
         (session) => session.sessionId === wanted
       )
-      if (item) this.openSession(item, { syncUrl: false })
+      if (item) await this.openSession(item, { syncUrl: false })
       else await this.loadSessions()
     },
     /** 会话时间展示：优先最后消息时间，其次修改/创建时间，格式 yyyy-MM-dd HH:mm */
@@ -412,12 +429,7 @@ export default {
       if (!this.aid) return
       this.sessionLoading = true
       try {
-        const [top, normal] = await Promise.all([
-          fetchPublishedTopSessionList(this.aid),
-          fetchPublishedSessionList(this.aid, 20)
-        ])
-        this.topSessions = top || []
-        this.normalSessions = normal || []
+        await this.fetchSessionLists()
         const wanted = this.sessionId || this.pendingSessionId
         if (wanted) {
           const current = [...this.topSessions, ...this.normalSessions].find(
@@ -438,23 +450,68 @@ export default {
         this.sessionLoading = false
       }
     },
+    /** 只刷新左侧会话列表，不触碰当前消息与正在进行的流，避免切换/刷新时打断会话。 */
+    async fetchSessionLists() {
+      const [top, normal] = await Promise.all([
+        fetchPublishedTopSessionList(this.aid),
+        fetchPublishedSessionList(this.aid, 20)
+      ])
+      this.topSessions = top || []
+      this.normalSessions = normal || []
+    },
+    /**
+     * 静默刷新会话列表并校正 activeSessionId：新会话提交后本地占位项没有服务端主键，
+     * 需要从列表回填真实 id，否则切换回该会话时无法按 id 拉取消息、续流。
+     */
+    async refreshSessionsQuietly() {
+      if (!this.aid) return
+      try {
+        await this.fetchSessionLists()
+        const current = [...this.topSessions, ...this.normalSessions].find(
+          (item) => String(item.sessionId) === String(this.sessionId)
+        )
+        if (current) {
+          if (this.activeSessionId !== current.id) this.activeSessionId = current.id
+          if (!this.sessionTitle && current.title) this.sessionTitle = current.title
+        }
+      } catch (_error) {
+        // 静默刷新失败不影响当前会话
+      }
+    },
     async openSession(item, { syncUrl = true } = {}) {
       if (!item) return
+      // 已在当前会话且在流式输出，重复点击无需重连，避免无谓地 abort 再重连。
+      if (item.id && this.running && item.id === this.activeSessionId) return
       if (this.running) this.detachCurrentRun()
-      this.activeSessionId = item.id
-      this.sessionId = item.sessionId
+      let target = item
+      if (!target.id) {
+        // 新会话在列表中可能是无主键的本地占位项，先回填真实 id 再加载。
+        await this.refreshSessionsQuietly()
+        target = [...this.topSessions, ...this.normalSessions].find(
+          (session) => String(session.sessionId) === String(item.sessionId)
+        )
+        if (!target || !target.id) {
+          this.$message.warning('会话正在初始化，请稍后重试')
+          return
+        }
+      }
+      const version = ++this.sessionLoadVersion
+      this.activeSessionId = target.id
+      this.sessionId = target.sessionId
       this.attachments = []
       this.attachmentMenuVisible = false
       this.inputExpanded = false
-      this.sessionTitle = item.title
+      this.sessionTitle = target.title
       this.pendingSessionId = ''
-      if (syncUrl) this.syncSessionToUrl(item.sessionId, { replace: false })
-      await this.loadMessages(item.id, { restoreDeferred: true })
+      if (syncUrl) this.syncSessionToUrl(target.sessionId, { replace: false })
+      await this.loadMessages(target.id, { restoreDeferred: true, version })
     },
-    async loadMessages(sessionRefId, { restoreDeferred = false } = {}) {
+    async loadMessages(sessionRefId, { restoreDeferred = false, version = null } = {}) {
       try {
         const records = await fetchSessionMessages(sessionRefId)
+        if (version != null && version !== this.sessionLoadVersion) return
         const replay = replaySession(records)
+        if (version != null && version !== this.sessionLoadVersion) return
         this.messages = replay.messages
         if (restoreDeferred) {
           this.pendingAppends = replay.pendingAppends
@@ -465,6 +522,7 @@ export default {
         this.resetScrollFollow()
         this.scroll()
       } catch (error) {
+        if (version != null && version !== this.sessionLoadVersion) return
         this.$message.error(error.message || '会话消息加载失败')
       }
     },
@@ -493,9 +551,18 @@ export default {
       const requestVersion = ++this.requestVersion
       this.controller = new AbortController()
       this.currentMessageId = answer.messageId
-      answer.parts = []; answer.content = ''; answer.error = ''; answer.lastEventSeq = 0
+      this.running = true
+      // 历史事件已在会话查询的回放阶段还原为 parts；这里从上次事件序号继续订阅，
+      // 既避免整段重放，也避免清空已渲染内容后闪烁。
+      const cursor = Number(answer.lastEventSeq || 0)
+      if (!cursor) {
+        // 没有可回放的事件（如仅靠 contentText 兜底）时，清空后从 0 重建，避免正文重复。
+        answer.parts = []
+        answer.content = ''
+        answer.error = ''
+      }
       try {
-        await resumeChatStream(answer.messageId, 0, {
+        await resumeChatStream(answer.messageId, cursor, {
           signal: this.controller.signal,
           onEvent: (event) => {
             if (requestVersion !== this.requestVersion) return
@@ -510,7 +577,7 @@ export default {
           if (answer.status === 'running') { promoteLastResponseSegment(answer); answer.status = 'success'; this.finishParts(answer) }
           this.applyStreamPauseState(answer)
           this.controller = null
-          this.loadSessions()
+          this.refreshSessionsQuietly()
         }
       }
     },
@@ -530,7 +597,7 @@ export default {
             this.running = false
             this.deferredAppends = replay.deferredAppends
             this.restoreDeferredAppends()
-            this.loadSessions()
+            this.refreshSessionsQuietly()
             return
           }
           this.remotePollTimer = setTimeout(tick, 1500)
@@ -566,7 +633,7 @@ export default {
     async toggleTop(item, isTop) {
       try {
         await setSessionTop(item.id, isTop)
-        await this.loadSessions()
+        await this.refreshSessionsQuietly()
         this.$message.success(isTop ? '已置顶' : '已取消置顶')
       } catch (error) {
         this.$message.error(error.message || '操作失败')
@@ -583,7 +650,7 @@ export default {
       try {
         await deleteSession(item.id)
         if (this.activeSessionId === item.id) this.newChat()
-        await this.loadSessions()
+        await this.refreshSessionsQuietly()
         this.$message.success('已删除')
       } catch (error) {
         this.$message.error(error.message || '删除失败')
@@ -830,6 +897,8 @@ export default {
             this.syncSessionToUrl(this.sessionId)
             // 新会话立即追加到左侧列表，不整体刷新历史列表。
             this.upsertSession(task, text)
+            // 回填服务端会话主键，保证切走再切回时能按 id 拉取消息并续流。
+            this.refreshSessionsQuietly()
           },
           onEvent: (event) => {
             if (requestVersion === this.requestVersion) this.handleEvent(answer, event, text)
@@ -884,7 +953,8 @@ export default {
         createTime: now
       }
       this.normalSessions = [item, ...this.normalSessions]
-      this.activeSessionId = item.id
+      // 占位项没有服务端主键，activeSessionId 交给 refreshSessionsQuietly 回填真实 id。
+      if (item.id) this.activeSessionId = item.id
       this.sessionTitle = item.title
     },
     /** 更新当前会话在列表中的运行标记与时间，不触发列表刷新。 */

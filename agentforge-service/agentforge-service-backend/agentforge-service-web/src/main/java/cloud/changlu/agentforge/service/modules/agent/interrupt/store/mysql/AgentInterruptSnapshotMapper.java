@@ -11,7 +11,11 @@ public interface AgentInterruptSnapshotMapper {
 
     AgentInterruptSnapshotPojo selectByBatchId(@Param("batchId") String batchId);
 
+    AgentInterruptSnapshotPojo selectPendingByMemoryId(@Param("memoryId") String memoryId);
+
     int claim(@Param("batchId") String batchId, @Param("now") Date now);
 
     int complete(@Param("batchId") String batchId, @Param("now") Date now);
+
+    int cancel(@Param("batchId") String batchId, @Param("now") Date now);
 }
